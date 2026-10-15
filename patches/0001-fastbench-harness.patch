@@ -1,0 +1,342 @@
+diff --git a/configs/sim_libero.yaml b/configs/sim_libero.yaml
+index dc44f89..b2063d3 100644
+--- a/configs/sim_libero.yaml
++++ b/configs/sim_libero.yaml
+@@ -41,6 +41,26 @@ EVALUATION:
+   dataset_stats_path: null
+   device: cuda
+ 
++  # [fastbench] Gate 9: deterministic mid-chunk intervention + structured recorder.
++  # All inert by default; enable via CLI e.g.
++  #   +EVALUATION.intervention_enabled=true +EVALUATION.intervention_mode=zero_action
++  intervention_enabled: false
++  intervention_mode: null
++  intervention_replan_idx: 0
++  intervention_step_in_chunk: 1
++  intervention_scale: 0.0
++  intervention_seed: 0
++  recorder_path: null
++  recorder_state: false
++
++  # [fastbench] Gate 9 primary H3 intervention: one-shot WORLD-state displacement
++  # (WARM_START §9.3). Displaces a movable object's free-joint qpos immediately
++  # after an action chunk is generated, so the chunk is stale by construction.
++  intervention_world_enabled: false
++  intervention_world_body: null          # e.g. plate_1_main
++  intervention_world_delta: null         # e.g. [0.08, 0.0, 0.0]
++  intervention_stale_metric: true
++
+ MULTIRUN:
+   create_only: false
+   task_file: null
+diff --git a/experiments/libero/eval_libero_single.py b/experiments/libero/eval_libero_single.py
+index 62c8fa8..d12a8bf 100644
+--- a/experiments/libero/eval_libero_single.py
++++ b/experiments/libero/eval_libero_single.py
+@@ -24,6 +24,14 @@ project_root = Path(__file__).resolve().parents[2]
+ if str(project_root) not in sys.path:
+     sys.path.insert(0, str(project_root))
+ 
++from experiments.libero.fastbench_intervention import (
++    StructuredRecorder,
++    apply_intervention,
++    maybe_displace_world,
++    resolve_intervention_cfg,
++    snapshot_state,
++    summarize_chunk,
++)
+ from experiments.libero.libero_utils import (
+     LIBERO_ENV_RESOLUTION,
+     get_libero_dummy_action,
+@@ -31,6 +39,7 @@ from experiments.libero.libero_utils import (
+     get_libero_image,
+     invert_gripper_action,
+     quat2axisangle,
++    resolve_task_file_path,
+     save_prediction_video,
+     save_rollout_video,
+ )
+@@ -455,6 +464,13 @@ def _get_max_steps(task_suite_name: str) -> int:
+         "libero_goal": 400,
+         "libero_10": 700,
+         "libero_90": 700,
++        # [fastbench] LIBERO-Safety suites use 600 steps (LIBERO-Safety
++        # libero/configs/eval/default.yaml: max_steps: 600)
++        "obstacle_avoidance": 600,
++        "obstacle_avoidance_human": 600,
++        "human_safety": 600,
++        "affordance": 600,
++        "reasoning_safety": 600,
+     }
+     if task_suite_name not in suite_steps:
+         raise ValueError(f"Unknown task suite: {task_suite_name}")
+@@ -482,6 +498,21 @@ def run_single_episode(
+     visualize_future_video = bool(cfg.EVALUATION.get("visualize_future_video", False))
+     capture_steps = set(_get_future_frame_capture_steps(cfg)[1:])
+ 
++    # [fastbench] Gate 9: deterministic mid-chunk intervention + structured recorder.
++    icfg = resolve_intervention_cfg(cfg)
++    recorder = StructuredRecorder(icfg["recorder_path"])
++    if icfg["enabled"]:
++        logging.info(
++            "[fastbench] intervention ON mode=%s replan_idx=%s step_in_chunk=%s scale=%s seed=%s",
++            icfg["mode"],
++            icfg["replan_idx"],
++            icfg["step_in_chunk"],
++            icfg["scale"],
++            icfg["seed"],
++        )
++    last_executed_action: Optional[list] = None
++    chunk_intervention: Optional[dict] = None
++
+     env.reset()
+     obs = env.set_init_state(initial_state)
+     if use_action_ensembler:
+@@ -495,6 +526,11 @@ def run_single_episode(
+     current_predicted_future_clip: Optional[dict[str, Any]] = None
+     current_replan_step = 0
+     current_replan_idx = -1
++    # [fastbench] Gate 9 H3 bookkeeping.
++    stale_remaining = 0            # already-planned actions still queued post-intervention
++    episode_stale_steps = 0        # §3.2 stale_action_steps for this episode
++    episode_intervention_steps = 0
++    world_intervention = None      # set at the replan where the world was displaced
+ 
+     t = 0
+     done = False
+@@ -518,8 +554,13 @@ def run_single_episode(
+                 input_h=input_h,
+                 model_device=model_device,
+             )
++            # [fastbench] The replan counter must advance on EVERY replan, not only
++            # when future frames are predicted. Previously it was incremented inside
++            # the `predicted_future_frames is not None` branch, so with future-video
++            # disabled it stuck at -1 and any replan-indexed intervention silently
++            # never fired.
++            current_replan_idx += 1
+             if predicted_future_frames is not None:
+-                current_replan_idx += 1
+                 current_predicted_future_clip = {
+                     "replan_idx": current_replan_idx,
+                     "gt_frames": [imgs.copy()],
+@@ -533,14 +574,137 @@ def run_single_episode(
+                 pending_actions = [ensembler.get_action(ts).tolist() for ts in range(t, t + replan_steps)]
+             else:
+                 pending_actions = action_chunk[:replan_steps].tolist()
++
++            # [fastbench] Gate 9: apply the deterministic intervention to THIS chunk
++            # (only fires on the configured replan index / offset).
++            _applied, _iv_before, _iv_after = apply_intervention(
++                pending_actions,
++                icfg,
++                current_replan_idx,
++                prev_action=last_executed_action,
++                task_key=episode_idx,
++            )
++            chunk_intervention = (
++                {
++                    "replan_idx": current_replan_idx,
++                    "step_in_chunk": int(icfg["step_in_chunk"]),
++                    "mode": icfg["mode"],
++                    "scale": float(icfg["scale"]),
++                    "seed": int(icfg["seed"]),
++                    "before": _iv_before,
++                    "after": _iv_after,
++                }
++                if _applied
++                else None
++            )
++            if _applied:
++                logging.info(
++                    "[fastbench] ACTION intervention fired: replan=%d step_in_chunk=%d mode=%s "
++                    "before=%s after=%s",
++                    current_replan_idx,
++                    int(icfg["step_in_chunk"]),
++                    icfg["mode"],
++                    [round(float(x), 4) for x in (_iv_before or [])],
++                    [round(float(x), 4) for x in (_iv_after or [])],
++                )
++
++            # [fastbench] Gate 9 primary H3 hook: mutate the WORLD after the chunk
++            # exists but before any of its actions run (WARM_START §9.2).
++            world_intervention = maybe_displace_world(env, icfg, current_replan_idx)
++            if world_intervention is not None:
++                if world_intervention.get("applied"):
++                    # §3.2: every action already planned for this chunk was
++                    # generated against the pre-intervention world, so all of
++                    # them are stale until the next re-query.
++                    stale_remaining = len(pending_actions)
++                logging.info(
++                    "[fastbench] WORLD intervention fired: replan=%d body=%s delta=%s applied=%s stale=%d",
++                    current_replan_idx,
++                    world_intervention["body"],
++                    world_intervention["delta"],
++                    world_intervention["applied"],
++                    stale_remaining,
++                )
++                recorder.record(
++                    event="intervention",
++                    episode=episode_idx,
++                    replan_idx=current_replan_idx,
++                    t=t,
++                    task_description=task_description,
++                    **world_intervention,
++                )
++
++            recorder.record(
++                event="replan",
++                episode=episode_idx,
++                replan_idx=current_replan_idx,
++                t=t,
++                task_description=task_description,
++                chunk=summarize_chunk(action_chunk),
++                pending_len=len(pending_actions),
++                replan_steps=replan_steps,
++                intervention=chunk_intervention,
++            )
++            if os.environ.get("FASTBENCH_DEBUG_ACTIONS"):
++                import numpy as _np
++
++                _a = _np.asarray(action_chunk, dtype=_np.float32)
++                print(
++                    "[fb-actions] replan=%d t=%d chunk=%s min=%s max=%s mean=%s absmax=%s grip=%s"
++                    % (
++                        current_replan_idx,
++                        t,
++                        tuple(_a.shape),
++                        _np.round(_a.min(0), 3).tolist(),
++                        _np.round(_a.max(0), 3).tolist(),
++                        _np.round(_a.mean(0), 3).tolist(),
++                        _np.round(_np.abs(_a).max(0), 3).tolist(),
++                        _np.round(_a[:, -1], 3).tolist()[:6],
++                    ),
++                    flush=True,
++                )
+             replay_images.append(imgs.copy())
+         else:
+             imgs = get_libero_image(obs)
+             replay_images.append(imgs.copy())
+ 
+-        obs, _, done, _ = env.step(pending_actions.pop(0))
++        _popped = pending_actions.pop(0)
++        _prev_action = last_executed_action
++        last_executed_action = [float(x) for x in _popped]
++        obs, _, done, _ = env.step(_popped)
++        # [fastbench] Gate 9 §3.2: count already-planned actions executed after the
++        # intervention and before the first re-query.
++        _stale = stale_remaining > 0
++        if _stale:
++            stale_remaining -= 1
++            episode_stale_steps += 1
++        # [fastbench] Gate 9: record the action actually sent to the environment.
++        if recorder.enabled:
++            _rec_fields: dict[str, Any] = {
++                "event": "step",
++                "episode": episode_idx,
++                "t": t,
++                "step_in_chunk": current_replan_step,
++                "replan_idx": current_replan_idx,
++                "action": last_executed_action,
++                "prev_action": _prev_action,
++                "intervened": bool(
++                    chunk_intervention is not None
++                    and current_replan_step == int(icfg["step_in_chunk"])
++                ),
++                "intervention": chunk_intervention,
++                "world_intervened": world_intervention is not None,
++                "stale": _stale,
++                "done": bool(done),
++            }
++            if icfg.get("record_state"):
++                _rec_fields["state"] = snapshot_state(env)
++            recorder.record(**_rec_fields)
++        # [fastbench] advance unconditionally: this used to live inside the
++        # future-video branch, which left step_in_chunk pinned at 0 in the common
++        # case where future frames are not rendered.
++        current_replan_step += 1
+         if visualize_future_video and current_predicted_future_clip is not None:
+-            current_replan_step += 1
+             if current_replan_step in capture_steps:
+                 current_predicted_future_clip["gt_frames"].append(get_libero_image(obs))
+             if done or len(pending_actions) == 0:
+@@ -597,6 +761,28 @@ def run_single_episode(
+     episode_mean_psnr = (
+         float(np.mean(episode_future_clip_psnr)) if len(episode_future_clip_psnr) > 0 else None
+     )
++    # [fastbench] Gate 9: terminal record for this episode (success + provenance).
++    recorder.record(
++        event="episode_end",
++        episode=episode_idx,
++        success=bool(done),
++        steps=t,
++        intervention_enabled=bool(icfg["enabled"]),
++        intervention_mode=icfg["mode"],
++        intervention_replan_idx=int(icfg["replan_idx"]),
++        intervention_step_in_chunk=int(icfg["step_in_chunk"]),
++        intervention_scale=float(icfg["scale"]),
++        intervention_seed=int(icfg["seed"]),
++        episode_mean_psnr=episode_mean_psnr,
++        replan_steps=replan_steps,
++        task_description=task_description,
++        # [fastbench] Gate 9 §3.2 stale-action metric + world-intervention provenance.
++        stale_action_steps=episode_stale_steps,
++        world_intervention_enabled=bool(icfg.get("world_enabled")),
++        world_body=icfg.get("world_body"),
++        world_delta=icfg.get("world_delta"),
++    )
++    recorder.close()
+     return bool(done), replay_images, predicted_future_video_clips, episode_mean_psnr
+ 
+ 
+@@ -730,10 +916,9 @@ def _run_task_to_file(
+ 
+     task_suite = benchmark.get_benchmark_dict()[suite_name]()
+     task = task_suite.get_task(task_id)
+-    init_states_path = (
+-        Path(get_libero_path("init_states"))
+-        / task.problem_folder
+-        / task.init_states_file
++    # [fastbench] level-aware path resolution (LIBERO-Safety uses <suite>/L<level>/)
++    init_states_path = resolve_task_file_path(
++        task, "init_states", task.init_states_file
+     )
+     initial_states = torch.load(init_states_path, weights_only=False)
+     while len(initial_states) < int(task_cfg.EVALUATION.num_trials):
+diff --git a/experiments/libero/libero_utils.py b/experiments/libero/libero_utils.py
+index 68edfd8..9ba1d85 100644
+--- a/experiments/libero/libero_utils.py
++++ b/experiments/libero/libero_utils.py
+@@ -15,15 +15,28 @@ DATE = time.strftime("%Y_%m_%d")
+ DATE_TIME = time.strftime("%Y_%m_%d-%H_%M_%S")
+ LIBERO_ENV_RESOLUTION = 256  # resolution used to render training data
+ 
++# [fastbench] LIBERO-Safety stores bddl/init files under `<suite>/L<level>/`, while
++# upstream LIBERO keeps them flat in `<suite>/`. This resolver prefers the level
++# directory when the task exposes `level` and the file is there, otherwise falls
++# back to the flat upstream layout. Behaviour for the official LIBERO suites is
++# therefore unchanged (no `level` attribute -> flat path).
++def resolve_task_file_path(task, file_type: str, filename: str):
++    base = pathlib.Path(get_libero_path(file_type)) / task.problem_folder
++    level = getattr(task, "level", None)
++    candidates = []
++    if level is not None:
++        candidates.append(base / f"L{level}" / filename)
++    candidates.append(base / filename)
++    for candidate in candidates:
++        if candidate.exists():
++            return candidate
++    return candidates[-1]
++
+ 
+ def get_libero_env(task, resolution, seed, env_num=1):
+     """Initializes and returns the LIBERO environment, along with the task description."""
+     task_description = task.language
+-    task_bddl_file = (
+-        pathlib.Path(get_libero_path("bddl_files"))
+-        / task.problem_folder
+-        / task.bddl_file
+-    )
++    task_bddl_file = resolve_task_file_path(task, "bddl_files", task.bddl_file)
+     env_args = {
+         "bddl_file_name": task_bddl_file,
+         "camera_heights": resolution,

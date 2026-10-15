@@ -1,0 +1,22 @@
+{
+  "replan_steps_1": {
+    "success": true,
+    "intervention_step": 2,
+    "first_replan_after_intervention": 3,
+    "stale_action_steps": 1,
+    "recovery_success": true,
+    "recovery_steps": 6,
+    "num_replans": 8,
+    "num_env_steps": 8
+  },
+  "replan_steps_4": {
+    "success": true,
+    "intervention_step": 2,
+    "first_replan_after_intervention": 4,
+    "stale_action_steps": 2,
+    "recovery_success": true,
+    "recovery_steps": 8,
+    "num_replans": 3,
+    "num_env_steps": 10
+  }
+}

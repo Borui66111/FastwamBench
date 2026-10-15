@@ -1,0 +1,251 @@
+[
+  {
+    "replan_steps": 1,
+    "body": "akita_black_bowl_1_main",
+    "delta": [
+      0.06,
+      0.06,
+      0.0
+    ],
+    "episodes": 2,
+    "success_control": 0,
+    "success_disturb": 0,
+    "stale_steps_control": 0,
+    "stale_steps_disturb": 2,
+    "per_episode": [
+      {
+        "episode": 0,
+        "iv_t": 31,
+        "iv_body": "akita_black_bowl_1_main",
+        "stale_window": 1,
+        "stale_t_range": [
+          31,
+          31
+        ],
+        "pre_iv_max_l1": 0.0,
+        "divergence_threshold": 0.005,
+        "divergence_onset": 32,
+        "divergence_gap": 1,
+        "plan_divergence": {
+          "replan_idx": 2,
+          "l1_mean": 0.384806
+        },
+        "eef_obj_min": {
+          "control": 0.0781,
+          "disturb": 0.1494
+        },
+        "eef_obj_last": {
+          "control": 1.1979,
+          "disturb": 0.5572
+        },
+        "obj_net_motion": {
+          "control": 0.1954,
+          "disturb": 0.0
+        }
+      },
+      {
+        "episode": 1,
+        "iv_t": 31,
+        "iv_body": "akita_black_bowl_1_main",
+        "stale_window": 1,
+        "stale_t_range": [
+          31,
+          31
+        ],
+        "pre_iv_max_l1": 0.0,
+        "divergence_threshold": 0.005,
+        "divergence_onset": 32,
+        "divergence_gap": 1,
+        "plan_divergence": {
+          "replan_idx": 2,
+          "l1_mean": 0.294446
+        },
+        "eef_obj_min": {
+          "control": 0.1106,
+          "disturb": 0.0945
+        },
+        "eef_obj_last": {
+          "control": 0.6183,
+          "disturb": 0.3549
+        },
+        "obj_net_motion": {
+          "control": 0.0,
+          "disturb": 0.1236
+        }
+      }
+    ]
+  },
+  {
+    "replan_steps": 5,
+    "body": "akita_black_bowl_1_main",
+    "delta": [
+      0.06,
+      0.06,
+      0.0
+    ],
+    "episodes": 2,
+    "success_control": 0,
+    "success_disturb": 0,
+    "stale_steps_control": 0,
+    "stale_steps_disturb": 10,
+    "per_episode": [
+      {
+        "episode": 0,
+        "iv_t": 35,
+        "iv_body": "akita_black_bowl_1_main",
+        "stale_window": 5,
+        "stale_t_range": [
+          35,
+          39
+        ],
+        "pre_iv_max_l1": 0.0,
+        "divergence_threshold": 0.005,
+        "divergence_onset": 40,
+        "divergence_gap": 5,
+        "plan_divergence": {
+          "replan_idx": 2,
+          "l1_mean": 0.109977
+        },
+        "eef_obj_min": {
+          "control": 0.1832,
+          "disturb": 0.2398
+        },
+        "eef_obj_last": {
+          "control": 0.4961,
+          "disturb": 0.2775
+        },
+        "obj_net_motion": {
+          "control": 0.0,
+          "disturb": 0.0
+        }
+      },
+      {
+        "episode": 1,
+        "iv_t": 35,
+        "iv_body": "akita_black_bowl_1_main",
+        "stale_window": 5,
+        "stale_t_range": [
+          35,
+          39
+        ],
+        "pre_iv_max_l1": 0.0,
+        "divergence_threshold": 0.005,
+        "divergence_onset": 40,
+        "divergence_gap": 5,
+        "plan_divergence": {
+          "replan_idx": 2,
+          "l1_mean": 1.683311
+        },
+        "eef_obj_min": {
+          "control": 0.4752,
+          "disturb": 0.3701
+        },
+        "eef_obj_last": {
+          "control": 0.9946,
+          "disturb": 0.5305
+        },
+        "obj_net_motion": {
+          "control": 0.0,
+          "disturb": 0.0
+        }
+      }
+    ]
+  },
+  {
+    "replan_steps": 10,
+    "body": "akita_black_bowl_1_main",
+    "delta": [
+      0.06,
+      0.06,
+      0.0
+    ],
+    "episodes": 2,
+    "success_control": 0,
+    "success_disturb": 0,
+    "stale_steps_control": 0,
+    "stale_steps_disturb": 20,
+    "per_episode": [
+      {
+        "episode": 0,
+        "iv_t": 40,
+        "iv_body": "akita_black_bowl_1_main",
+        "stale_window": 10,
+        "stale_t_range": [
+          40,
+          49
+        ],
+        "pre_iv_max_l1": 0.0,
+        "divergence_threshold": 0.005,
+        "divergence_onset": 50,
+        "divergence_gap": 10,
+        "plan_divergence": {
+          "replan_idx": 2,
+          "l1_mean": 0.098941
+        },
+        "eef_obj_min": {
+          "control": 0.0689,
+          "disturb": 0.1709
+        },
+        "eef_obj_last": {
+          "control": 0.8983,
+          "disturb": 0.4217
+        },
+        "obj_net_motion": {
+          "control": 0.1275,
+          "disturb": 0.0053
+        }
+      },
+      {
+        "episode": 1,
+        "iv_t": 40,
+        "iv_body": "akita_black_bowl_1_main",
+        "stale_window": 10,
+        "stale_t_range": [
+          40,
+          49
+        ],
+        "pre_iv_max_l1": 0.0,
+        "divergence_threshold": 0.005,
+        "divergence_onset": 50,
+        "divergence_gap": 10,
+        "plan_divergence": {
+          "replan_idx": 2,
+          "l1_mean": 0.272298
+        },
+        "eef_obj_min": {
+          "control": 0.185,
+          "disturb": 0.3617
+        },
+        "eef_obj_last": {
+          "control": 0.5662,
+          "disturb": 0.5101
+        },
+        "obj_net_motion": {
+          "control": 0.0,
+          "disturb": 0.0
+        }
+      }
+    ]
+  }
+]
+
+=== GATE 11 - CONTROL vs DISTURBANCE ===
+  rs  succC  succD  staleC  staleD  window   gap    planD   eefObjC   eefObjD  objMoveD
+---------------------------------------------------------------------------------------
+   1      0      0       0       2       1     1 0.384806    0.0781    0.1494       0.0
+   5      0      0       0      10       5     5 0.109977    0.1832    0.2398       0.0
+  10      0      0       0      20      10    10 0.098941    0.0689    0.1709    0.0053
+(episode 0 shown for per-episode columns; totals in the JSON above)
+
+=== Interpretation ===
+  replan_steps=1: stale window 1 steps (t=[31, 31]); first action divergence 1 step(s) after the intervention; plan divergence at the next replan L1=0.384806.
+      -> harness correct: the entire stale chunk was executed verbatim, then the policy re-planned on the post-intervention world.
+      -> plan CHANGED after seeing the displaced world (correction present).
+  replan_steps=5: stale window 5 steps (t=[35, 39]); first action divergence 5 step(s) after the intervention; plan divergence at the next replan L1=0.109977.
+      -> harness correct: the entire stale chunk was executed verbatim, then the policy re-planned on the post-intervention world.
+      -> plan CHANGED after seeing the displaced world (correction present).
+  replan_steps=10: stale window 10 steps (t=[40, 49]); first action divergence 10 step(s) after the intervention; plan divergence at the next replan L1=0.098941.
+      -> harness correct: the entire stale chunk was executed verbatim, then the policy re-planned on the post-intervention world.
+      -> plan CHANGED after seeing the displaced world (correction present).
+
+  All arms: the policy commits to the stale chunk for the full stale window and then corrects. This is the H3 'world-model commitment' signature.

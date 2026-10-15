@@ -1,0 +1,73 @@
+2026年 10月 15日 星期四 02:33:42 CST
+test-X640-G50
+Linux test-X640-G50 6.8.0-138-generic #138~22.04.1-Ubuntu SMP PREEMPT_DYNAMIC Fri Aug  7 13:43:15 UTC  x86_64 x86_64 x86_64 GNU/Linux
+Thu Oct 15 02:33:42 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.95.05              Driver Version: 580.95.05      CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA RTX 5880 Ada Gene...    On  |   00000000:2A:00.0 Off |                  Off |
+| 35%   64C    P2            258W /  285W |   35327MiB /  49140MiB |     91%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   1  NVIDIA RTX 5880 Ada Gene...    On  |   00000000:3D:00.0 Off |                  Off |
+| 37%   68C    P2            251W /  285W |   33305MiB /  49140MiB |     87%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   2  NVIDIA RTX 5880 Ada Gene...    On  |   00000000:50:00.0 Off |                  Off |
+| 30%   32C    P8             22W /  285W |      15MiB /  49140MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   3  NVIDIA RTX 5880 Ada Gene...    On  |   00000000:63:00.0 Off |                  Off |
+| 48%   74C    P2            283W /  285W |   39699MiB /  49140MiB |     96%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   4  NVIDIA GeForce RTX 4090        On  |   00000000:99:00.0 Off |                  Off |
+| 64%   61C    P0            270W /  450W |   37091MiB /  49140MiB |     81%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   5  NVIDIA GeForce RTX 4090        On  |   00000000:AB:00.0 Off |                  Off |
+| 69%   61C    P0            280W /  450W |   24193MiB /  49140MiB |     88%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   6  NVIDIA GeForce RTX 4090        On  |   00000000:BD:00.0 Off |                  Off |
+|100%   81C    P0            426W /  450W |   39023MiB /  49140MiB |    100%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   7  NVIDIA GeForce RTX 4090        On  |   00000000:CF:00.0 Off |                  Off |
+| 30%   39C    P0             82W /  450W |   11533MiB /  49140MiB |     49%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A            3528      G   /usr/lib/xorg/Xorg                        4MiB |
+|    0   N/A  N/A         4046640      C   python                                35304MiB |
+|    1   N/A  N/A            3528      G   /usr/lib/xorg/Xorg                        4MiB |
+|    1   N/A  N/A          154299      C   python                                33282MiB |
+|    2   N/A  N/A            3528      G   /usr/lib/xorg/Xorg                        4MiB |
+|    3   N/A  N/A            3528      G   /usr/lib/xorg/Xorg                        4MiB |
+|    3   N/A  N/A         3351724      C   .../.conda/envs/pevit/bin/python      39676MiB |
+|    4   N/A  N/A            3528      G   /usr/lib/xorg/Xorg                        4MiB |
+|    4   N/A  N/A           11765      C   python                                37068MiB |
+|    5   N/A  N/A            3528      G   /usr/lib/xorg/Xorg                        4MiB |
+|    5   N/A  N/A         4154875      C   ...envs/Safety_layers/bin/python      24170MiB |
+|    6   N/A  N/A            3528      G   /usr/lib/xorg/Xorg                        4MiB |
+|    6   N/A  N/A         3207219      C   .../.conda/envs/pevit/bin/python      39000MiB |
+|    7   N/A  N/A            3528      G   /usr/lib/xorg/Xorg                        4MiB |
+|    7   N/A  N/A         3801708      C   ...envs/Safety_layers/bin/python      11510MiB |
++-----------------------------------------------------------------------------------------+
+Python 3.12.4
+/opt/anaconda3/bin/python
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sdb1        44T   30T   12T  73% /data1
+/dev/sda2       1.8T  1.6T  130G  93% /
+               total        used        free      shared  buff/cache   available
+Mem:           503Gi        39Gi        46Gi       727Mi       418Gi       458Gi
+Swap:          2.0Gi       1.0Mi       2.0Gi

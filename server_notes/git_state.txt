@@ -1,0 +1,8 @@
+=== FastWAM ===
+7faa71108368fbb3b6885649f112af607427a2d4
+origin	https://github.com/yuantianyuan01/FastWAM (fetch)
+origin	https://github.com/yuantianyuan01/FastWAM (push)
+=== LIBERO-Safety ===
+19ec8df23eedfbb9265bafd3e56495fcebfcfcd0
+origin	https://githubfast.com/LIBERO-SAFETY/LIBERO-Safety (fetch)
+origin	https://githubfast.com/LIBERO-SAFETY/LIBERO-Safety (push)
