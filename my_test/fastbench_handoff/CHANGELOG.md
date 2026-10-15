@@ -1,5 +1,45 @@
 # Changelog
 
+## 2026-10-16 — repo published for remote collaboration; Gate 11 interpretation corrected
+
+**Issue**
+The harness, patches and Gate 11 evidence existed only on the GPU server, so a remote collaborator had nothing to
+review. Separately, the Gate 11 write-up used a framing ("the model commits to a plan built on a world that no longer
+exists") that overstates what the experiment shows: the stale window is a property of the execution protocol, not of
+the model.
+
+**Reason**
+Gate 12–14 (baseline task screening, first recovery result, WAM-specific comparison) will be split between the server
+worker (GPU runs, raw evidence) and the remote side (review, metric validity, plotting), which needs a shared source
+of truth rather than chat history.
+
+**Fix**
+- Initialised `/data1/liborui/fastwam_bench` as a standalone git repo and pushed it to
+  `https://github.com/Borui66111/FastwamBench` (public): 55 tracked files, ~720 KB. The ~83 GB of downloaded payloads
+  (65 GB checkpoints, LIBERO-Safety assets, rollouts) are gitignored and re-fetched by the setup scripts.
+- Added `README.md`, `.gitignore`, `PUSH.md` (remote/push procedure) and `evidence/` (gate7 + gate11 analysis text).
+- Exported the FastWAM modifications as `patches/0001-fastbench-harness.patch` (3 modified files + the new
+  `fastbench_intervention.py`) against base commit `7faa711`, so no upstream tree needs vendoring.
+- Bundled the raw Gate 11 records as `evidence/gate11_records.tar.gz` (6 × `records.jsonl`, 44 MB → 3.8 MB).
+- **Interpretation guardrail adopted** (raised by the remote reviewer). Gate 11 is a *Future-Reality Divergence*
+  probe, not evidence that "the model chooses to execute stale actions for N steps": the intervention is injected
+  *after* the chunk is planned and the model cannot re-query the environment until the next boundary, so
+  `divergence_gap == stale_window == replan_steps` is a harness-correctness check by construction. README.md and
+  STATE.md reworded accordingly, and the claims that are *not* yet supported (recovery, success drop, WAM-vs-VLA,
+  "future modeling improves robustness") are now listed explicitly.
+- Recorded the next plan (Gate 12A screening / 12B fidelity / 13 recovery / 14 WAM-specific) in STATE.md, and adopted
+  the reviewer's per-gate format: `STATUS / EVIDENCE / INTERPRETATION / OPEN QUESTION / NEXT ACTION`.
+
+**Verification**
+- Remote `main` matches the local commit, and all three remote branches (`main`, `remote-review`,
+  `chatgpt-write-test`) point at the same commit — no divergent work to reconcile.
+- Secret scan across every tracked directory before the first commit: no tokens, keys or credentials.
+- `patches/0001-fastbench-harness.patch` is byte-identical to the live `git -C FastWAM diff`, and
+  `patches/fastbench_intervention.py` matches the live file (16,194 bytes) — the committed patch is current, not stale.
+- The `.gitignore` excludes exactly the payload dirs (`git check-ignore` verified); largest tracked file is 40 KB.
+- Note: git does **not** support trailing comments on `.gitignore` pattern lines — the first attempt silently failed
+  to ignore `checkpoints/` and started hashing 83 GB. Comments now sit on their own lines.
+
 ## 2026-10-08 — New-server warm-start handoff
 
 **Issue**

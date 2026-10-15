@@ -45,9 +45,11 @@ scripts_setup/          all runnable scripts (bring-up, gates, analysis) + unit 
   gate11_analyze.py     H3 divergence analysis (step-level, noise-floor aware)
   test_gate9_intervention.py   unit tests (45 checks) for the intervention mechanism
 patches/                our changes to the upstream FastWAM tree (it is NOT vendored here)
-evidence/               curated text/JSON results backing the conclusions
+evidence/               curated text results + a compressed bundle of the raw Gate 11 records
 my_test/fastbench_handoff/   the onboarding brief + live STATE.md / CHANGELOG.md
 server_notes/           host/GPU inventory captured during bring-up
+PUSH.md                 how to push this repo to a remote
+REMOTE_REVIEW.md        the remote collaborator's brief: status, interpretation guardrails, Gate 12-14 plan
 ```
 
 **Nothing upstream is vendored.** `FastWAM/` and `LIBERO-Safety/` are separate clones and are gitignored.
@@ -63,7 +65,7 @@ Everything below assumes the fastbench project root as the working directory.
 
 ```bash
 git clone https://github.com/yuantianyuan01/FastWAM         FastWAM
-git clone https://githubfast.com/LIBERO-SAFETY/LIBERO-Safety LIBERO-Safety
+git clone https://githubfast.com/LIBERO-SAFETY/LIBERO-Safety LIBERO-Safety   # mirror host; github.com was blocked here
 ```
 
 Our changes against FastWAM `7faa711` (recorded in `patches/BASE_COMMIT.txt`):
@@ -148,15 +150,29 @@ re-run silently does nothing unless you use a fresh `output_dir`.
 - Success is 0/2 in all arms including control, so this task yields no success-recovery signal; the
   evidence is behavioural, not success-based.
 
-**Conclusion (H3, "world-model commitment"):** the model commits to a plan built on a world that no longer
-exists, pays the full stale window for it, and corrects only at the next replanning boundary.
+**Conclusion (H3, "Future-Reality Divergence"):** under fixed-horizon chunk execution, a world change cannot
+affect the current action chunk until the next replanning boundary. The chunk planned against the old world is
+executed unchanged, the full stale window is paid, and at the first post-intervention replan the newly generated
+plan differs from control (0.099-0.385 vs a 0.005 noise floor).
+
+This is deliberately **not** stated as *"the model chooses to execute stale actions for N steps."* Because the
+intervention is injected **after** the chunk has been planned and the model cannot re-query the environment until
+the next boundary, `divergence_gap == stale_window == replan_steps` follows from the execution protocol — it is a
+harness-correctness property, not a model property. The model-side content is (a) the magnitude of the post-replan
+plan divergence and (b) the disturbed arm's behaviour afterwards (it stays further from the object at closest
+approach, 0.149-0.240 m vs 0.069-0.183 m).
+
+What this result does **not** support yet: reliable recovery, an intervention-caused success drop, or any
+WAM-vs-VLA claim. The current task is 0% success in both arms, so it cannot yield a recovery signal — see
+`REMOTE_REVIEW.md` for the Gate 12-14 plan that fixes this.
 
 ---
 
 ## Provenance
 
 - FastWAM: `github.com/yuantianyuan01/FastWAM` @ `7faa711`
-- LIBERO-Safety: `githubfast.com/LIBERO-SAFETY/LIBERO-Safety` @ `19ec8df2`
+- LIBERO-Safety: `githubfast.com/LIBERO-SAFETY/LIBERO-Safety` @ `19ec8df2` (the host recorded in the local clone's
+  remote — a mirror, used because github.com was blocked on this machine)
 - FastWAM weights: `yuanty/fastwam` (release checkpoint), base model `Wan-AI/Wan2.2-TI2V-5B`
 - Upstream components remain under their own licenses; this repo contains only our harness, patches,
   and results.

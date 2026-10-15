@@ -16,7 +16,9 @@
 - [x] Run LIBERO-Safety `obstacle_avoidance` end-to-end through FastWAM with no intervention (Gate 8 v2: 0/5 with the
       correct flags — clean run, real MP4s, meaningful verdict).
 - [x] Deterministic mid-chunk intervention + structured recorder (**Gate 9 COMPLETE**, verified end-to-end).
-- [~] Control-vs-disturbance sweep over `replan_steps` 1/5/10 (Gate 11 — running).
+- [x] Control-vs-disturbance sweep over `replan_steps` 1/5/10 (**Gate 11 COMPLETE** — six arms, seed-pinned,
+      `pre_iv_max_l1 == 0.0`; see below).
+- [ ] Gate 12 — screen for tasks with usable control success (see "Next integration target").
 
 ## Environment (resolved — supersedes the old limitation)
 The old "no libero/mujoco/robosuite" limitation no longer applies. On this server:
@@ -136,15 +138,50 @@ worked.
   not success-based: the committed stale chunk is fully paid for, and the disturbed arm stays further from the object
   at its closest approach (0.149–0.240 m vs 0.069–0.183 m control).
 
-Interpretation: this is the H3 "world-model commitment" signature — the model commits to a plan built on a world that
-no longer exists, pays the full stale window for it, and corrects only at the next replanning boundary. Note that
-`divergence_gap == stale_window` is a harness-correctness check by construction; the behavioural content is the
-post-replan divergence magnitude and whether the arm still re-approaches the object.
+Interpretation (revised 2026-10-16 per `REMOTE_REVIEW.md`): this is the H3 **Future-Reality Divergence** signature, and
+it must be stated as a property of the execution protocol, not of the model:
 
-## Next integration target
-Finish the full Gate 11 sweep (rs ∈ {1,5,10}, 2 trials) and write up the recovery finding; then extend to more
-tasks/levels and further suites. Intervention/recording hooks are already ported into FastWAM's
-`run_single_episode()` (Gate 9, above).
+> Under fixed-horizon chunk execution, a world change cannot affect the current action chunk until the next
+> replanning boundary.
+
+Do **not** headline it as "the model chooses to execute stale actions for N steps": `divergence_gap == stale_window`
+is harness-correctness by construction (the intervention is injected *after* the chunk is planned and the model
+cannot re-query the environment until the next boundary). The model-side content is (a) the post-replan plan
+divergence magnitude and (b) the disturbed arm's subsequent behaviour — it stays further from the object at closest
+approach (0.149–0.240 m vs 0.069–0.183 m).
+
+Supported claim:
+
+> We built a deterministic paired-intervention harness for FastWAM in LIBERO-Safety. A mid-chunk world-state change
+> invalidates the current plan; under fixed-horizon execution the stale chunk persists until the next replan, after
+> which the generated action plan changes relative to control.
+
+Explicitly **not** yet supported: reliable recovery; intervention-caused success drop; WAM > or < VLA; "future
+modeling specifically improves robustness".
+
+## Next integration target — Gate 12 (baseline tasks), per `REMOTE_REVIEW.md`
+Gate 11 is finished. The blocker for the next result is that the current task has 0% success in *both* arms, so it
+cannot produce a recovery signal. Agreed plan with the remote reviewer:
+
+- **Gate 12A — screen control-only success.** Scan LIBERO Spatial / Object / Goal and LIBERO-Safety
+  `obstacle_avoidance` L0/L1 at ~5 trials/task and target `30% <= control success <= 90%`; then 10–20 trials on the
+  best 2–3 tasks. Commit a machine-readable summary:
+  `suite, task_id, level, trials, successes, success_rate, mean_steps`. (Starting evidence: libero_spatial t0 = 1/5.)
+- **Gate 12B — baseline fidelity** (parallel, non-blocking). The `sigma_shift=1.0` fix restored non-zero success but
+  the absolute rate is still far below upstream. Check checkpoint/config pairing, inference mode, image
+  preprocessing, init-state protocol, action horizon / replanning, manager path vs per-task worker, upstream commit
+  drift. Do not block benchmark construction on it — but do not call it solved either.
+- **Gate 13 — first real recovery result.** Paired control vs disturbance on a task with reliable control success
+  (same task, init state, seed, model config and replan horizon). Report Control SR, Disturbed SR, Success Drop,
+  Recovery Rate (`successful disturbed episodes / disturbed episodes whose paired control succeeds`), Recovery
+  Latency, Stale Action Steps, Post-intervention Plan Divergence, and collision/safety violations where available.
+  "Recovery" means successful adaptation after the old plan becomes invalid — not merely that the action changed.
+- **Gate 14 — make the result WAM-specific.** Same checkpoint, task, seed, intervention and replan horizon,
+  comparing future-aware / IDM inference against non-future / first-frame inference (preferred, because almost every
+  factor stays controlled). Only after Gate 14 make WAM-specific robustness/failure claims.
+
+Gate write-ups from now on use the remote reviewer's format:
+`STATUS: / EVIDENCE: / INTERPRETATION: / OPEN QUESTION: / NEXT ACTION:`.
 
 Harness patches already applied (minimal, marked `[fastbench]`, no-op for upstream LIBERO suites):
 - `experiments/libero/libero_utils.py`: `resolve_task_file_path(task, file_type, filename)` prefers
