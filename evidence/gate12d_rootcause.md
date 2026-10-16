@@ -81,3 +81,20 @@ small sample).
 LIBERO-Safety is advertised as "drop-in compatible" with LIBERO, but ships a
 modified OSC controller config. Always diff a vendored/forked simulator
 against the stock release before trusting downstream numbers from it.
+
+## Verification of the fix
+
+Re-diffed the whole vendored package against the official 1.4.0 sdist with CRLF
+normalised: the only remaining difference under `robosuite/**` is a trailing
+newline in `osc_pose.json` (JSON-equal: `output_max=[0.05,0.05,0.05,0.5,0.5,0.5]`,
+`kp=150`). No other functional difference exists. A few non-Python assets differ
+(one mesh `IKE170031`, two 4k textures, an empty `renderers/config` dir) — none
+are loaded by LIBERO's manipulation tasks.
+
+## Reversibility
+
+One file, backed up in place:
+
+    cp .../controllers/config/osc_pose.json.forkbak .../controllers/config/osc_pose.json
+
+The official content is also committed as `patches/osc_pose.official.json`.
