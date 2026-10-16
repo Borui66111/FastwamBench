@@ -227,7 +227,20 @@ Toy contract test only; verifies definitions and runner mechanics, not a robotic
 
 ## Gate 13 — cross-horizon commitment-cost sweep (2026-10-17, in progress)
 
-**STATUS:** infrastructure complete and canary-validated; full sweep running.
+**STATUS:** infrastructure complete and validated; main sweep done, magnitude ladder + PSNR arm
+queued unattended (`scripts_setup/gate13_finish.sh`).
+**HEADLINE FINDING (2026-10-17, main sweep):** the commitment is real and scales *exactly* with H,
+but the task-level success cost is dominated by re-acquisition and is therefore flat in H:
+- `stale executed` = H exactly (1, 2, 5, 10 for H=1,2,5,10) — the model really does execute
+  precisely H actions chosen for the pre-change world.
+- **stale-window divergence** (eef-to-object distance growth *during* that window) is monotone in
+  H: 0.002 → 0.011 → 0.043 → 0.045 m. This is the direct signature of acting on a stale world.
+- success cost is flat: control 1.00 vs disturb 0.80 at *every* H (+0.20), with mean steps
+  104 → ~175 and 2/10 timeouts at every H. Re-grasping the displaced object costs the same
+  whether 1 or 10 stale actions were executed, so the horizon effect is masked.
+- **magnitude ladder** (0.02 / 0.03 m, H=1 vs H=10) is the decisive follow-up: at mag 0.02 the
+  H=1 disturb arm recovers almost perfectly (2/2, 106 steps vs control 102), so at a small
+  displacement the cost of a long commitment is no longer masked and H-dependence becomes visible.
 **EVIDENCE:** `scripts_setup/gate13_run.py` (sweep runner), `gate13_analyze.py`,
 `gate13_figure.py`, `gate13_report.py`, `gate13_all.sh` (unattended pipeline),
 `gate13_validate_goal_aware.py`; `evidence/gate13_design_checks/` (raw captures);
