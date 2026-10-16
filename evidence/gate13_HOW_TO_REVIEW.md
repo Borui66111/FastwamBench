@@ -11,9 +11,33 @@ function of H — using controlled interventions, not task success alone.
 | artifact | what it is |
 |---|---|
 | `evidence/gate13_commitment_cost.md` | headline table + trend (generated) |
-| `evidence/gate13_commitment_cost.png` | two-panel figure: success vs H, stale vs H (generated) |
+| `evidence/gate13_commitment_cost.png` | three-panel figure: success vs H, stale vs H, divergence vs H (generated) |
 | `results/gate13_main/gate13_summary.json` | machine-readable per-(task,H) numbers + `_config` |
 | `results/gate13_main/<task>/H<h>/<arm>_s<seed>/records.jsonl` | raw per-step records |
+
+## Headline finding (main sweep, 2026-10-17)
+
+The commitment is **real** but its **task-level cost saturates immediately** — the two must be
+reported separately, which is why the figure has three panels:
+
+| H | control | disturbed | cost | stale executed | mean steps (ctl→dis) | timeouts | stale-window divergence |
+|---|---|---|---|---|---|---|---|
+| 1 | 1.00 | 0.80 | +0.20 | 1 | 104 → 176 | 0 → 2 | 0.002 m |
+| 2 | 1.00 | 0.80 | +0.20 | 2 | 105 → 175 | 0 → 2 | 0.011 m |
+| 5 | 1.00 | 0.80 | +0.20 | 5 | 102 → 173 | 0 → 2 | 0.043 m |
+| 10 | 1.00 | 0.80 | +0.20 | 10 | 104 → 173 | 0 → 2 | 0.045 m |
+
+- **Mechanism confirmed:** the model executes exactly H stale actions (panel B), and the
+  end-effector diverges from the moved object *during* that window by an amount that grows
+  with H (panel C) — the direct signature of acting on a world that no longer exists.
+- **Task cost is flat in H:** a disturbed episode is usually still solvable, it just costs
+  ~70 extra steps and sometimes exhausts the 400-step budget. That re-acquisition cost is
+  set by how hard the displaced object is to re-grasp, which does not depend on H — so the
+  horizon effect is *masked* at this displacement, not absent.
+- **The decisive follow-up** is the magnitude ladder (`results/gate13_lad002` / `_lad003`,
+  H=1 vs H=10 at 0.02 / 0.03 m): at a small displacement H=1 replans away the problem almost
+  perfectly (probe: 2/2, 106 steps vs control 102), so the cost of a long commitment is no
+  longer hidden behind the re-grasp cost.
 
 ## The five validity checks (and where each is proven)
 
