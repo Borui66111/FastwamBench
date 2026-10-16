@@ -136,6 +136,28 @@ for _tag, _mag in (("lad002", "0.02"), ("lad003", "0.03")):
     _table(_pl, _tag)
 if not _any:
     w("*(ladder not run yet — see `scripts_setup/gate13_finish.sh`)*\n")
+
+# --- PSNR arm: the world-modelling signal -------------------------------------
+_pn = summary_path.parent.parent / "gate13_psnr" / "gate13_summary.json"
+if _pn.exists():
+    with open(_pn) as _fh:
+        _ps = json.load(_fh)
+    _pp = _ps.get("_pooled") or {}
+    if _pp and any(_pp[h].get("psnr_drop") is not None for h in _pp):
+        w("\n## Predicted-future vs reality (PSNR arm)\n")
+        w("`visualize_future_video=true` makes the model render its predicted future; the")
+        w("PSNR of that prediction against what actually happened is the most direct")
+        w("world-modelling signal available. A larger drop = the model's world model is")
+        w("more wrong about the world it is acting in.\n")
+        w("| H | PSNR control | PSNR disturbed | drop |")
+        w("|---|---|---|---|")
+        for h in sorted(_pp, key=lambda x: int(x)):
+            _r = _pp[h]
+            if _r.get("psnr_drop") is None:
+                continue
+            w(f"| {h} | {_r['psnr_control']:.2f} | {_r['psnr_disturb']:.2f} | "
+              f"{_r['psnr_drop']:+.2f} |")
+        w("")
 w("\n## Reproduce\n")
 w("```bash")
 w("bash scripts_setup/gate13_all.sh   # full pipeline: sweep -> psnr -> analyze -> report")

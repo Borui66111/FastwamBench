@@ -224,6 +224,13 @@ def main() -> int:
                     "contaminated_disturb": rows["disturb"].get("contaminated", 0),
                     "psnr_control": rows["control"].get("psnr"),
                     "psnr_disturb": rows["disturb"].get("psnr"),
+                    # the on-thesis world-modelling quantity: how much the model's
+                    # predicted future degrades against reality after the world changed
+                    "psnr_drop": (
+                        None
+                        if rows["control"].get("psnr") is None or rows["disturb"].get("psnr") is None
+                        else rows["control"]["psnr"] - rows["disturb"]["psnr"]
+                    ),
                     "n": rows["control"]["n"],
                     "mean_steps_control": rows["control"].get("mean_steps"),
                     "mean_steps_disturb": rows["disturb"].get("mean_steps"),
@@ -275,7 +282,18 @@ def main() -> int:
                     sum(e["stale_divergence"] for e in d
                         if e.get("stale_divergence") is not None)
                     / max(1, sum(1 for e in d if e.get("stale_divergence") is not None))),
+                "psnr_control": (
+                    sum(e["psnr"] for e in c if e.get("psnr") is not None)
+                    / max(1, sum(1 for e in c if e.get("psnr") is not None))
+                    if any(e.get("psnr") is not None for e in c) else None),
+                "psnr_disturb": (
+                    sum(e["psnr"] for e in d if e.get("psnr") is not None)
+                    / max(1, sum(1 for e in d if e.get("psnr") is not None))
+                    if any(e.get("psnr") is not None for e in d) else None),
             }
+            _pc, _pd2 = summary["_pooled"][h]["psnr_control"], summary["_pooled"][h]["psnr_disturb"]
+            summary["_pooled"][h]["psnr_drop"] = (
+                None if _pc is None or _pd2 is None else _pc - _pd2)
             print(f"  H{h:>3}  control {cr:.2f} (n={len(c)})  disturb {dr:.2f} (n={len(d)})"
                   f"  cost {cr - dr:+.2f}")
 
