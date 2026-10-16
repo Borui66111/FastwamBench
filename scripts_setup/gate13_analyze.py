@@ -153,7 +153,8 @@ def main() -> int:
     for (suite, tid), per_h in sorted(data.items()):
         print(f"\n### {suite} t{tid}   (manipulated body: {meta[(suite, tid)].get('body')})")
         hdr = (f"{'H':>4} {'arm':>8} {'succ':>9} {'rate':>7} {'stale':>6} "
-               f"{'iv_step':>8} {'reacq':>6} {'obj_move':>9} {'bad':>4} {'psnr':>7}")
+               f"{'iv_step':>8} {'reacq':>6} {'obj_move':>9} {'bad':>4} {'psnr':>7} "
+               f"{'steps':>9} {'TO':>4}")
         print(hdr)
         print("-" * len(hdr))
         rows = {}
@@ -174,11 +175,19 @@ def main() -> int:
                 mv_s = sum(mv) / len(mv) if mv else float("nan")
                 ps = [e["psnr"] for e in eps if e.get("psnr") is not None]
                 ps_s = sum(ps) / len(ps) if ps else float("nan")
+                # graded signals: success alone is coarse.  A failed disturbed
+                # episode is almost always a 400-step timeout, and a recovered one
+                # still costs extra steps, so report both.
+                stp = [e["steps"] for e in eps if e.get("steps") is not None]
+                stp_s = sum(stp) / len(stp) if stp else float("nan")
+                to = sum(1 for s in stp if s >= 400)
                 print(f"{h:>4} {arm:>8} {s:>4}/{n:<4} {s/n:>7.2f} {stale:>6.1f} "
-                      f"{iv:>8.0f} {lat_s:>6.1f} {mv_s:>9.3f} {bad:>4} {ps_s:>7.2f}")
+                      f"{iv:>8.0f} {lat_s:>6.1f} {mv_s:>9.3f} {bad:>4} {ps_s:>7.2f} "
+                      f"{stp_s:>9.1f} {to:>4}")
                 rows[arm] = {"n": n, "succ": s, "rate": s / n, "stale": stale,
                              "iv_step": iv, "reacq": lat_s, "obj_move": mv_s,
-                             "contaminated": bad, "psnr": ps_s}
+                             "contaminated": bad, "psnr": ps_s,
+                             "mean_steps": stp_s, "timeouts": to}
             if "control" in rows and "disturb" in rows:
                 d = rows["control"]["rate"] - rows["disturb"]["rate"]
                 print(f"{h:>4} {'DELTA':>8} {'':>9} {d:>7.2f}")
@@ -191,6 +200,10 @@ def main() -> int:
                     "psnr_control": rows["control"].get("psnr"),
                     "psnr_disturb": rows["disturb"].get("psnr"),
                     "n": rows["control"]["n"],
+                    "mean_steps_control": rows["control"].get("mean_steps"),
+                    "mean_steps_disturb": rows["disturb"].get("mean_steps"),
+                    "timeouts_control": rows["control"].get("timeouts"),
+                    "timeouts_disturb": rows["disturb"].get("timeouts"),
                 }
         # trend
         hh = sorted(k for k in summary.get(f"{suite}_t{tid}", {}))
@@ -218,6 +231,8 @@ def main() -> int:
                 continue
             cr = sum(1 for e in c if e["success"]) / len(c)
             dr = sum(1 for e in d if e["success"]) / len(d)
+            _cs = [e["steps"] for e in c if e.get("steps") is not None]
+            _ds = [e["steps"] for e in d if e.get("steps") is not None]
             summary["_pooled"][h] = {
                 "control_rate": cr,
                 "disturb_rate": dr,
@@ -226,6 +241,10 @@ def main() -> int:
                 "contaminated_disturb": sum(1 for e in d if e.get("contaminated")),
                 "n_control": len(c),
                 "n_disturb": len(d),
+                "mean_steps_control": sum(_cs) / len(_cs) if _cs else None,
+                "mean_steps_disturb": sum(_ds) / len(_ds) if _ds else None,
+                "timeouts_control": sum(1 for s in _cs if s >= 400),
+                "timeouts_disturb": sum(1 for s in _ds if s >= 400),
             }
             print(f"  H{h:>3}  control {cr:.2f} (n={len(c)})  disturb {dr:.2f} (n={len(d)})"
                   f"  cost {cr - dr:+.2f}")
