@@ -35,14 +35,17 @@ commands wildly oversized motions — it flails and rarely succeeds.
 ## Runtime confirmation
 
 `robosuite.controllers.controller_factory.load_controller_config()` executed
-inside the `fastbench` env returns:
+inside the `fastbench` env returns, **before and after** the fix:
 
-```
-output_max [2, 2, 2, 2, 2, 2]   kp 750
-```
+| | output_max | kp |
+|---|---|---|
+| before fix | `[2, 2, 2, 2, 2, 2]` | 750 |
+| after fix | `[0.05, 0.05, 0.05, 0.5, 0.5, 0.5]` | 150 |
+| stock robosuite 1.4.0 | `[0.05, 0.05, 0.05, 0.5, 0.5, 0.5]` | 150 |
 
-i.e. the environment really does load the fork's file — this is not a
-dead-code difference. (raw output: `/tmp/ctrl.out`)
+i.e. the environment really did load the fork's file — this is not a
+dead-code difference — and after the fix it loads the official values.
+(raw outputs: `/tmp/ctrl.out` pre-fix, `/tmp/ctrl_postfix.out` post-fix)
 
 ## Fix
 

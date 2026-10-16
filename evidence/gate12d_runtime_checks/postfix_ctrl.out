@@ -1,0 +1,5 @@
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+[robosuite WARNING] To setup, run: python /data1/liborui/fastwam_bench/LIBERO-Safety/third_party/robosuite-1.4/robosuite/scripts/setup_macros.py (__init__.py:9)
+RUNTIME osc_pose -> output_max: [0.05, 0.05, 0.05, 0.5, 0.5, 0.5] kp: 150
+EXIT=0

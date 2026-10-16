@@ -1,0 +1,17 @@
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+[robosuite WARNING] To setup, run: python /data1/liborui/fastwam_bench/LIBERO-Safety/third_party/robosuite-1.4/robosuite/scripts/setup_macros.py (__init__.py:9)
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+BDDL: /data1/liborui/fastwam_bench/LIBERO-Safety/libero/libero/bddl_files/libero_spatial/L0/pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate.bddl
+robosuite load_controller_config -> {'output_max': [2, 2, 2, 2, 2, 2], 'output_min': [-2, -2, -2, -2, -2, -2], 'kp': 750, 'kp_limits': [0, 1000]}
+Traceback (most recent call last):
+  File "/tmp/check_ctrl.py", line 16, in <module>
+    env = OffScreenRenderEnv(bddl_file_name=bddl, camera_heights=128, camera_widths=128)
+  File "/data1/liborui/fastwam_bench/LIBERO-Safety/libero/libero/envs/env_wrapper.py", line 379, in __init__
+    super().__init__(**kwargs)
+  File "/data1/liborui/fastwam_bench/LIBERO-Safety/libero/libero/envs/env_wrapper.py", line 204, in __init__
+    assert os.path.exists(
+AssertionError: [error] /data1/liborui/fastwam_bench/LIBERO-Safety/libero/libero/bddl_files/libero_spatial/L0/pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate.bddl does not exist!
+CTRL_EXIT=1
