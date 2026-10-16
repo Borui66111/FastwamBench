@@ -1,5 +1,62 @@
 # Changelog
 
+## 2026-10-16 (later) — Gate 12A screen + 12B audit + 12C flag A/B: the reproduction gap
+
+**What happened**
+Gate 12A screened control success on 30 standard-LIBERO tasks (libero_spatial / object / goal × 10 tasks,
+5 trials each, GPUs 5+7) using the exact command the FastWAM README documents for the released checkpoint.
+
+**Result — we are ~25x below the published number**
+
+| suite | tasks | success | rate |
+| --- | --- | --- | --- |
+| libero_spatial | 10 | 5/50 | 10% |
+| libero_object  | 10 | 0/50 | 0% |
+| libero_goal    | 10 | 1/50 | 2% |
+| **total** | **30** | **6/150** | **4.0%** |
+
+The README claims 98.55% average for this checkpoint (IDM mode, 40 tasks × 50 episodes).
+Only `libero_spatial` t0/t1 cleared the 30% "usable" bar at 5 trials — and Gate 12C showed that was
+small-sample luck (true rate 5–15% at n=20).
+
+**Gate 12B (fidelity audit, `evidence/gate12b_fidelity_audit.md`) — everything verifiable is faithful**
+- reference command == README; resolved config == repo defaults (`action_horizon` 32, 10 inference steps,
+  `num_steps_wait` 30, `replan_steps` 10, `binarize_gripper` true, 2 cameras → 224×448 horizontal concat);
+- checkpoint complete: `mot.mixtures.video.*` (825 keys) AND `mot.mixtures.action.*` (824 keys) + `proprio_encoder`;
+- standard suites resolve to the ORIGINAL bddl/init filenames (no `_add_*` augmentation), 50 init states,
+  file order — same as upstream;
+- decoded observations are valid, bright renders (not black/garbage);
+- failures are "ran out of the 400-step budget", not crashes.
+- Forced offline adaptations (NOT optional deviations): `model.redirect_common_files=false` (else the runtime
+  401s trying to fetch Wan2.2 from HF), `model.action_dit_pretrained_path=null` +
+  `model.skip_dit_load_from_pretrain=true` (the ActionDiT backbone file was never generated locally).
+
+**Gate 12C (flag A/B, `scripts_setup/gate12c_ab.sh`) — our flags are exonerated**
+
+| task | upstream-flags arm | our-flags arm | README |
+| --- | ---: | ---: | ---: |
+| libero_spatial t0 | 1/20 (5%) | 3/20 (15%) | 99.0% |
+| libero_object t0  | 0/20 (0%) | 0/20 (0%) | 99.6% |
+
+Both arms sit at the floor ⇒ `load_text_encoder=true` / `compile_action_infer=false` / `seed=1` are not the
+cause. **The gap is environmental.**
+
+**Leading suspect:** this box runs **LIBERO-Safety** (editable `libero` + a vendored
+`robosuite-1.4` fork, `site-packages/__editable__.robosuite-1.4.0.pth`), while FastWAM's README (line 303)
+explicitly says to install the **official LIBERO** environment. LIBERO-Safety advertises drop-in
+compatibility and its standard-suite bddl/init files are the upstream ones, but the vendored robosuite fork
+and the standard-suite assets are unverified variables.
+
+**Next step (needs go-ahead):** rebuild the eval environment against official LIBERO + stock `robosuite==1.4.0`
+in a *separate* env and re-run the README command on `libero_spatial` t0 / `libero_object` t0 at 20 trials.
+Resolving this is the gate to Gate 13 — the stale-commitment cost cannot be measured behaviourally while the
+control arm sits at ~5%.
+
+**New artifacts:** `scripts_setup/gate12_screen.sh`, `gate12a_aggregate.py`, `gate12a_tasks.txt`,
+`gate12a_canary_tasks.txt`, `gate12c_ab.sh`, `gate12c_tasks.txt`, `list_scene_bodies.py`,
+`gate13_paired.sh`, `gate13_analyze.py`, `evidence/gate12b_fidelity_audit.md`,
+`results/gate12a_screen_summary.csv`.
+
 ## 2026-10-16 — repo published for remote collaboration; Gate 11 interpretation corrected
 
 **Issue**

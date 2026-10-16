@@ -1,0 +1,4 @@
+libero_spatial,0
+libero_spatial,1
+libero_object,0
+libero_goal,0

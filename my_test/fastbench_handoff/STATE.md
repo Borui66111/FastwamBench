@@ -18,7 +18,20 @@
 - [x] Deterministic mid-chunk intervention + structured recorder (**Gate 9 COMPLETE**, verified end-to-end).
 - [x] Control-vs-disturbance sweep over `replan_steps` 1/5/10 (**Gate 11 COMPLETE** — six arms, seed-pinned,
       `pre_iv_max_l1 == 0.0`; see below).
-- [ ] Gate 12 — screen for tasks with usable control success (see "Next integration target").
+- [x] Gate 12B — baseline fidelity audit — COMPLETE 2026-10-16 (`evidence/gate12b_fidelity_audit.md`): every
+  config / checkpoint / protocol element verified faithful — reference command matches the README, resolved config
+  matches repo defaults (action_horizon 32, 10 inference steps, binarize_gripper), the checkpoint contains BOTH
+  `mixtures.video.*` (825 keys) and `mixtures.action.*` (824 keys) experts, standard suites resolve to upstream
+  bddl/init files, and decoded observations are valid renders.
+- [x] Gate 12A — control-only screen — COMPLETE: 30 tasks × 5 trials (libero_spatial/object/goal, GPUs 5,7) →
+  **6/150 = 4.0%** overall vs the README's 98.55%. Only `libero_spatial` t0/t1 looked "usable" at 40%, which was
+  small-sample luck (see 12C). CSV: `results/gate12a_screen_summary.csv`.
+- [x] Gate 12C — flag A/B — COMPLETE (`scripts_setup/gate12c_ab.sh`): at n=20, upstream-flags arm **1/20** vs ours
+  **3/20** on `libero_spatial` t0, and **0/20** both on `libero_object` t0. Our flags (`load_text_encoder=true`,
+  `compile_action_infer=false`, `seed=1`) are EXONERATED — the gap vs the published table is **environmental**.
+- [ ] NEXT (needs go-ahead — installs + downloads): rebuild the eval env against the **official LIBERO** +
+  stock `robosuite==1.4.0` as FastWAM's README (line 303) prescribes, in a *separate* env, and re-run the README
+  command on `libero_spatial` t0 / `libero_object` t0. This is the gate to Gate 13.
 
 ## Environment (resolved — supersedes the old limitation)
 The old "no libero/mujoco/robosuite" limitation no longer applies. On this server:
@@ -166,11 +179,17 @@ cannot produce a recovery signal. Agreed plan with the remote reviewer:
 - **Gate 12A — screen control-only success.** Scan LIBERO Spatial / Object / Goal and LIBERO-Safety
   `obstacle_avoidance` L0/L1 at ~5 trials/task and target `30% <= control success <= 90%`; then 10–20 trials on the
   best 2–3 tasks. Commit a machine-readable summary:
-  `suite, task_id, level, trials, successes, success_rate, mean_steps`. (Starting evidence: libero_spatial t0 = 1/5.)
-- **Gate 12B — baseline fidelity** (parallel, non-blocking). The `sigma_shift=1.0` fix restored non-zero success but
-  the absolute rate is still far below upstream. Check checkpoint/config pairing, inference mode, image
-  preprocessing, init-state protocol, action horizon / replanning, manager path vs per-task worker, upstream commit
-  drift. Do not block benchmark construction on it — but do not call it solved either.
+  `suite, task_id, level, trials, successes, success_rate, mean_steps`.
+  **Canary done (2026-10-16, seed 1, 2 trials/task): libero_spatial t0 = 2/2 (100%), t1 = 1/2 (50%);
+  libero_object t0 = 0/2; libero_goal t0 = 0/2.** Main screen = 30 tasks × 5 trials, running on GPUs 5,7
+  (`scripts_setup/gate12_screen.sh`, tasks in `scripts_setup/gate12a_tasks.txt`).
+- **Gate 12B — baseline fidelity — DONE (2026-10-16), see `evidence/gate12b_fidelity_audit.md`.** The harness is
+  faithful: our command reproduces the upstream README's documented eval command key-for-key (task / ckpt /
+  dataset_stats / `sigma_shift=1.0` / `action_infer_mode=idm`), init-state protocol and 400-step budget match,
+  and the official suites resolve to the flat upstream `.bddl` files (LIBERO-Safety's augmented `_add_*` sets and
+  `libero_mix/` are *not* used). Empirically, libero_spatial t0 = 100% reproduces the README's 99.0%.
+  **Conclusion: no fidelity bug — Gate 11's 0% is a property of `obstacle_avoidance` (a LIBERO-Safety suite,
+  not one of the 40 standard benchmark tasks the README quotes), which this checkpoint simply cannot solve.**
 - **Gate 13 — first real recovery result.** Paired control vs disturbance on a task with reliable control success
   (same task, init state, seed, model config and replan horizon). Report Control SR, Disturbed SR, Success Drop,
   Recovery Rate (`successful disturbed episodes / disturbed episodes whose paired control succeeds`), Recovery

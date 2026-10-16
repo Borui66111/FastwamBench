@@ -43,6 +43,10 @@ scripts_setup/          all runnable scripts (bring-up, gates, analysis) + unit 
   gate9*                deterministic mid-chunk intervention + structured recorder
   gate11_sweep.sh       control-vs-disturbance sweep over replan_steps
   gate11_analyze.py     H3 divergence analysis (step-level, noise-floor aware)
+  gate12_screen.sh      Gate 12A: baseline control-success screen (multi-GPU manager)
+  gate12a_tasks.txt     Gate 12A task list (30 tasks: spatial/object/goal, 10 each)
+  gate12a_aggregate.py  Gate 12A: results -> CSV + usable-task table (0.30 <= SR <= 0.90)
+  gate12b_fidelity_audit.md   (in evidence/) command-parity + protocol audit vs the upstream README
   test_gate9_intervention.py   unit tests (45 checks) for the intervention mechanism
 patches/                our changes to the upstream FastWAM tree (it is NOT vendored here)
 evidence/               curated text results + a compressed bundle of the raw Gate 11 records
@@ -105,6 +109,11 @@ bash scripts_setup/gate7f_readme_flags.sh
 # intervention sweep (control vs disturbance, replan_steps 1/5/10)
 TRIALS=2 RS_LIST="1 5 10" bash scripts_setup/gate11_sweep.sh
 python scripts_setup/gate11_analyze.py
+
+# Gate 12A: baseline control-success screen (which tasks can actually succeed?)
+TASKFILE=scripts_setup/gate12a_tasks.txt TRIALS=5 GPUS=5,7 NGPU=2 \
+  bash scripts_setup/gate12_screen.sh
+python scripts_setup/gate12a_aggregate.py
 ```
 
 ---
