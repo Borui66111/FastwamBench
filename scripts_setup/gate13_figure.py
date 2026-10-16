@@ -50,6 +50,14 @@ for task, by_h in tasks:
     ax1.plot(hs, dist, "s-", label=f"{task} disturbed")
     ax2.plot(hs, stale, "^-", label=f"{task} stale executed")
 
+# pooled headline curve (thick black), if the analyzer produced it
+_pooled = summary.get("_pooled") or {}
+if _pooled:
+    ph = sorted(int(h) for h in _pooled)
+    ax1.plot(ph, [_pooled[str(h)]["control_rate"] for h in ph], "k--", lw=2, label="POOLED control")
+    ax1.plot(ph, [_pooled[str(h)]["disturb_rate"] for h in ph], "k-", lw=2.5, label="POOLED disturbed")
+    ax2.plot(ph, [_pooled[str(h)].get("stale_disturb", 0) for h in ph], "k-", lw=2, label="POOLED stale")
+
 ax1.set_xlabel("commitment horizon H (actions per replan)")
 ax1.set_ylabel("task success rate")
 ax1.set_ylim(-0.05, 1.05)

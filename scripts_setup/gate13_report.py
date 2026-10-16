@@ -42,20 +42,38 @@ if _ws is not None:
 else:
     w("- `disturb` — the task object is teleported *away* from its goal, then the model")
     w("  finishes the committed chunk and replans normally (goal-aware; guarded).\n")
-w("## Headline table\n")
-w("| task | H | control | disturbed | cost | stale executed | contaminated |")
-w("|---|---|---|---|---|---|---|")
-for task, by_h in sorted((k, v) for k, v in summary.items() if not k.startswith("_")):
-    for h in sorted(by_h, key=int):
-        r = by_h[h]
-        w(f"| {task} | {h} | {r['control_rate']:.2f} | {r['disturb_rate']:.2f} | "
-          f"**{r['cost']:+.2f}** | {r.get('stale_disturb', 0):.0f} | "
-          f"{r.get('contaminated_disturb', 0)} |")
-w("\n`cost` = control_rate − disturb_rate. `stale executed` = actions executed after the world")
+w("## Headline (pooled across tasks)\n")
+_pooled = summary.get("_pooled") or {}
+
+def _table(rows_by_h, label):
+    w("| H (commitment horizon) | control | disturbed | cost | stale executed | contaminated | n |")
+    w("|---|---|---|---|---|---|---|")
+    for h in sorted(rows_by_h, key=int):
+        r = rows_by_h[h]
+        n = r.get("n", r.get("n_control", "-"))
+        w(f"| {h} | {r['control_rate']:.2f} | {r['disturb_rate']:.2f} | **{r['cost']:+.2f}** | "
+          f"{r.get('stale_disturb', 0):.0f} | {r.get('contaminated_disturb', 0)} | {n} |")
+    w("")
+
+if _pooled:
+    _table(_pooled, "pooled")
+else:
+    w("*(no pooled rows: control and disturb arms are not both present)*\n")
+w("`cost` = control_rate − disturb_rate. `stale executed` = actions executed after the world")
 w("change but before the next replan (mechanism check: should equal H). `contaminated` =")
 w("episodes in which the disturbance accidentally completed the task (must be 0).\n")
+w("## Per-task breakdown\n")
+cands = sorted((k, v) for k, v in summary.items() if not k.startswith("_"))
+if not cands:
+    w("*(no paired per-task rows)*\n")
+for task, by_h in cands:
+    w(f"### {task}\n")
+    _table(by_h, task)
 w("## Trend\n")
-for task, by_h in sorted((k, v) for k, v in summary.items() if not k.startswith("_")):
+_trend = dict((k, v) for k, v in summary.items() if not k.startswith("_"))
+if summary.get("_pooled"):
+    _trend["POOLED"] = summary["_pooled"]
+for task, by_h in sorted(_trend.items()):
     hs = sorted(by_h, key=int)
     costs = [by_h[h]["cost"] for h in hs]
     stale = [by_h[h].get("stale_disturb", 0) for h in hs]

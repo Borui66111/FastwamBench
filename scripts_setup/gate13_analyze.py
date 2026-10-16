@@ -202,6 +202,34 @@ def main() -> int:
             mono = all(costs[i] <= costs[i + 1] + 1e-9 for i in range(len(costs) - 1))
             print(f"  monotone increasing cost with horizon: {mono}")
 
+    # pooled across tasks: this is the headline curve (one line, not one per task)
+    pooled = {}
+    for _key, per_h in data.items():
+        for h, arms in per_h.items():
+            for arm, eps in arms.items():
+                pooled.setdefault(h, {}).setdefault(arm, []).extend(eps)
+    if pooled:
+        print("\n### POOLED across tasks (headline)")
+        summary["_pooled"] = {}
+        for h in sorted(pooled):
+            c = pooled[h].get("control", [])
+            d = pooled[h].get("disturb", [])
+            if not c or not d:
+                continue
+            cr = sum(1 for e in c if e["success"]) / len(c)
+            dr = sum(1 for e in d if e["success"]) / len(d)
+            summary["_pooled"][h] = {
+                "control_rate": cr,
+                "disturb_rate": dr,
+                "cost": cr - dr,
+                "stale_disturb": sum(e["stale_action_steps"] for e in d) / len(d),
+                "contaminated_disturb": sum(1 for e in d if e.get("contaminated")),
+                "n_control": len(c),
+                "n_disturb": len(d),
+            }
+            print(f"  H{h:>3}  control {cr:.2f} (n={len(c)})  disturb {dr:.2f} (n={len(d)})"
+                  f"  cost {cr - dr:+.2f}")
+
     # carry the exact run settings so the report cannot drift from what ran
     cfgp = OUT_ROOT / "run_config.json"
     if cfgp.exists():
