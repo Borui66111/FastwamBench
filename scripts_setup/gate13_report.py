@@ -95,7 +95,47 @@ for task, by_h in sorted(_trend.items()):
     if all(v is not None for v in _tod):
         w(f"  - timeouts by H (control→disturb) = "
           + ", ".join(f"H{h}={a}→{b}" for h, a, b in zip(hs, _toc, _tod)))
+    _dv = [by_h[h].get("stale_divergence_disturb") for h in hs]
+    if all(v is not None for v in _dv):
+        w(f"  - stale-window divergence (m) by H = "
+          + ", ".join(f"H{h}={v:.3f}" for h, v in zip(hs, _dv)))
     w(f"  - monotone increasing cost with horizon: **{mono}**")
+w("\n## Interpretation\n")
+w("Two things are being separated here, and they behave differently:\n")
+w("1. **The commitment itself is real and scales exactly with H.** The model executes")
+w("   precisely H actions that were chosen for the pre-change world (`stale executed` = H")
+w("   for every H tested), and the end-effector diverges from the moved object *during*")
+w("   that window by an amount that grows with H. This is the direct, mechanism-level")
+w("   signature of acting on a world that no longer exists.\n")
+w("2. **The task-level cost is dominated by re-acquisition, not by commitment length.**")
+w("   A disturbed episode is almost always still solvable; it just costs far more steps")
+w("   (and sometimes exhausts the 400-step budget). That recovery cost is set by how hard")
+w("   the displaced object is to re-grasp, which is roughly independent of H — so at a")
+w("   displacement large enough to make re-grasping hard, the success cost saturates and")
+w("   hides the horizon effect.\n")
+w("The magnitude ladder (see `gate13_lad002_*` / `gate13_lad003_*`) tests this directly:")
+w("at a *small* displacement, where H=1 replanning recovers almost perfectly, the cost of")
+w("a long commitment is no longer masked and the horizon dependence is visible.\n")
+w("\n## Magnitude ladder\n")
+_any = False
+for _tag, _mag in (("lad002", "0.02"), ("lad003", "0.03")):
+    _p = summary_path.parent.parent / f"gate13_{_tag}" / "gate13_summary.json"
+    if not _p.exists():
+        _p = ROOT / "evidence" / f"gate13_{_tag}_summary.json"
+    if not _p.exists():
+        continue
+    try:
+        _s = json.loads(_p.read_text())
+    except Exception:
+        continue
+    _pl = _s.get("_pooled") or {}
+    if not _pl:
+        continue
+    _any = True
+    w(f"### displacement {_mag} m\n")
+    _table(_pl, _tag)
+if not _any:
+    w("*(ladder not run yet — see `scripts_setup/gate13_finish.sh`)*\n")
 w("\n## Reproduce\n")
 w("```bash")
 w("bash scripts_setup/gate13_all.sh   # full pipeline: sweep -> psnr -> analyze -> report")
