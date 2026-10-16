@@ -46,13 +46,17 @@ w("## Headline (pooled across tasks)\n")
 _pooled = summary.get("_pooled") or {}
 
 def _table(rows_by_h, label):
-    w("| H (commitment horizon) | control | disturbed | cost | stale executed | contaminated | n |")
-    w("|---|---|---|---|---|---|---|")
+    w("| H | control | disturbed | cost | stale executed | mean steps (ctl→dis) | timeouts (ctl→dis) | contaminated | n |")
+    w("|---|---|---|---|---|---|---|---|---|")
     for h in sorted(rows_by_h, key=int):
         r = rows_by_h[h]
         n = r.get("n", r.get("n_control", "-"))
+        ctl_s, dis_s = r.get("mean_steps_control"), r.get("mean_steps_disturb")
+        ctl_t, dis_t = r.get("timeouts_control"), r.get("timeouts_disturb")
+        steps = (f"{ctl_s:.0f} → {dis_s:.0f}" if ctl_s is not None and dis_s is not None else "—")
+        tos = (f"{ctl_t} → {dis_t}" if ctl_t is not None and dis_t is not None else "—")
         w(f"| {h} | {r['control_rate']:.2f} | {r['disturb_rate']:.2f} | **{r['cost']:+.2f}** | "
-          f"{r.get('stale_disturb', 0):.0f} | {r.get('contaminated_disturb', 0)} | {n} |")
+          f"{r.get('stale_disturb', 0):.0f} | {steps} | {tos} | {r.get('contaminated_disturb', 0)} | {n} |")
     w("")
 
 if _pooled:
@@ -61,7 +65,10 @@ else:
     w("*(no pooled rows: control and disturb arms are not both present)*\n")
 w("`cost` = control_rate − disturb_rate. `stale executed` = actions executed after the world")
 w("change but before the next replan (mechanism check: should equal H). `contaminated` =")
-w("episodes in which the disturbance accidentally completed the task (must be 0).\n")
+w("episodes in which the disturbance accidentally completed the task (must be 0).")
+w("`mean steps` and `timeouts` are graded signals: success rate alone hides the cost of")
+w("recovery, so a disturbed episode that still succeeds after many extra steps, or that")
+w("exhausts the 400-step budget, is reported too.\n")
 w("## Per-task breakdown\n")
 cands = sorted((k, v) for k, v in summary.items() if not k.startswith("_"))
 if not cands:
@@ -80,13 +87,33 @@ for task, by_h in sorted(_trend.items()):
     mono = all(costs[i] <= costs[i + 1] + 1e-9 for i in range(len(costs) - 1))
     w(f"- **{task}**: cost by H = " + ", ".join(f"H{h}={c:+.2f}" for h, c in zip(hs, costs)))
     w(f"  - stale executed by H = " + ", ".join(f"H{h}={s:.0f}" for h, s in zip(hs, stale)))
+    _ms = [by_h[h].get("mean_steps_disturb") for h in hs]
+    if all(v is not None for v in _ms):
+        w(f"  - mean disturbed steps by H = " + ", ".join(f"H{h}={v:.0f}" for h, v in zip(hs, _ms)))
+    _toc = [by_h[h].get("timeouts_control") for h in hs]
+    _tod = [by_h[h].get("timeouts_disturb") for h in hs]
+    if all(v is not None for v in _tod):
+        w(f"  - timeouts by H (control→disturb) = "
+          + ", ".join(f"H{h}={a}→{b}" for h, a, b in zip(hs, _toc, _tod)))
     w(f"  - monotone increasing cost with horizon: **{mono}**")
 w("\n## Reproduce\n")
 w("```bash")
 w("bash scripts_setup/gate13_all.sh   # full pipeline: sweep -> psnr -> analyze -> report")
 w("")
+def _task_specs(cfg):
+    """tasks may be recorded as 'suite:tid' strings or as [suite, tid] pairs."""
+    raw = cfg.get("tasks") or ["libero_spatial:0"]
+    out = []
+    for t in raw:
+        if isinstance(t, (list, tuple)):
+            out.append(f"{t[0]}:{t[1]}")
+        else:
+            out.append(str(t))
+    return out
+
+
 w("cd /data1/liborui/fastwam_bench")
-w(f"python scripts_setup/gate13_run.py --tasks {','.join('%s:%d' % (s, t) for s, t in (cfg.get('tasks') or [['libero_spatial', 0]]))} \\")
+w(f"python scripts_setup/gate13_run.py --tasks {','.join(_task_specs(cfg))} \\")
 w(f"  --horizons {','.join(str(h) for h in (cfg.get('horizons') or [1, 2, 5, 10]))} "
   f"--seeds {','.join(str(s) for s in (cfg.get('seeds') or [1]))} "
   f"--trials {cfg.get('trials', 5)} --magnitude {cfg.get('magnitude_m', 0.05)} "
