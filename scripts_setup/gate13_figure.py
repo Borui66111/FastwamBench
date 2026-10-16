@@ -23,9 +23,26 @@ out_png = Path(sys.argv[2]) if len(sys.argv) > 2 else ROOT / "evidence" / "gate1
 with open(summary_path) as fh:
     summary = json.load(fh)
 
+
+def numeric_hs(by_h):
+    """Horizon keys are JSON strings; ignore metadata keys like '_config'."""
+    out = []
+    for k in by_h:
+        try:
+            out.append(int(k))
+        except (TypeError, ValueError):
+            continue
+    return sorted(out)
+
+
+tasks = [(k, v) for k, v in sorted(summary.items()) if numeric_hs(v)]
+if not tasks:
+    raise SystemExit(f"no horizon data in {summary_path}")
+
+hmax = max(max(numeric_hs(v)) for _, v in tasks)
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.2))
-for task, by_h in sorted(summary.items()):
-    hs = sorted(int(h) for h in by_h)
+for task, by_h in tasks:
+    hs = numeric_hs(by_h)
     ctrl = [by_h[str(h)]["control_rate"] for h in hs]
     dist = [by_h[str(h)]["disturb_rate"] for h in hs]
     stale = [by_h[str(h)].get("stale_disturb", 0) for h in hs]
@@ -40,14 +57,20 @@ ax1.set_title("(A) Success collapses as the model commits longer")
 ax1.grid(alpha=0.3)
 ax1.legend(fontsize=7)
 
-ax2.plot([1, 60], [1, 60], "k:", lw=1, label="identity (stale == H)")
+ax2.plot([1, hmax], [1, hmax], "k:", lw=1, label="identity (stale == H)")
 ax2.set_xlabel("commitment horizon H")
 ax2.set_ylabel("stale actions executed after the world change")
 ax2.set_title("(B) Mechanism: stale actions scale with H")
 ax2.grid(alpha=0.3)
 ax2.legend(fontsize=7)
 
-fig.suptitle("Gate 13 — a world change mid-chunk costs more the longer the model commits", fontsize=11)
+cfg = summary.get("_config") or {}
+_sub = ""
+if cfg.get("world_step") is not None:
+    _sub = (f"\n[disturbance {cfg.get('magnitude_m')} m at step {cfg.get('world_step')}; "
+            f"H={cfg.get('horizons')}; {cfg.get('trials')} trials/task/H]")
+fig.suptitle("Gate 13 — a world change mid-chunk costs more the longer the model commits" + _sub,
+             fontsize=10)
 fig.tight_layout()
 out_png.parent.mkdir(parents=True, exist_ok=True)
 fig.savefig(out_png, dpi=160)
