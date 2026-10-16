@@ -234,33 +234,47 @@ Toy contract test only; verifies definitions and runner mechanics, not a robotic
 `scripts_setup/test_gate9_intervention.py` (67 checks, all pass).
 
 `replan_steps` is the commitment horizon H (`pending_actions = action_chunk[:H]`); the released
-config ships H=10. The sweep varies H over {1,2,5,10,15,30} with a paired control/disturb design
-and an **absolute-step trigger** (`+EVALUATION.intervention_world_step=60`) so the world change
-lands at the same absolute step for every H.
+config ships H=10. The sweep varies H over {1,2,5,10} (the divisors of `world_step-30`) with a
+paired control/disturb design and an **absolute-step trigger**
+(`+EVALUATION.intervention_world_step=40`) so the world change lands at the same absolute step
+for every H.
 
-**Design flaw found and fixed during canary.** The original fixed displacement `[+0.06,+0.06,0]`
-*completed the task* for `libero_spatial` t0 (it teleported the bowl onto the plate: the goal is
-`on(akita_black_bowl_1, plate_1)` and the plate sits at +x/+y). The episode then ended at
-t = 60 = the intervention step, so `stale` read 1 instead of 10. The disturbance is now
-**goal-aware**: the manipulated body is resolved from the task's own goal state, the displacement
-points *away* from the goal target, and the result is checked against the env's `_check_success()`
-— a candidate that satisfies the goal is reverted and the next direction is tried
-(`post_iv_success`, `rejected_candidates` are recorded per episode).
+**Design flaw 1 — the disturbance completed the task.** The original fixed displacement
+`[+0.06,+0.06,0]` *completed* `libero_spatial` t0 (it teleported the bowl onto the plate: the goal
+is `on(akita_black_bowl_1, plate_1)` and the plate sits at +x/+y). The episode ended at
+t = world_step, so `stale` read 1 instead of 10. The disturbance is now **goal-aware**: the
+manipulated body is resolved from the task's own goal state, the displacement points *away* from
+the goal target, and the result is checked against the env's `_check_success()` — a candidate that
+satisfies the goal is reverted and the next direction tried (`post_iv_success` and
+`rejected_candidates` are recorded per episode). See `evidence/gate13_design_checks/`.
 
-**Corrected canary (H=10, 2 trials, seed 1):**
+**Design flaw 2 — the disturbance was unrecoverable at every horizon.** At `world_step=60` the bowl
+is already held aloft (z≈0.90); teleporting a *held* object forces a full re-grasp, which no
+horizon can do — not even H=1. Cost saturated at 1.0 everywhere, so the sweep measured nothing.
+Calibrated to **`world_step=40`** (during the approach, before the grasp) and **magnitude 0.05 m**
+(0.10 m was comparable to the whole 0.117 m bowl→plate distance). At this setting H=1 recovers.
 
-| task | arm | success | stale executed | contaminated |
-|---|---|---|---|---|
-| libero_spatial t0 | control | 2/2 | 0 | 0 |
-| libero_spatial t0 | disturb | 0/2 | **10** | 0 |
-| libero_object t0 | control | 2/2 | 0 | 0 |
-| libero_object t0 | disturb | 1/2 | **10** | 0 |
+**Design flaw 3 — falsy-zero bug in the magnitude.** `float(ev.get(...) or 0.10)` promoted a
+legitimate `0.0` (the no-op control that validates the disturb code path) to 0.10 m. Fixed; the
+no-op run now correctly reproduces the control (`noop_validation_summary.json`: 1/1, obj_move
+0.111 m = the natural grasp-and-place), which proves the disturb arm itself is sound.
+
+**Validated design (probe, ws=40, mag=0.05, 2 trials, seed 1):**
+
+| task | H | arm | success | stale executed | contaminated |
+|---|---|---|---|---|---|
+| libero_spatial t0 | 1 | control | 2/2 | 0 | 0 |
+| libero_spatial t0 | 1 | disturb | 1/2 | 1 | 0 |
+| libero_spatial t0 | 10 | control | 2/2 | 0 | 0 |
+| libero_spatial t0 | 10 | disturb | 1/2 | 10 | 0 |
 
 `stale executed == H` is the mechanism claim: after the world changed, the model still executed
-the whole remaining chunk that had been planned for the pre-change world.
+the whole remaining chunk that had been planned for the pre-change world. Control is 1.00 at both
+horizons and H=1 recovers, so the sweep is not floor-saturated.
 
-**OPEN QUESTION:** does the cost grow monotonically with H, and does H=1 recover (i.e. is the
-disturbance recoverable rather than simply destructive)? This is exactly what the running
-horizon gradient decides; the full sweep is only worth 5 trials/task if H=1 recovers.
-**NEXT ACTION:** finish the {1,2,5,10} gradient, then run the full sweep + PSNR arm unattended,
-generate `evidence/gate13_commitment_cost.{md,png}`, and commit.
+**RUNNING:** `results/gate13_main` — 2 tasks x H{1,2,5,10} x seeds{1,2} x {control,disturb} x 5
+trials = 32 jobs / 160 episodes, unattended (~2.5 h), then the PSNR arm and the report.
+**NEXT ACTION:** on completion, generate `evidence/gate13_commitment_cost.{md,png}` from
+`gate13_main/gate13_summary.json`, verify control≈1.0 / cost monotone in H / `contaminated==0`,
+then commit.
+
