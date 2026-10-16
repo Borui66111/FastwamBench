@@ -40,8 +40,15 @@ def load(rec_path: Path):
         return [json.loads(line) for line in fh if line.strip()]
 
 
-def episode_metrics(recs, body):
-    """Per-episode metrics for one run."""
+def episode_metrics(recs, body, h=None):
+    """Per-episode metrics for one run.
+
+    `h` is the commitment horizon (actions per replan). When given, we also
+    measure what happens DURING the stale window (t in (iv_step, iv_step+h]):
+    the model keeps flying toward where the object used to be, so the
+    end-effector-to-object distance should grow with h. That divergence is the
+    direct signature of acting on a world that no longer exists.
+    """
     ends = [r for r in recs if r.get("event") == "episode_end"]
     steps = [r for r in recs if r.get("event") == "step"]
     ivs = [r for r in recs if r.get("event") == "intervention"]
@@ -68,6 +75,8 @@ def episode_metrics(recs, body):
         lat = -1
         min_after = None
         net = None
+        stale_end_dist = None
+        max_stale_dist = None
         if body:
             first = last = None
             for r in es:
@@ -87,6 +96,12 @@ def episode_metrics(recs, body):
                         min_after = d
                     if lat < 0 and pre_dist is not None and d <= pre_dist:
                         lat = r["t"] - iv_step
+                    # inside the stale window the model is still executing the
+                    # pre-intervention plan; distance to the moved object grows
+                    if h is not None and r["t"] <= iv_step + h:
+                        if max_stale_dist is None or d > max_stale_dist:
+                            max_stale_dist = d
+                        stale_end_dist = d
             if first is not None and last is not None:
                 net = dist(first, last)
         out.append({
@@ -103,6 +118,10 @@ def episode_metrics(recs, body):
             "obj_net_motion": net,
             "pre_iv_dist": pre_dist,
             "min_post_iv_dist": min_after,
+            "stale_end_dist": stale_end_dist,
+            "max_stale_dist": max_stale_dist,
+            "stale_divergence": (max_stale_dist - pre_dist)
+            if (max_stale_dist is not None and pre_dist is not None) else None,
         })
     return out
 
@@ -136,7 +155,7 @@ def main() -> int:
                 if e.get("event") == "episode_end" and e.get("world_body"):
                     body = e["world_body"]
                     break
-        eps = episode_metrics(recs, body)
+        eps = episode_metrics(recs, body, h=h)
         data[(suite, tid)][h][arm].extend(eps)
         m = meta.setdefault((suite, tid), {"body": None})
         if body and not m.get("body"):
@@ -154,7 +173,7 @@ def main() -> int:
         print(f"\n### {suite} t{tid}   (manipulated body: {meta[(suite, tid)].get('body')})")
         hdr = (f"{'H':>4} {'arm':>8} {'succ':>9} {'rate':>7} {'stale':>6} "
                f"{'iv_step':>8} {'reacq':>6} {'obj_move':>9} {'bad':>4} {'psnr':>7} "
-               f"{'steps':>9} {'TO':>4}")
+               f"{'steps':>9} {'TO':>4} {'div':>9}")
         print(hdr)
         print("-" * len(hdr))
         rows = {}
@@ -181,13 +200,19 @@ def main() -> int:
                 stp = [e["steps"] for e in eps if e.get("steps") is not None]
                 stp_s = sum(stp) / len(stp) if stp else float("nan")
                 to = sum(1 for s in stp if s >= 400)
+                # divergence accumulated DURING the stale window: the direct
+                # signature of executing a plan for a world that moved.
+                sd = [e["stale_divergence"] for e in eps
+                      if e.get("stale_divergence") is not None]
+                sd_s = sum(sd) / len(sd) if sd else float("nan")
                 print(f"{h:>4} {arm:>8} {s:>4}/{n:<4} {s/n:>7.2f} {stale:>6.1f} "
                       f"{iv:>8.0f} {lat_s:>6.1f} {mv_s:>9.3f} {bad:>4} {ps_s:>7.2f} "
-                      f"{stp_s:>9.1f} {to:>4}")
+                      f"{stp_s:>9.1f} {to:>4} {sd_s:>9.3f}")
                 rows[arm] = {"n": n, "succ": s, "rate": s / n, "stale": stale,
                              "iv_step": iv, "reacq": lat_s, "obj_move": mv_s,
                              "contaminated": bad, "psnr": ps_s,
-                             "mean_steps": stp_s, "timeouts": to}
+                             "mean_steps": stp_s, "timeouts": to,
+                             "stale_divergence": sd_s}
             if "control" in rows and "disturb" in rows:
                 d = rows["control"]["rate"] - rows["disturb"]["rate"]
                 print(f"{h:>4} {'DELTA':>8} {'':>9} {d:>7.2f}")
@@ -204,6 +229,7 @@ def main() -> int:
                     "mean_steps_disturb": rows["disturb"].get("mean_steps"),
                     "timeouts_control": rows["control"].get("timeouts"),
                     "timeouts_disturb": rows["disturb"].get("timeouts"),
+                    "stale_divergence_disturb": rows["disturb"].get("stale_divergence"),
                 }
         # trend
         hh = sorted(k for k in summary.get(f"{suite}_t{tid}", {}))
@@ -245,6 +271,10 @@ def main() -> int:
                 "mean_steps_disturb": sum(_ds) / len(_ds) if _ds else None,
                 "timeouts_control": sum(1 for s in _cs if s >= 400),
                 "timeouts_disturb": sum(1 for s in _ds if s >= 400),
+                "stale_divergence_disturb": (
+                    sum(e["stale_divergence"] for e in d
+                        if e.get("stale_divergence") is not None)
+                    / max(1, sum(1 for e in d if e.get("stale_divergence") is not None))),
             }
             print(f"  H{h:>3}  control {cr:.2f} (n={len(c)})  disturb {dr:.2f} (n={len(d)})"
                   f"  cost {cr - dr:+.2f}")
