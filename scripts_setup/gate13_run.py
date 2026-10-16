@@ -212,6 +212,23 @@ def main() -> int:
     args.out_root = ROOT / "results" / name
     args.log_dir = ROOT / "logs"
     args.log_dir.mkdir(parents=True, exist_ok=True)
+    # Record the exact settings so downstream analysis/report text can never drift
+    # from what actually ran (an earlier report hardcoded stale values).
+    args.out_root.mkdir(parents=True, exist_ok=True)
+    with open(args.out_root / "run_config.json", "w") as fh:
+        json.dump({
+            "tag": args.tag,
+            "tasks": [[s, t] for s, t in args.tasks],
+            "horizons": args.horizons,
+            "seeds": args.seeds,
+            "trials": args.trials,
+            "arms": args.arm_list,
+            "magnitude_m": float(args.magnitude),
+            "world_step": args.world_step,
+            "world_body": args.world_body,
+            "psnr": bool(args.psnr),
+            "num_steps_wait": 30,
+        }, fh, indent=2, sort_keys=True)
 
     # every H must divide (WORLD_STEP - num_steps_wait) so the disturbance lands
     # exactly on a chunk boundary for all horizons

@@ -68,7 +68,13 @@ def resolve_intervention_cfg(cfg: Any) -> dict:
         # `world_magnitude` metres, and reject any candidate that would satisfy
         # the env's own goal predicate (see apply_world_displacement).
         "world_auto": bool(ev.get("intervention_world_auto", True)),
-        "world_magnitude": float(ev.get("intervention_world_magnitude", 0.10) or 0.10),
+        # NOTE: `float(x or 0.10)` promotes a legitimate 0.0 (the no-op control
+        # that validates the disturb code path) to 0.10 -- keep 0.0 intact.
+        "world_magnitude": float(
+            ev.get("intervention_world_magnitude")
+            if ev.get("intervention_world_magnitude") is not None
+            else 0.10
+        ),
         # [fastbench] Gate 13 absolute-step trigger. Triggering purely on a replan
         # index makes the disturbance land at a *different absolute step* for
         # every replan horizon (rs=1 -> t=60, rs=10 -> t=69), which confounds any
@@ -584,7 +590,10 @@ def maybe_displace_world(env: Any, icfg: dict, replan_idx: int, step_t: Optional
     elif replan_idx != int(icfg.get("replan_idx", 0)):
         return None
     auto = bool(icfg.get("world_auto", True))
-    magnitude = float(icfg.get("world_magnitude", 0.10) or 0.10)
+    # NOTE: `float(x or 0.10)` would silently promote a legitimate 0.0 magnitude
+    # (the no-op control that validates the disturb code path) to 0.10.
+    _mag = icfg.get("world_magnitude")
+    magnitude = float(_mag) if _mag is not None else 0.10
     primary = icfg.get("world_delta")
     if not primary:
         primary = goal_away_delta(env, body, magnitude) if auto else [0.0, 0.0, 0.0]

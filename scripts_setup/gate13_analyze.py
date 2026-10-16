@@ -202,6 +202,13 @@ def main() -> int:
             mono = all(costs[i] <= costs[i + 1] + 1e-9 for i in range(len(costs) - 1))
             print(f"  monotone increasing cost with horizon: {mono}")
 
+    # carry the exact run settings so the report cannot drift from what ran
+    cfgp = OUT_ROOT / "run_config.json"
+    if cfgp.exists():
+        try:
+            summary["_config"] = json.loads(cfgp.read_text())
+        except Exception as exc:  # pragma: no cover
+            print(f"  (could not read run_config.json: {exc})")
     outp = OUT_ROOT / "gate13_summary.json"
     with open(outp, "w") as fh:
         json.dump(summary, fh, indent=2, sort_keys=True)

@@ -27,16 +27,25 @@ w("chunk is being executed, every remaining action in that chunk was chosen for 
 w("no longer exists. This experiment measures the price of that commitment as a function of H.\n")
 w("**Design.** Paired arms, bit-identical until the intervention (verified: `pre_iv_max_l1 = 0`):")
 w("- `control` — no intervention.\n")
-w("- `disturb` — at the chunk boundary nearest absolute step 60, teleport the task object")
-w("  *away* from its goal (goal-aware, magnitude 0.10 m), then let the model finish the chunk")
-w("  and replan normally. The disturbance is guaranteed **not** to satisfy the goal")
-w("  (`post_iv_success = False`, guarded + reverted otherwise).\n")
-w("H is swept over {1, 2, 5, 10, 15, 30}; every H divides (60 − 30) so the trigger lands on a")
-w("real replan boundary at the same absolute step for all H.\n")
+cfg = summary.get("_config") or {}
+_ws = cfg.get("world_step")
+_mag = cfg.get("magnitude_m")
+if _ws is not None:
+    w(f"- `disturb` — at the replan boundary at absolute step {_ws}, teleport the task object")
+    w(f"  *away* from its goal (goal-aware, magnitude {_mag} m), then let the model finish the chunk")
+    w("  and replan normally. The disturbance is guaranteed **not** to satisfy the goal")
+    w("  (`post_iv_success = False`, guarded + reverted otherwise).\n")
+    w(f"H is swept over {cfg.get('horizons')}; every H divides ({_ws} - 30) so the trigger lands on")
+    w("a real replan boundary at the same absolute step for all H.")
+    w(f"Settings: magnitude={_mag} m, seeds={cfg.get('seeds')}, "
+      f"trials per task/horizon={cfg.get('trials')}, tasks={cfg.get('tasks')}.\n")
+else:
+    w("- `disturb` — the task object is teleported *away* from its goal, then the model")
+    w("  finishes the committed chunk and replans normally (goal-aware; guarded).\n")
 w("## Headline table\n")
 w("| task | H | control | disturbed | cost | stale executed | contaminated |")
 w("|---|---|---|---|---|---|---|")
-for task, by_h in sorted(summary.items()):
+for task, by_h in sorted((k, v) for k, v in summary.items() if not k.startswith("_")):
     for h in sorted(by_h, key=int):
         r = by_h[h]
         w(f"| {task} | {h} | {r['control_rate']:.2f} | {r['disturb_rate']:.2f} | "
@@ -46,7 +55,7 @@ w("\n`cost` = control_rate − disturb_rate. `stale executed` = actions executed
 w("change but before the next replan (mechanism check: should equal H). `contaminated` =")
 w("episodes in which the disturbance accidentally completed the task (must be 0).\n")
 w("## Trend\n")
-for task, by_h in sorted(summary.items()):
+for task, by_h in sorted((k, v) for k, v in summary.items() if not k.startswith("_")):
     hs = sorted(by_h, key=int)
     costs = [by_h[h]["cost"] for h in hs]
     stale = [by_h[h].get("stale_disturb", 0) for h in hs]
@@ -56,9 +65,14 @@ for task, by_h in sorted(summary.items()):
     w(f"  - monotone increasing cost with horizon: **{mono}**")
 w("\n## Reproduce\n")
 w("```bash")
+w("bash scripts_setup/gate13_all.sh   # full pipeline: sweep -> psnr -> analyze -> report")
+w("")
 w("cd /data1/liborui/fastwam_bench")
-w("python scripts_setup/gate13_run.py --tasks libero_spatial:0,libero_object:0 \\")
-w("  --horizons 1,2,5,10,15,30 --seeds 1 --trials 5 --tag main --ngpu 2")
+w(f"python scripts_setup/gate13_run.py --tasks {','.join('%s:%d' % (s, t) for s, t in (cfg.get('tasks') or [['libero_spatial', 0]]))} \\")
+w(f"  --horizons {','.join(str(h) for h in (cfg.get('horizons') or [1, 2, 5, 10]))} "
+  f"--seeds {','.join(str(s) for s in (cfg.get('seeds') or [1]))} "
+  f"--trials {cfg.get('trials', 5)} --magnitude {cfg.get('magnitude_m', 0.05)} "
+  f"--world-step {cfg.get('world_step', 40)} --tag main --ngpu 2")
 w("python scripts_setup/gate13_analyze.py results/gate13_main")
 w("python scripts_setup/gate13_figure.py results/gate13_main/gate13_summary.json \\")
 w("  evidence/gate13_commitment_cost.png")
