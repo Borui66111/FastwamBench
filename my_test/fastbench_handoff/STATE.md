@@ -224,3 +224,43 @@ Harness patches already applied (minimal, marked `[fastbench]`, no-op for upstre
 - `replan_steps=4`: intervention step 2; first replan after intervention step 4; stale actions = 2; recovered later.
 
 Toy contract test only; verifies definitions and runner mechanics, not a robotics conclusion.
+
+## Gate 13 — cross-horizon commitment-cost sweep (2026-10-17, in progress)
+
+**STATUS:** infrastructure complete and canary-validated; full sweep running.
+**EVIDENCE:** `scripts_setup/gate13_run.py` (sweep runner), `gate13_analyze.py`,
+`gate13_figure.py`, `gate13_report.py`, `gate13_all.sh` (unattended pipeline),
+`gate13_validate_goal_aware.py`; `evidence/gate13_design_checks/` (raw captures);
+`scripts_setup/test_gate9_intervention.py` (67 checks, all pass).
+
+`replan_steps` is the commitment horizon H (`pending_actions = action_chunk[:H]`); the released
+config ships H=10. The sweep varies H over {1,2,5,10,15,30} with a paired control/disturb design
+and an **absolute-step trigger** (`+EVALUATION.intervention_world_step=60`) so the world change
+lands at the same absolute step for every H.
+
+**Design flaw found and fixed during canary.** The original fixed displacement `[+0.06,+0.06,0]`
+*completed the task* for `libero_spatial` t0 (it teleported the bowl onto the plate: the goal is
+`on(akita_black_bowl_1, plate_1)` and the plate sits at +x/+y). The episode then ended at
+t = 60 = the intervention step, so `stale` read 1 instead of 10. The disturbance is now
+**goal-aware**: the manipulated body is resolved from the task's own goal state, the displacement
+points *away* from the goal target, and the result is checked against the env's `_check_success()`
+— a candidate that satisfies the goal is reverted and the next direction is tried
+(`post_iv_success`, `rejected_candidates` are recorded per episode).
+
+**Corrected canary (H=10, 2 trials, seed 1):**
+
+| task | arm | success | stale executed | contaminated |
+|---|---|---|---|---|
+| libero_spatial t0 | control | 2/2 | 0 | 0 |
+| libero_spatial t0 | disturb | 0/2 | **10** | 0 |
+| libero_object t0 | control | 2/2 | 0 | 0 |
+| libero_object t0 | disturb | 1/2 | **10** | 0 |
+
+`stale executed == H` is the mechanism claim: after the world changed, the model still executed
+the whole remaining chunk that had been planned for the pre-change world.
+
+**OPEN QUESTION:** does the cost grow monotonically with H, and does H=1 recover (i.e. is the
+disturbance recoverable rather than simply destructive)? This is exactly what the running
+horizon gradient decides; the full sweep is only worth 5 trials/task if H=1 recovers.
+**NEXT ACTION:** finish the {1,2,5,10} gradient, then run the full sweep + PSNR arm unattended,
+generate `evidence/gate13_commitment_cost.{md,png}`, and commit.

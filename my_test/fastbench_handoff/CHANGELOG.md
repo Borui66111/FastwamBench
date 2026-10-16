@@ -1,5 +1,46 @@
 # Changelog
 
+## 2026-10-17 — Gate 13: cross-horizon commitment-cost sweep (headline experiment)
+
+**Goal.** Turn the project thesis into a measured result: a World Action Model plans a chunk,
+executes it open-loop for `replan_steps` steps, then replans. If the world changes mid-chunk,
+the remaining actions were chosen for a world that no longer exists. Measure that price as a
+function of the commitment horizon H — the *Future-Reality Divergence* framing from
+`REMOTE_REVIEW.md` (a property of fixed-horizon chunk execution, not a claim about intent).
+
+**New machinery.** `scripts_setup/gate13_run.py` (paired control/disturb sweep over H, `queue.Queue`
+GPU pool, resumable), `gate13_analyze.py` (per-H success/cost/stale/contamination/PSNR),
+`gate13_figure.py`, `gate13_report.py`, `gate13_all.sh` (unattended 3-stage pipeline),
+`gate13_validate_goal_aware.py`.
+Harness: a new **absolute-step trigger** `+EVALUATION.intervention_world_step` (fires at step
+`t == world_step` regardless of H, so a cross-horizon sweep has no confound) and a
+**goal-aware disturbance**.
+
+**Design flaw found and fixed while canarying.** The first canary reported `stale=1` at H=10
+because the fixed displacement `[+0.06,+0.06,0]` teleported the bowl *onto the plate* — the goal
+is `on(akita_black_bowl_1, plate_1)` and the plate sits at +x/+y — so `_check_success()` returned
+True at the intervention step and the episode ended immediately (t=60 = the trigger step).
+The disturbance is now resolved from the task's own goal state: the manipulated body is mapped
+from the goal object, the displacement points *away* from the goal target, and the result is
+validated against the env's own `_check_success()`; a contaminating candidate is reverted and the
+next direction is tried. Per-episode `post_iv_success` / `rejected_candidates` are recorded, and
+the analyzer prints a `bad` (contaminated) count per cell.
+
+**Corrected canary (H=10, seed 1, 2 trials).**
+
+| task | arm | success | stale executed | contaminated |
+|---|---|---|---|---|
+| libero_spatial t0 | control | 2/2 | 0 | 0 |
+| libero_spatial t0 | disturb | 0/2 | 10 | 0 |
+| libero_object t0 | control | 2/2 | 0 | 0 |
+| libero_object t0 | disturb | 1/2 | 10 | 0 |
+
+`stale executed == H` is the mechanism claim, verified end-to-end. Also fixed an analyzer bug
+where `meta.setdefault` locked in `body=None` from the control arm before the disturb arm could
+record the resolved body.
+
+**Evidence.** `evidence/gate13_design_checks/` (raw probe + validation + unit-run outputs).
+
 ## 2026-10-16 (evening) — ROOT CAUSE of the 0–4% success gap: wrong OSC action scaling
 
 **Symptom.** 30-task control screen = 6/150 (4%) on standard LIBERO vs the released README's 98.55%, on the same

@@ -1,155 +1,213 @@
 #!/usr/bin/env python
-"""[fastbench] Gate 13 analysis: paired control vs disturbance -> recovery metrics.
+"""[fastbench] Gate 13 analyzer: commitment cost vs replan horizon.
 
-Reads `results/gate13_<TAG>_{control,disturb}/records.jsonl` and reports, per
-matched episode pair (same init state, same seed => identical up to the
-intervention):
+Reads the per-run records.jsonl produced by gate13_run.py and reports, per
+horizon H:
+  * control vs disturbed success (the commitment cost = control - disturbed)
+  * mean stale_action_steps  (mechanism check: should be ~0 for control, ~H for disturb)
+  * the absolute step at which the disturbance actually fired (should be 60)
+  * net object displacement  (confirms the world really changed)
+  * re-acquisition latency   (steps after the disturbance until the end-effector
+                              closes back to within the pre-disturbance distance
+                              of the manipulated object; -1 = never recovered)
 
-  Control SR            successes / episodes               (control arm)
-  Disturbed SR          successes / episodes               (disturb arm)
-  Success Drop          Control SR - Disturbed SR
-  Recovery Rate         (# pairs where control AND disturb succeed)
-                        / (# pairs where control succeeds)
-  Recovery Latency      steps from the intervention until the EEF re-acquires the
-                        displaced object (min EEF-object distance < 0.12 m) in the
-                        disturb arm, over pairs whose control succeeds
-  Stale Action Steps    post-intervention steps executed verbatim from the stale
-                        chunk (harness invariant: == replan_steps)
-  Plan Divergence (L1)  L1 between control/disturb chunk means at the first
-                        post-intervention replan (0 => no correction)
-
-Usage:
-  GATE13_TAG=libero_spatial_t0_rs1 python scripts_setup/gate13_analyze.py
+Usage:  python scripts_setup/gate13_analyze.py [results/gate13[_tag]]
 """
+from __future__ import annotations
+
+import glob
 import json
 import math
 import os
+import re
 import sys
+from collections import defaultdict
+from pathlib import Path
 
-ROOT = "/data1/liborui/fastwam_bench"
-TAG = os.environ.get("GATE13_TAG", "libero_spatial_t0_rs1")
-RECLAIM_M = 0.12          # EEF-to-object distance counted as (re-)acquisition
-
-
-def load(path):
-    if not os.path.exists(path):
-        return None
-    return [json.loads(l) for l in open(path) if l.strip()]
-
-
-def l1(a, b):
-    return sum(abs(x - y) for x, y in zip(a, b))
+ROOT = Path("/data1/liborui/fastwam_bench")
+_argv = [a for a in sys.argv[1:] if not a.startswith("--")]
+if len(_argv) > 1 and _argv[0] in ("--dir", "--root"):
+    _argv = _argv[1:]
+OUT_ROOT = Path(_argv[0]) if _argv else ROOT / "results" / "gate13"
 
 
 def dist(a, b):
     return math.sqrt(sum((x - y) ** 2 for x, y in zip(a, b)))
 
 
-def by_ep(recs, event):
-    out = {}
-    for r in recs:
-        if r.get("event") == event:
-            out.setdefault(r.get("episode"), []).append(r)
+def load(rec_path: Path):
+    with open(rec_path) as fh:
+        return [json.loads(line) for line in fh if line.strip()]
+
+
+def episode_metrics(recs, body):
+    """Per-episode metrics for one run."""
+    ends = [r for r in recs if r.get("event") == "episode_end"]
+    steps = [r for r in recs if r.get("event") == "step"]
+    ivs = [r for r in recs if r.get("event") == "intervention"]
+    by_ep = defaultdict(list)
+    for r in steps:
+        by_ep[r["episode"]].append(r)
+    iv_by_ep = defaultdict(list)
+    for r in ivs:
+        iv_by_ep[r["episode"]].append(r)
+    out = []
+    for e in ends:
+        ep = e["episode"]
+        es = sorted(by_ep.get(ep, []), key=lambda r: r["t"])
+        iv_step = e.get("intervention_step", -1)
+        ivrec = iv_by_ep.get(ep, [{}])[-1]
+        # a run is CONTAMINATED if the disturbance itself satisfied the task
+        # (episode ends at the intervention step) or if no stale action ever
+        # executed, i.e. the manipulation under test never actually ran.
+        stale_n = e.get("stale_action_steps", 0)
+        post_iv = ivrec.get("post_iv_success")
+        contaminated = bool(post_iv) or (iv_step >= 0 and stale_n <= 0)
+        # distance series
+        pre_dist = None
+        lat = -1
+        min_after = None
+        net = None
+        if body:
+            first = last = None
+            for r in es:
+                st = r.get("state") or {}
+                obj = (st.get("bodies") or {}).get(body, {}).get("pos")
+                eef = (st.get("eef") or {}).get("pos")
+                if obj is None or eef is None:
+                    continue
+                d = dist(obj, eef)
+                if first is None:
+                    first = obj
+                last = obj
+                if iv_step >= 0 and r["t"] <= iv_step:
+                    pre_dist = d
+                elif iv_step >= 0 and r["t"] > iv_step:
+                    if min_after is None or d < min_after:
+                        min_after = d
+                    if lat < 0 and pre_dist is not None and d <= pre_dist:
+                        lat = r["t"] - iv_step
+            if first is not None and last is not None:
+                net = dist(first, last)
+        out.append({
+            "episode": ep,
+            "success": bool(e.get("success")),
+            "steps": e.get("steps"),
+            "stale_action_steps": stale_n,
+            "contaminated": contaminated,
+            "post_iv_success": post_iv,
+            "delta_used": ivrec.get("delta_used"),
+            "intervention_step": iv_step,
+            "psnr": e.get("episode_mean_psnr"),
+            "reacq_latency": lat,
+            "obj_net_motion": net,
+            "pre_iv_dist": pre_dist,
+            "min_post_iv_dist": min_after,
+        })
     return out
 
 
-def analyse():
-    cpath = f"{ROOT}/results/gate13_{TAG}_control/records.jsonl"
-    dpath = f"{ROOT}/results/gate13_{TAG}_disturb/records.jsonl"
-    c, d = load(cpath), load(dpath)
-    if c is None or d is None:
-        print(json.dumps({"tag": TAG, "error": "missing records",
-                          "have": {"control": c is not None, "disturb": d is not None}}, indent=2))
+def main() -> int:
+    runs = sorted(glob.glob(str(OUT_ROOT / "*" / "H*" / "*" / "records.jsonl")))
+    if not runs:
+        print(f"no runs under {OUT_ROOT}")
         return 1
 
-    ivs = [r for r in d if r.get("event") == "intervention"]
-    body = ivs[0].get("body") if ivs else None
-    cends = by_ep(c, "episode_end")
-    dends = by_ep(d, "episode_end")
-    csteps = by_ep(c, "step")
-    dsteps = by_ep(d, "step")
-    creplans = by_ep(c, "replan")
-    dreplans = by_ep(d, "replan")
-
-    eps = sorted(set(cends) & set(dends))
-    pairs = []
-    for ep in eps:
-        csucc = bool(cends[ep][0].get("success"))
-        dsucc = bool(dends[ep][0].get("success"))
-        ds = dsteps.get(ep, [])
-        iv_t = next((r["t"] for r in ds if r.get("world_intervened")), None)
-        stale_ts = sorted(r["t"] for r in ds if r.get("stale"))
-
-        # recovery latency: first post-intervention step with EEF within RECLAIM_M
-        lat = None
-        best = None
-        for r in ds:
-            if iv_t is None or r["t"] <= iv_t:
-                continue
-            st = r.get("state") or {}
-            e = (st.get("eef") or {}).get("pos")
-            o = ((st.get("bodies") or {}).get(body) or {}).get("pos") if body else None
-            if e and o:
-                dd = dist(e, o)
-                best = dd if best is None else min(best, dd)
-                if dd < RECLAIM_M:
-                    lat = r["t"] - iv_t
-                    break
-
-        # plan divergence at the first post-intervention replan
-        plan_div = None
-        for ri, dr in sorted(dreplans.get(ep, []) and {r["replan_idx"]: r for r in dreplans[ep]}.items()):
-            if iv_t is not None and dr.get("t", 0) > iv_t:
-                cr = {r["replan_idx"]: r for r in creplans.get(ep, [])}
-                if ri in cr:
-                    cmn = (cr[ri].get("chunk") or {}).get("mean")
-                    dmn = (dr.get("chunk") or {}).get("mean")
-                    if cmn and dmn:
-                        plan_div = round(l1(cmn, dmn), 6)
+    # (suite, tid) -> H -> arm -> list of per-episode dicts
+    data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    meta = {}
+    pat = re.compile(r"(?P<suite>.+)_t(?P<tid>\d+)/H(?P<h>\d+)/(?P<arm>[a-z]+)_s(?P<seed>\d+)")
+    for rp in runs:
+        rel = str(Path(rp).relative_to(OUT_ROOT))
+        m = pat.search(rel)
+        if not m:
+            continue
+        suite, tid, h, arm, seed = (m["suite"], int(m["tid"]), int(m["h"]),
+                                    m["arm"], int(m["seed"]))
+        recs = load(Path(rp))
+        body = None
+        # prefer the body the intervention actually resolved/displaced
+        for e in recs:
+            if e.get("event") == "intervention" and e.get("body") and e.get("applied"):
+                body = e["body"]
                 break
+        if body is None:
+            for e in recs:
+                if e.get("event") == "episode_end" and e.get("world_body"):
+                    body = e["world_body"]
+                    break
+        eps = episode_metrics(recs, body)
+        data[(suite, tid)][h][arm].extend(eps)
+        m = meta.setdefault((suite, tid), {"body": None})
+        if body and not m.get("body"):
+            m["body"] = body
+        # sanity: intervention actually fired where configured
+        fired = [e["intervention_step"] for e in eps if e["intervention_step"] >= 0]
+        if arm == "disturb":
+            meta[(suite, tid)].setdefault("fired_steps", set()).update(fired)
 
-        pairs.append({
-            "episode": ep, "iv_t": iv_t,
-            "control_success": csucc, "disturb_success": dsucc,
-            "stale_steps": len(stale_ts),
-            "recovery_latency": lat, "min_eef_obj": round(best, 4) if best is not None else None,
-            "plan_divergence_l1": plan_div,
-        })
+    summary = {}
+    print("=" * 100)
+    print("GATE 13 - cost of world-model commitment vs replan horizon")
+    print("=" * 100)
+    for (suite, tid), per_h in sorted(data.items()):
+        print(f"\n### {suite} t{tid}   (manipulated body: {meta[(suite, tid)].get('body')})")
+        hdr = (f"{'H':>4} {'arm':>8} {'succ':>9} {'rate':>7} {'stale':>6} "
+               f"{'iv_step':>8} {'reacq':>6} {'obj_move':>9} {'bad':>4} {'psnr':>7}")
+        print(hdr)
+        print("-" * len(hdr))
+        rows = {}
+        for h in sorted(per_h):
+            for arm in ("control", "disturb"):
+                eps = per_h[h].get(arm, [])
+                if not eps:
+                    continue
+                n = len(eps)
+                s = sum(1 for e in eps if e["success"])
+                stale = sum(e["stale_action_steps"] for e in eps) / n
+                bad = sum(1 for e in eps if e.get("contaminated"))
+                ivs = [e["intervention_step"] for e in eps if e["intervention_step"] >= 0]
+                iv = sum(ivs) / len(ivs) if ivs else -1
+                lat = [e["reacq_latency"] for e in eps if e["reacq_latency"] >= 0]
+                lat_s = sum(lat) / len(lat) if lat else -1
+                mv = [e["obj_net_motion"] for e in eps if e["obj_net_motion"] is not None]
+                mv_s = sum(mv) / len(mv) if mv else float("nan")
+                ps = [e["psnr"] for e in eps if e.get("psnr") is not None]
+                ps_s = sum(ps) / len(ps) if ps else float("nan")
+                print(f"{h:>4} {arm:>8} {s:>4}/{n:<4} {s/n:>7.2f} {stale:>6.1f} "
+                      f"{iv:>8.0f} {lat_s:>6.1f} {mv_s:>9.3f} {bad:>4} {ps_s:>7.2f}")
+                rows[arm] = {"n": n, "succ": s, "rate": s / n, "stale": stale,
+                             "iv_step": iv, "reacq": lat_s, "obj_move": mv_s,
+                             "contaminated": bad, "psnr": ps_s}
+            if "control" in rows and "disturb" in rows:
+                d = rows["control"]["rate"] - rows["disturb"]["rate"]
+                print(f"{h:>4} {'DELTA':>8} {'':>9} {d:>7.2f}")
+                summary.setdefault(f"{suite}_t{tid}", {})[h] = {
+                    "control_rate": rows["control"]["rate"],
+                    "disturb_rate": rows["disturb"]["rate"],
+                    "cost": d,
+                    "stale_disturb": rows["disturb"]["stale"],
+                    "contaminated_disturb": rows["disturb"].get("contaminated", 0),
+                    "psnr_control": rows["control"].get("psnr"),
+                    "psnr_disturb": rows["disturb"].get("psnr"),
+                    "n": rows["control"]["n"],
+                }
+        # trend
+        hh = sorted(k for k in summary.get(f"{suite}_t{tid}", {}))
+        if len(hh) >= 2:
+            costs = [summary[f"{suite}_t{tid}"][h]["cost"] for h in hh]
+            stale = [summary[f"{suite}_t{tid}"][h]["stale_disturb"] for h in hh]
+            print(f"\n  cost by H: " + ", ".join(f"H{h}={c:+.2f}" for h, c in zip(hh, costs)))
+            print(f"  stale by H: " + ", ".join(f"H{h}={s:.0f}" for h, s in zip(hh, stale)))
+            mono = all(costs[i] <= costs[i + 1] + 1e-9 for i in range(len(costs) - 1))
+            print(f"  monotone increasing cost with horizon: {mono}")
 
-    n = len(pairs)
-    csuccess = sum(p["control_success"] for p in pairs)
-    dsuccess = sum(p["disturb_success"] for p in pairs)
-    denom = sum(1 for p in pairs if p["control_success"])
-    numer = sum(1 for p in pairs if p["control_success"] and p["disturb_success"])
-    lats = [p["recovery_latency"] for p in pairs if p["control_success"] and p["recovery_latency"] is not None]
-
-    summary = {
-        "tag": TAG, "body": body, "episodes": n,
-        "control_success": csuccess, "control_sr": round(csuccess / n, 4) if n else None,
-        "disturb_success": dsuccess, "disturb_sr": round(dsuccess / n, 4) if n else None,
-        "success_drop": round((csuccess - dsuccess) / n, 4) if n else None,
-        "recovery_rate": round(numer / denom, 4) if denom else None,
-        "recovery_rate_note": f"{numer}/{denom} disturbed episodes whose paired control succeeds",
-        "recovery_latency_mean": round(sum(lats) / len(lats), 2) if lats else None,
-        "recovery_latency_all": lats,
-        "stale_steps_total": sum(p["stale_steps"] for p in pairs),
-        "plan_divergence_nonzero": sum(1 for p in pairs if p["plan_divergence_l1"]),
-        "pairs": pairs,
-    }
-    print(json.dumps(summary, indent=2, default=str))
-
-    print(f"\n=== GATE 13 — {TAG} (body={body}) ===")
-    hdr = f"{'ep':>3} {'ctlSR':>6} {'dstSR':>6} {'stale':>6} {'recov_lat':>10} {'minEEF-obj':>11} {'planL1':>9}"
-    print(hdr); print("-" * len(hdr))
-    for p in pairs:
-        print(f"{p['episode']:>3} {int(p['control_success']):>6} {int(p['disturb_success']):>6} "
-              f"{p['stale_steps']:>6} {str(p['recovery_latency']):>10} {str(p['min_eef_obj']):>11} "
-              f"{str(p['plan_divergence_l1']):>9}")
-    print(f"\nControl SR {csuccess}/{n}   Disturbed SR {dsuccess}/{n}   "
-          f"Success Drop {summary['success_drop']}   Recovery Rate {summary['recovery_rate']}   "
-          f"Recovery Latency {summary['recovery_latency_mean']}")
+    outp = OUT_ROOT / "gate13_summary.json"
+    with open(outp, "w") as fh:
+        json.dump(summary, fh, indent=2, sort_keys=True)
+    print(f"\nwrote {outp}")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(analyse())
+    raise SystemExit(main())

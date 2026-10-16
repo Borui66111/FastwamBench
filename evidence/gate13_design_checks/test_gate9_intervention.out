@@ -1,0 +1,89 @@
+== 1. disabled by default is a no-op ==
+  [PASS] disabled -> not applied
+  [PASS] disabled -> chunk unchanged
+== 2. wrong replan index is untouched ==
+  [PASS] replan_idx=3 vs target 0 -> not applied
+  [PASS] wrong replan -> chunk unchanged
+== 3. only the target step changes; rest of chunk preserved ==
+  [PASS] target replan -> applied
+  [PASS] before matches original step
+  [PASS] zero_action -> zeros
+  [PASS] step 2 changed
+  [PASS] steps 0,1,3.. unchanged
+== 4. out-of-range step_in_chunk is a safe no-op ==
+  [PASS] oob step -> not applied
+  [PASS] oob step -> unchanged
+== 5. mode semantics ==
+  [PASS] zero_action semantics
+  [PASS] scale semantics
+  [PASS] invert semantics
+  [PASS] gripper_flip semantics
+== 6. freeze_prev uses the previous action ==
+  [PASS] freeze_prev -> previous action
+== 7. determinism: identical seed -> identical perturbation ==
+  [PASS] 3 runs byte-identical
+  [PASS] different seed -> different perturbation
+== 8. resolve_intervention_cfg reads an OmegaConf-like mapping ==
+  [PASS] enabled parsed
+  [PASS] mode parsed
+  [PASS] scale parsed
+  [PASS] replan parsed
+  [PASS] defaults for absent keys
+== 9. StructuredRecorder writes valid JSONL ==
+  [PASS] recorder enabled
+  [PASS] 2 records written
+  [PASS] record round-trips
+  [PASS] event field present
+== 10. recorder is inert when path is None ==
+  [PASS] disabled without path
+  [PASS] no path -> no file attribute
+== 11. summarize_chunk is JSON-safe ==
+  [PASS] chunk_len
+  [PASS] dim
+  [PASS] gripper len
+== 12. world displacement uses the qpos ADDRESS, not the joint index ==
+  [PASS] displacement applied
+  [PASS] qpos_adr resolved to 16 (not joint index 10)
+  [PASS] bowl_2 x moved by the delta
+  [PASS] bowl_1 qpos untouched
+  [PASS] no stray write at joint-index offset 10
+  [PASS] sim.forward() called
+== 13. maybe_displace_world gating + recorder-key collision ==
+  [PASS] world disabled -> None
+  [PASS] replan mismatch -> None
+  [PASS] target replan -> record
+  [PASS] no 'replan_idx' key (avoids duplicate recorder kwarg)
+  [PASS] record is JSON-serialisable
+  [PASS] world delta applied
+== 14. snapshot_state is JSON-safe and exposes the qpos address ==
+  [PASS] snapshot has bodies
+  [PASS] snapshot reports qpos_adr
+  [PASS] snapshot reports free_joint
+  [PASS] snapshot eef present
+== 15. Gate 13 absolute-step trigger (intervention_world_step) ==
+  [PASS] world_step parsed
+  [PASS] silent before target step
+  [PASS] silent at a replan that is not the target step
+  [PASS] fires at target step
+  [PASS] fires regardless of replan index (6, not the configured 0)
+  [PASS] silent after target step
+  [PASS] fires at the same step under a different horizon
+  [PASS] no 'replan_idx' key (recorder kwarg collision)
+  [PASS] absolute-step record is JSON-serialisable
+== 16. Gate 13 goal-aware disturbance cannot satisfy the goal ==
+  [PASS] goal targets parsed from parsed_problem
+  [PASS] bddl object name -> sim body name
+  [PASS] manipulated body auto-resolved from goal state
+  [PASS] success is False before the disturbance
+  [PASS] goal-away delta points away from the target (-x here)
+  [PASS] goal-away displacement applied
+  [PASS] post_iv_success stays False (task NOT completed by the disturbance)
+  [PASS] no candidate rejected in the clean case
+  [PASS] contaminating candidate is rejected
+  [PASS] rejection is recorded with post_iv_success=True
+  [PASS] fallback candidate is used and is non-contaminating
+  [PASS] contaminating displacement was reverted
+  [PASS] success is False after the guarded displacement
+
+RESULT: ALL GATE 9 CHECKS PASSED
+EXIT=0

@@ -63,6 +63,20 @@ def resolve_intervention_cfg(cfg: Any) -> dict:
         "world_enabled": bool(ev.get("intervention_world_enabled", False)),
         "world_body": ev.get("intervention_world_body", None),
         "world_delta": ev.get("intervention_world_delta", None),
+        # [fastbench] Gate 13 goal-aware disturbance: when no explicit delta is
+        # given, displace the goal object AWAY from its goal target by
+        # `world_magnitude` metres, and reject any candidate that would satisfy
+        # the env's own goal predicate (see apply_world_displacement).
+        "world_auto": bool(ev.get("intervention_world_auto", True)),
+        "world_magnitude": float(ev.get("intervention_world_magnitude", 0.10) or 0.10),
+        # [fastbench] Gate 13 absolute-step trigger. Triggering purely on a replan
+        # index makes the disturbance land at a *different absolute step* for
+        # every replan horizon (rs=1 -> t=60, rs=10 -> t=69), which confounds any
+        # cross-horizon comparison with the horizon itself. Setting
+        # intervention_world_step (or intervention_stale_metric_step) pins the
+        # disturbance to one absolute env step regardless of horizon.
+        "world_step": ev.get("intervention_world_step", None),
+        "stale_metric_step": ev.get("intervention_stale_metric_step", None),
         "stale_metric": ev.get("intervention_stale_metric", True),
         "record_state": bool(ev.get("recorder_state", False)),
     }
@@ -338,6 +352,170 @@ def snapshot_state(env: Any, body_names: Optional[Sequence[str]] = None) -> dict
     return out
 
 
+# ---------------------------------------------------------------------------
+# [fastbench] Goal-aware intervention helpers (Gate 13).
+#
+# Displacing a task object in an arbitrary direction can ACCIDENTALLY SATISFY the
+# goal predicate.  Measured (2026-10-17) for libero_spatial t0: a +x/+y
+# displacement of akita_black_bowl_1 lands it on plate_1, `_check_success()`
+# flips to True at the intervention step, the episode ends immediately and ZERO
+# stale actions execute -- the disturb arm then measures nothing.
+#
+# These helpers make the disturbance goal-aware:
+#   * the disturbed body is resolved from the task's own goal state,
+#   * the direction is "away from the goal target", which can only INCREASE the
+#     object->goal distance and therefore cannot satisfy `on`/`in`,
+#   * the outcome is verified with the env's own predicate and recorded as
+#     `post_iv_success`, with a candidate-direction fallback if it ever flips.
+# ---------------------------------------------------------------------------
+
+_GOAL_PREDICATES = ("on", "in", "inside")
+
+# Ring of fallback unit directions, tried only if the goal-away direction ever
+# contaminates (kept deterministic for reproducibility).
+_FALLBACK_DIRS = [
+    (-1.0, 0.0), (0.0, -1.0), (1.0, 0.0), (0.0, 1.0),
+    (-0.7071, -0.7071), (-0.7071, 0.7071), (0.7071, -0.7071), (0.7071, 0.7071),
+]
+
+
+def _parsed_problem(env: Any) -> Optional[dict]:
+    for obj in (env, getattr(env, "env", None)):
+        pp = getattr(obj, "parsed_problem", None)
+        if isinstance(pp, dict):
+            return pp
+    return None
+
+
+def resolve_goal_targets(env: Any) -> list:
+    """[(object_name, target_name), ...] from the task's parsed goal state."""
+    pp = _parsed_problem(env)
+    if not pp:
+        return []
+    out = []
+    for pred in (pp.get("goal_state") or []):
+        if len(pred) >= 3 and str(pred[0]).lower() in _GOAL_PREDICATES:
+            out.append((str(pred[1]), str(pred[2])))
+    return out
+
+
+def resolve_body_name(env: Any, name: str) -> Optional[str]:
+    """Map a bddl object/region name onto an actual sim body name."""
+    sim = _sim(env)
+    if sim is None:
+        return None
+    try:
+        names = list(sim.model.body_names)
+    except Exception:
+        return None
+    base = str(name)
+    for suf in ("_contain_region", "_region"):
+        if base.endswith(suf):
+            base = base[: -len(suf)]
+    for cand in (name, base, base + "_main"):
+        if cand in names:
+            return cand
+    for n in names:
+        if n == base or n.startswith(base + "_"):
+            return n
+    return None
+
+
+def resolve_manipulated_body(env: Any) -> Optional[str]:
+    """The body the task's goal predicate is about (i.e. what to disturb)."""
+    for obj, _tgt in resolve_goal_targets(env):
+        b = resolve_body_name(env, obj)
+        if b is not None:
+            return b
+    return None
+
+
+def _body_xyz(env: Any, body: str) -> Optional[list]:
+    rec = snapshot_state(env, body_names=[body]).get("bodies", {}).get(body, {})
+    pos = rec.get("pos")
+    return [float(x) for x in pos] if pos else None
+
+
+def goal_away_delta(env: Any, body: str, magnitude: float) -> Optional[list]:
+    """Displacement of `body` directly AWAY from its goal target.
+
+    Increases the object->target distance, so it can never satisfy `on`/`in`.
+    Returns [dx, dy, 0.0], or None when the goal target cannot be resolved.
+    """
+    p = _body_xyz(env, body)
+    if p is None:
+        return None
+    for obj, tgt in resolve_goal_targets(env):
+        if resolve_body_name(env, obj) != body:
+            continue
+        tb = resolve_body_name(env, tgt)
+        tp = _body_xyz(env, tb) if tb else None
+        if tp is None:
+            continue
+        v = np.asarray(p[:2], dtype=float) - np.asarray(tp[:2], dtype=float)
+        n = float(np.linalg.norm(v))
+        if n < 1e-6:
+            continue
+        u = v / n
+        return [float(u[0] * magnitude), float(u[1] * magnitude), 0.0]
+    return None
+
+
+def check_success(env: Any) -> Optional[bool]:
+    """The env's own goal predicate evaluated on the CURRENT sim state."""
+    for obj in (env, getattr(env, "env", None)):
+        if obj is None:
+            continue
+        fn = getattr(obj, "_check_success", None)
+        if callable(fn):
+            try:
+                return bool(fn())
+            except Exception:
+                continue
+    return None
+
+
+def apply_world_displacement(
+    env: Any,
+    body: str,
+    primary_delta: Optional[Sequence[float]],
+    magnitude: float,
+    auto: bool,
+) -> tuple:
+    """Apply a goal-safe displacement; never leave the task satisfied.
+
+    Tries `primary_delta` first, then (when `auto`) a deterministic ring of
+    fallback directions.  A candidate is rejected if the env's own success
+    predicate becomes True, and is reverted before the next candidate.
+
+    Returns (result_record, delta_used, post_success, rejected_list).
+    """
+    cands = []
+    if primary_delta:
+        cands.append([float(x) for x in primary_delta])
+    if auto:
+        for cx, cy in _FALLBACK_DIRS:
+            cands.append([cx * magnitude, cy * magnitude, 0.0])
+    rejected = []
+    last = None
+    for d in cands:
+        res = displace_object(env, body, d)
+        if not res.get("applied"):
+            rejected.append({"delta": d, "reason": res.get("reason")})
+            continue
+        post = check_success(env)
+        if auto and post:
+            rejected.append({"delta": d, "post_iv_success": True})
+            displace_object(env, body, [-x for x in d])  # revert
+            last = res
+            continue
+        return res, d, post, rejected
+    if last is not None:
+        # every candidate contaminated: restore the primary displacement state
+        return last, None, check_success(env), rejected
+    return {"applied": False, "reason": "no candidate applied"}, None, check_success(env), rejected
+
+
 def displace_object(env: Any, body: str, delta_xyz: Sequence[float]) -> dict:
     """One-shot deterministic displacement of a free-joint object (WARM_START §9.3).
 
@@ -375,12 +553,18 @@ def displace_object(env: Any, body: str, delta_xyz: Sequence[float]) -> dict:
     }
 
 
-def maybe_displace_world(env: Any, icfg: dict, replan_idx: int) -> Optional[dict]:
+def maybe_displace_world(env: Any, icfg: dict, replan_idx: int, step_t: Optional[int] = None) -> Optional[dict]:
     """[fastbench] Gate 9 primary H3 intervention: one-shot world-state change.
 
     Called immediately AFTER an action chunk has been generated but BEFORE any of
     its actions execute (handoff WARM_START.md §9.2), so the chunk is guaranteed
     to have been planned against the pre-intervention world.
+
+    Trigger is EITHER `intervention_replan_idx` (matched against `replan_idx`) OR
+    the absolute-step form `intervention_world_step` (matched against `step_t`).
+    The absolute form is preferred for cross-horizon comparisons: it fires the
+    disturbance at the same env step for every replan horizon, so the disturbance
+    is not entangled with the horizon.
 
     Returns a JSON-safe record, or None if no world intervention is configured /
     this is not the target replan.
@@ -388,19 +572,40 @@ def maybe_displace_world(env: Any, icfg: dict, replan_idx: int) -> Optional[dict
     body = icfg.get("world_body")
     if not icfg.get("enabled") or not icfg.get("world_enabled") or not body:
         return None
-    if replan_idx != int(icfg.get("replan_idx", 0)):
+    if str(body) == "auto":
+        body = resolve_manipulated_body(env)
+        if not body:
+            return {"kind": "world_displacement", "applied": False,
+                    "reason": "auto: could not resolve manipulated body from goal state"}
+    wstep = icfg.get("world_step")
+    if wstep is not None:
+        if step_t is None or int(step_t) != int(wstep):
+            return None
+    elif replan_idx != int(icfg.get("replan_idx", 0)):
         return None
-    delta = icfg.get("world_delta") or [0.0, 0.0, 0.0]
+    auto = bool(icfg.get("world_auto", True))
+    magnitude = float(icfg.get("world_magnitude", 0.10) or 0.10)
+    primary = icfg.get("world_delta")
+    if not primary:
+        primary = goal_away_delta(env, body, magnitude) if auto else [0.0, 0.0, 0.0]
     snap_before = snapshot_state(env, body_names=[body])
-    res = displace_object(env, body, delta)
+    pre_success = check_success(env)
+    res, delta_used, post_success, rejected = apply_world_displacement(
+        env, body, primary, magnitude, auto
+    )
     snap_after = snapshot_state(env, body_names=[body])
     return {
         "kind": "world_displacement",
         "mode": "displace",
         "body": body,
-        "delta": [float(x) for x in delta],
+        "auto": bool(auto),
+        "magnitude": float(magnitude),
+        "delta": [float(x) for x in (delta_used or [0.0, 0.0, 0.0])],
         "applied": bool(res.get("applied")),
         "reason": res.get("reason"),
+        "pre_iv_success": pre_success,
+        "post_iv_success": post_success,
+        "rejected_candidates": rejected,
         "qpos_before": res.get("qpos_before"),
         "qpos_after": res.get("qpos_after"),
         "snapshot_before": snap_before,

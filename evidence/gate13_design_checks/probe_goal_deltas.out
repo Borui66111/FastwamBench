@@ -1,0 +1,78 @@
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+[robosuite WARNING] To setup, run: python /data1/liborui/fastwam_bench/LIBERO-Safety/third_party/robosuite-1.4/robosuite/scripts/setup_macros.py (__init__.py:9)
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+======================================================================
+SUITE libero_spatial TASK 0
+LANG: pick up the black bowl between the plate and the ramekin and place it on the plate
+GOAL_STATE: [['on', 'akita_black_bowl_1', 'plate_1']]
+INIT_STATE: [['on', 'akita_black_bowl_1', 'main_table_between_plate_ramekin_region'], ['on', 'akita_black_bowl_2', 'main_table_next_to_ramekin_region'], ['on', 'plate_1', 'main_table_plate_region'], ['on', 'cookies_1', 'main_table_box_region'], ['on', 'glazed_rim_porcelain_ramekin_1', 'main_table_ramekin_region'], ['on', 'wooden_cabinet_1', 'main_table_cabinet_region'], ['on', 'flat_stove_1', 'main_table_stove_region']]
+BODIES: ['akita_black_bowl_1_main', 'akita_black_bowl_2_main', 'cookies_1_main', 'glazed_rim_porcelain_ramekin_1_main', 'plate_1_main', 'wooden_cabinet_1_main', 'wooden_cabinet_1_base', 'wooden_cabinet_1_cabinet_top', 'wooden_cabinet_1_cabinet_middle', 'wooden_cabinet_1_cabinet_bottom', 'flat_stove_1_main', 'flat_stove_1_base', 'flat_stove_1_burner', 'flat_stove_1_burner_plate', 'flat_stove_1_button']
+   akita_black_bowl_1_main          pos=[-0.0411, 0.1887, 0.97]
+   akita_black_bowl_2_main          pos=[-0.1851, 0.3225, 0.97]
+   cookies_1_main                   pos=[0.056, 0.0356, 0.97]
+   glazed_rim_porcelain_ramekin_1_main pos=[-0.2113, 0.1882, 0.97]
+   plate_1_main                     pos=[0.0708, 0.2091, 0.97]
+   wooden_cabinet_1_main            pos=[0.0208, -0.2766, 0.905]
+   wooden_cabinet_1_base            pos=[0.0208, -0.2766, 0.905]
+   wooden_cabinet_1_cabinet_top     pos=[0.0208, -0.2766, 0.905]
+   wooden_cabinet_1_cabinet_middle  pos=[0.0208, -0.2766, 0.905]
+   wooden_cabinet_1_cabinet_bottom  pos=[0.0208, -0.2766, 0.905]
+   flat_stove_1_main                pos=[-0.418, -0.1416, 0.905]
+   flat_stove_1_base                pos=[-0.418, -0.1416, 0.905]
+   flat_stove_1_burner              pos=[-0.268, -0.1416, 0.905]
+   flat_stove_1_burner_plate        pos=[-0.268, -0.1416, 0.905]
+   flat_stove_1_button              pos=[-0.418, -0.1416, 0.905]
+SUCCESS_AT_INIT: False
+-- delta sweep on akita_black_bowl_1_main
+   delta=[0.06, 0.06, 0.0]  success_after=True
+   delta=[-0.06, -0.06, 0.0]  success_after=False
+   delta=[0.08, 0.0, 0.0]  success_after=True
+   delta=[-0.08, 0.0, 0.0]  success_after=False
+   delta=[0.0, 0.08, 0.0]  success_after=False
+   delta=[0.0, -0.08, 0.0]  success_after=False
+   delta=[0.12, 0.0, 0.0]  success_after=True
+   delta=[-0.12, 0.0, 0.0]  success_after=False
+   delta=[0.0, 0.0, 0.05]  success_after=False
+   delta=[0.1, 0.1, 0.0]  success_after=True
+-- other body akita_black_bowl_2_main: success_after=False
+-- other body cookies_1_main: success_after=False
+-- other body glazed_rim_porcelain_ramekin_1_main: success_after=False
+-- other body plate_1_main: success_after=False
+======================================================================
+SUITE libero_object TASK 0
+LANG: pick up the alphabet soup and place it in the basket
+GOAL_STATE: [['in', 'alphabet_soup_1', 'basket_1_contain_region']]
+INIT_STATE: [['on', 'alphabet_soup_1', 'floor_target_object_region'], ['on', 'salad_dressing_1', 'floor_other_object_region_0'], ['on', 'cream_cheese_1', 'floor_other_object_region_1'], ['on', 'milk_1', 'floor_other_object_region_2'], ['on', 'tomato_sauce_1', 'floor_other_object_region_3'], ['on', 'butter_1', 'floor_other_object_region_4'], ['on', 'basket_1', 'floor_bin_region']]
+BODIES: ['floor', 'alphabet_soup_1_main', 'basket_1_main', 'salad_dressing_1_main', 'cream_cheese_1_main', 'milk_1_main', 'tomato_sauce_1_main', 'butter_1_main']
+   floor                            pos=[0.0, 0.0, 0.0]
+   alphabet_soup_1_main             pos=[-0.12, -0.24, 0.015]
+   basket_1_main                    pos=[-0.0137, 0.259, 0.035]
+   salad_dressing_1_main            pos=[0.05, -0.1, 0.035]
+   cream_cheese_1_main              pos=[-0.147, 0.057, 0.0]
+   milk_1_main                      pos=[0.1019, -0.2019, 0.035]
+   tomato_sauce_1_main              pos=[0.15, 0.03, 0.035]
+   butter_1_main                    pos=[-0.1962, -0.084, -0.005]
+SUCCESS_AT_INIT: False
+-- delta sweep on floor
+   delta=[0.06, 0.06, 0.0] NOT APPLIED: no free joint on body 'floor'
+   delta=[-0.06, -0.06, 0.0] NOT APPLIED: no free joint on body 'floor'
+   delta=[0.08, 0.0, 0.0] NOT APPLIED: no free joint on body 'floor'
+   delta=[-0.08, 0.0, 0.0] NOT APPLIED: no free joint on body 'floor'
+   delta=[0.0, 0.08, 0.0] NOT APPLIED: no free joint on body 'floor'
+   delta=[0.0, -0.08, 0.0] NOT APPLIED: no free joint on body 'floor'
+   delta=[0.12, 0.0, 0.0] NOT APPLIED: no free joint on body 'floor'
+   delta=[-0.12, 0.0, 0.0] NOT APPLIED: no free joint on body 'floor'
+   delta=[0.0, 0.0, 0.05] NOT APPLIED: no free joint on body 'floor'
+   delta=[0.1, 0.1, 0.0] NOT APPLIED: no free joint on body 'floor'
+-- other body alphabet_soup_1_main: success_after=False
+-- other body basket_1_main: success_after=False
+-- other body salad_dressing_1_main: success_after=False
+-- other body cream_cheese_1_main: success_after=False
+-- other body milk_1_main: success_after=False
+-- other body tomato_sauce_1_main: success_after=False
+-- other body butter_1_main: success_after=False
+PROBE DONE
+EXIT=0

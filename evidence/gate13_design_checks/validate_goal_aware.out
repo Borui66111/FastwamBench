@@ -1,0 +1,32 @@
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+[robosuite WARNING] To setup, run: python /data1/liborui/fastwam_bench/LIBERO-Safety/third_party/robosuite-1.4/robosuite/scripts/setup_macros.py (__init__.py:9)
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+======================================================================
+libero_spatial t0: pick up the black bowl between the plate and the ramekin and place it on the plate
+GOAL_TARGETS: [('akita_black_bowl_1', 'plate_1')]
+AUTO BODY: akita_black_bowl_1_main
+GOAL_AWAY_DELTA: [-0.0983790867126615, -0.017931963015315182, 0.0]
+success before: False
+APPLIED: True DELTA_USED: [-0.0983790867126615, -0.017931963015315182, 0.0]
+POST_IV_SUCCESS: False   (MUST be False)
+REJECTED: []
+BODY POS AFTER: [-0.1395, 0.1707, 0.97]
+EXPLICIT +x+y -> DELTA_USED: [0.06, 0.06, 0.0] POST_IV_SUCCESS: False (guard must reject the +x/+y candidate)
+REJECTED_LIST: []
+======================================================================
+libero_object t0: pick up the alphabet soup and place it in the basket
+GOAL_TARGETS: [('alphabet_soup_1', 'basket_1_contain_region')]
+AUTO BODY: alphabet_soup_1_main
+GOAL_AWAY_DELTA: [-0.02082802089717159, -0.0978069197220063, 0.0]
+success before: False
+APPLIED: True DELTA_USED: [-0.02082802089717159, -0.0978069197220063, 0.0]
+POST_IV_SUCCESS: False   (MUST be False)
+REJECTED: []
+BODY POS AFTER: [-0.1408, -0.3378, 0.015]
+EXPLICIT +x+y -> DELTA_USED: [0.06, 0.06, 0.0] POST_IV_SUCCESS: False (guard must reject the +x/+y candidate)
+REJECTED_LIST: []
+VALIDATE DONE
+EXIT=0

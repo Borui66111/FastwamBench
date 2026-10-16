@@ -15,9 +15,15 @@ sys.path.insert(0, "/data1/liborui/fastwam_bench/FastWAM")
 from experiments.libero.fastbench_intervention import (  # noqa: E402
     StructuredRecorder,
     apply_intervention,
+    apply_world_displacement,
+    check_success,
     displace_object,
+    goal_away_delta,
     maybe_displace_world,
+    resolve_body_name,
+    resolve_goal_targets,
     resolve_intervention_cfg,
+    resolve_manipulated_body,
     snapshot_state,
     summarize_chunk,
 )
@@ -241,6 +247,117 @@ check("snapshot has bodies", "akita_black_bowl_2_main" in snap["bodies"])
 check("snapshot reports qpos_adr", snap["bodies"]["akita_black_bowl_2_main"]["qpos_adr"] == 16)
 check("snapshot reports free_joint", snap["bodies"]["akita_black_bowl_2_main"]["free_joint"] == 10)
 check("snapshot eef present", snap["eef"] is not None)
+
+print("== 15. Gate 13 absolute-step trigger (intervention_world_step) ==")
+# The absolute-step form exists so a cross-horizon sweep disturbs the world at
+# the SAME env step for every replan horizon. Verify it fires on the step, not
+# on the replan index, and that it stays silent at every other step.
+scfg = cfg(world_enabled=True, replan_idx=0, world_body="akita_black_bowl_2_main",
+           world_delta=[0.1, 0, 0], world_step=60)
+check("world_step parsed", scfg.get("world_step") == 60, str(scfg.get("world_step")))
+check("silent before target step", maybe_displace_world(env, scfg, 6, step_t=59) is None)
+check("silent at a replan that is not the target step",
+      maybe_displace_world(env, scfg, 1, step_t=10) is None)
+env.sim.data.qpos[16:19] = [1.0, 2.0, 3.0]
+swi = maybe_displace_world(env, scfg, 6, step_t=60)
+check("fires at target step", isinstance(swi, dict))
+check("fires regardless of replan index (6, not the configured 0)",
+      isinstance(swi, dict) and swi.get("applied") is True)
+check("silent after target step", maybe_displace_world(env, scfg, 7, step_t=61) is None)
+# Same absolute step must fire for a different horizon (replan_idx differs).
+env.sim.data.qpos[16:19] = [1.0, 2.0, 3.0]
+swi2 = maybe_displace_world(env, scfg, 60, step_t=60)
+check("fires at the same step under a different horizon", swi2 is not None)
+check("no 'replan_idx' key (recorder kwarg collision)",
+      "replan_idx" not in swi2, str(sorted(swi2)))
+json.dumps(swi2)
+check("absolute-step record is JSON-serialisable", True)
+
+print("== 16. Gate 13 goal-aware disturbance cannot satisfy the goal ==")
+# Regression for the 2026-10-17 finding: a +x/+y displacement of the task object
+# landed it ON the goal and `_check_success()` flipped True at the intervention
+# step, so the episode ended before a single stale action executed. The helpers
+# resolve the disturbed body from the task's own goal state and displace it AWAY
+# from the goal target; a candidate that still satisfies the goal is rejected.
+
+
+class _M3:
+    def __init__(self):
+        self.body_names = ["world", "robot0_base", "akita_black_bowl_1_main", "plate_1_main"]
+        self._bid = {n: i for i, n in enumerate(self.body_names)}
+        self.site_names = ["robot0_grip_site"]
+        self.jnt_type = np.zeros(13, dtype=int)
+        self.jnt_qposadr = np.array(list(range(9)) + [9, 16, 23, 30])
+        self.body_jntadr = np.array([0, 0, 9, 10])
+        self.body_jntnum = np.array([0, 0, 1, 1])
+
+    def body_name2id(self, n):
+        return self._bid[n]
+
+    def site_name2id(self, n):
+        return 0
+
+
+class _D3:
+    def __init__(self):
+        self.qpos = np.zeros(37)
+        self.body_xpos = np.array([[0, 0, 0], [0, 0, 0], [0.0, 0.0, 1.0], [0.10, 0.0, 1.0]])
+        self.body_xquat = np.tile([1.0, 0, 0, 0], (4, 1))
+        self.site_xpos = np.zeros((1, 3))
+        self.site_xmat = np.eye(3).reshape(1, 9)
+
+
+class _S3:
+    def __init__(self):
+        self.model = _M3()
+        self.data = _D3()
+        self.forward_calls = 0
+
+    def forward(self):
+        self.forward_calls += 1
+
+
+class _E3:
+    """bowl free joint=9/qposadr=9, plate free joint=10/qposadr=16."""
+
+    def __init__(self):
+        self.sim = _S3()
+        self.parsed_problem = {"goal_state": [["on", "akita_black_bowl_1", "plate_1"]]}
+
+    def _check_success(self):
+        b = self.sim.data.qpos[9:11]
+        p = self.sim.data.qpos[16:18]
+        return bool(np.linalg.norm(b - p) < 0.04)
+
+
+e3 = _E3()
+e3.sim.data.qpos[9:11] = [0.0, 0.0]
+e3.sim.data.qpos[16:18] = [0.10, 0.0]
+check("goal targets parsed from parsed_problem",
+      resolve_goal_targets(e3) == [("akita_black_bowl_1", "plate_1")],
+      str(resolve_goal_targets(e3)))
+check("bddl object name -> sim body name", resolve_body_name(e3, "akita_black_bowl_1") == "akita_black_bowl_1_main")
+check("manipulated body auto-resolved from goal state",
+      resolve_manipulated_body(e3) == "akita_black_bowl_1_main", str(resolve_manipulated_body(e3)))
+check("success is False before the disturbance", check_success(e3) is False)
+
+away = goal_away_delta(e3, "akita_black_bowl_1_main", 0.10)
+check("goal-away delta points away from the target (-x here)",
+      away is not None and away[0] < -0.09 and abs(away[1]) < 1e-6, str(away))
+res, used, post, rej = apply_world_displacement(e3, "akita_black_bowl_1_main", away, 0.10, True)
+check("goal-away displacement applied", res.get("applied") is True, str(res.get("reason")))
+check("post_iv_success stays False (task NOT completed by the disturbance)", post is False, str(post))
+check("no candidate rejected in the clean case", rej == [], str(rej))
+
+# Now feed a deliberately contaminating delta (moves the bowl ONTO the plate).
+e3.sim.data.qpos[9:11] = [0.0, 0.0]
+e3.sim.data.qpos[16:18] = [0.10, 0.0]
+res2, used2, post2, rej2 = apply_world_displacement(e3, "akita_black_bowl_1_main", [0.10, 0.0, 0.0], 0.10, True)
+check("contaminating candidate is rejected", len(rej2) >= 1, str(rej2))
+check("rejection is recorded with post_iv_success=True", rej2 and rej2[0].get("post_iv_success") is True, str(rej2))
+check("fallback candidate is used and is non-contaminating", post2 is False, str(post2))
+check("contaminating displacement was reverted", abs(e3.sim.data.qpos[9]) < 0.15, str(e3.sim.data.qpos[9]))
+check("success is False after the guarded displacement", check_success(e3) is False)
 
 print()
 if FAILS:
