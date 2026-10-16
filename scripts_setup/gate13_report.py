@@ -99,6 +99,10 @@ for task, by_h in sorted(_trend.items()):
     if all(v is not None for v in _dv):
         w(f"  - stale-window divergence (m) by H = "
           + ", ".join(f"H{h}={v:.3f}" for h, v in zip(hs, _dv)))
+    _ex = [by_h[h].get("extra_steps_on_success") for h in hs]
+    if all(v is not None for v in _ex):
+        w("  - extra steps to succeed, disturbed vs control (successes only, so not "
+          "inflated by timeouts) = " + ", ".join(f"H{h}={v:+.0f}" for h, v in zip(hs, _ex)))
     w(f"  - monotone increasing cost with horizon: **{mono}**")
 w("\n## Interpretation\n")
 w("Two things are being separated here, and they behave differently:\n")
@@ -108,11 +112,13 @@ w("   for every H tested), and the end-effector diverges from the moved object *
 w("   that window by an amount that grows with H. This is the direct, mechanism-level")
 w("   signature of acting on a world that no longer exists.\n")
 w("2. **The task-level cost is dominated by re-acquisition, not by commitment length.**")
-w("   A disturbed episode is almost always still solvable; it just costs far more steps")
-w("   (and sometimes exhausts the 400-step budget). That recovery cost is set by how hard")
-w("   the displaced object is to re-grasp, which is roughly independent of H — so at a")
-w("   displacement large enough to make re-grasping hard, the success cost saturates and")
-w("   hides the horizon effect.\n")
+w("   The cost is *bimodal*, not graded: a disturbed episode either recovers about as fast")
+w("   as control (spatial: +4 to +9 steps over control, and NOT monotone in H), or it fails")
+w("   outright by exhausting the 400-step budget. Averaging those two populations is what")
+w("   produces the misleadingly flat `mean steps` column. Because the displacement is the")
+w("   same size at the same absolute step for every H, the difficulty of re-acquiring the")
+w("   object is roughly H-independent — so at a displacement large enough to make")
+w("   re-grasping hard, the success cost saturates and hides the horizon effect.\n")
 w("The magnitude ladder (see `gate13_lad002_*` / `gate13_lad003_*`) tests this directly:")
 w("at a *small* displacement, where H=1 replanning recovers almost perfectly, the cost of")
 w("a long commitment is no longer masked and the horizon dependence is visible.\n")

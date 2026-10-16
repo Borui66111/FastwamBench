@@ -294,6 +294,19 @@ def main() -> int:
             _pc, _pd2 = summary["_pooled"][h]["psnr_control"], summary["_pooled"][h]["psnr_disturb"]
             summary["_pooled"][h]["psnr_drop"] = (
                 None if _pc is None or _pd2 is None else _pc - _pd2)
+            # re-acquisition cost, measured ONLY on episodes that do recover, so it
+            # is not inflated by timeouts.  The cost is bimodal: an episode either
+            # recovers about as fast as control, or it exhausts the step budget.
+            _csucc = [e["steps"] for e in c if e["success"] and e.get("steps") is not None]
+            _dsucc = [e["steps"] for e in d if e["success"] and e.get("steps") is not None]
+            summary["_pooled"][h]["mean_steps_success_control"] = (
+                sum(_csucc) / len(_csucc) if _csucc else None)
+            summary["_pooled"][h]["mean_steps_success_disturb"] = (
+                sum(_dsucc) / len(_dsucc) if _dsucc else None)
+            _mc, _md = (summary["_pooled"][h]["mean_steps_success_control"],
+                        summary["_pooled"][h]["mean_steps_success_disturb"])
+            summary["_pooled"][h]["extra_steps_on_success"] = (
+                None if _mc is None or _md is None else _md - _mc)
             print(f"  H{h:>3}  control {cr:.2f} (n={len(c)})  disturb {dr:.2f} (n={len(d)})"
                   f"  cost {cr - dr:+.2f}")
 
