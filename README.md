@@ -47,7 +47,16 @@ scripts_setup/          all runnable scripts (bring-up, gates, analysis) + unit 
   gate12a_tasks.txt     Gate 12A task list (30 tasks: spatial/object/goal, 10 each)
   gate12a_aggregate.py  Gate 12A: results -> CSV + usable-task table (0.30 <= SR <= 0.90)
   gate12b_fidelity_audit.md   (in evidence/) command-parity + protocol audit vs the upstream README
-  test_gate9_intervention.py   unit tests (45 checks) for the intervention mechanism
+  gate13_run.py         Gate 13: cross-horizon commitment-cost sweep (paired control/disturb)
+  gate13_analyze.py     Gate 13: per-H success, stale window, divergence, PSNR, contamination
+  gate13_figure.py      Gate 13: 3-panel figure (success | stale==H | stale-window divergence)
+  gate13_report.py      Gate 13: reviewer-facing markdown report
+  gate13_all.sh         Gate 13: one-command pipeline
+  gate13_finish.sh      Gate 13: unattended finisher (waits for sweep -> ladder -> psnr -> report)
+  gate13_validate_goal_aware.py  Gate 13: no-GPU proof the disturbance cannot satisfy the goal
+  gate13_magcal.py      Gate 13: magnitude calibration summary across runs
+  sync_patches.sh       export live FastWAM/ edits into tracked patches/
+  test_gate9_intervention.py   unit tests (67 checks) for the intervention mechanism + goal-aware guard
 patches/                our changes to the upstream FastWAM tree (it is NOT vendored here)
 evidence/               curated text results + a compressed bundle of the raw Gate 11 records
 my_test/fastbench_handoff/   the onboarding brief + live STATE.md / CHANGELOG.md
@@ -114,13 +123,60 @@ python scripts_setup/gate11_analyze.py
 TASKFILE=scripts_setup/gate12a_tasks.txt TRIALS=5 GPUS=5,7 NGPU=2 \
   bash scripts_setup/gate12_screen.sh
 python scripts_setup/gate12a_aggregate.py
+
+# Gate 13: the headline experiment — cost of world-model commitment vs replan horizon
+bash scripts_setup/gate13_all.sh          # sweep -> magnitude ladder -> psnr -> report
+# or just the sweep:
+python scripts_setup/gate13_run.py --tasks libero_spatial:0,libero_object:0 \
+  --horizons 1,2,5,10 --seeds 1 --trials 5 --magnitude 0.05 --world-step 40 --tag main
 ```
 
 ---
 
-## Two flags that MUST be passed (both were silent footguns)
+## Gate 13 — what a mid-chunk world change actually costs (the headline result)
 
-These are the two things that will waste your day if you don't know them:
+`replan_steps` **is** the commitment horizon H: the eval executes `action_chunk[:replan_steps]`
+open-loop before replanning. The released config ships H=10. Gate 13 sweeps H over {1,2,5,10}
+with a paired `control` / `disturb` design — the disturbance teleports the task object
+**away from its goal** (goal-aware: the body is resolved from the task's own goal state and every
+candidate displacement is validated against the env's own `_check_success()`, so it can never
+accidentally solve the task) at the same absolute step for every H.
+
+**Result (libero_spatial t0, n=10/cell, 0.05 m at step 40):**
+
+| H | control | disturbed | cost | stale executed | stale-window divergence | extra steps on success |
+|---|---|---|---|---|---|---|
+| 1 | 1.00 | 0.80 | +0.20 | 1 | 0.002 m | +9 |
+| 2 | 1.00 | 0.80 | +0.20 | 2 | 0.011 m | +6 |
+| 5 | 1.00 | 0.80 | +0.20 | 5 | 0.043 m | +7 |
+| 10 | 1.00 | 0.80 | +0.20 | 10 | 0.045 m | +4 |
+
+Two things must be reported separately, and they behave differently:
+
+1. **The commitment is real and scales exactly with H.** The model executes precisely H actions
+   chosen for the pre-change world, and the end-effector diverges from the moved object *during*
+   that window by an amount that grows with H. This is the direct mechanism-level signature of
+   acting on a world that no longer exists — and it is invisible if you only look at task success.
+2. **The task-level cost is bimodal, not graded.** A disturbed episode either recovers about as
+   fast as control (+4..+9 steps, and *not* monotone in H) or it fails outright by exhausting the
+   400-step budget. Because the displacement has the same size at the same absolute step for every
+   H, the difficulty of re-acquiring the object is roughly H-independent — so at this displacement
+   the success cost saturates and *masks* the horizon effect rather than showing it is absent.
+
+The magnitude ladder (`results/gate13_lad002*` / `_lad003*`, 0.02 / 0.03 m at H=1 vs H=10) is the
+decisive follow-up: at a small displacement H=1 replans the problem away almost perfectly, so the
+cost of a long commitment is no longer hidden behind the cost of re-grasping.
+
+Reviewer entry points: `evidence/gate13_HOW_TO_REVIEW.md` (claim → artifact → command),
+`evidence/gate13_commitment_cost.md` + `.png` (generated), and
+`evidence/gate13_design_checks/DESIGN_FINDINGS.md` (the four design flaws that were found and
+fixed, with raw captures).
+
+---
+
+## Three footguns that MUST be handled (all three were silent)
+
+These are the three things that will waste your day if you don't know them:
 
 1. **`EVALUATION.sigma_shift=1.0`.** The config default is `null`, which falls through to an internal
    default of `5.0`. The official README pins `1.0`. With the wrong value, rollouts silently fail at
