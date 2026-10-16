@@ -1,5 +1,9 @@
 # Gate 12B — Baseline fidelity audit (why we cannot reproduce the released success rates)
 
+> **RESOLVED 2026-10-16 — see `evidence/gate12d_rootcause.md`.** The cause was not the
+> harness at all: the vendored `robosuite-1.4` fork under `LIBERO-Safety/third_party/`
+> ships a modif...[truncated]
+
 Date: 2026-10-16
 Scope: determine whether the ~0–40% control success we observe on standard LIBERO
 suites is a *harness bug* (fixable here) or a *task/environment property*.

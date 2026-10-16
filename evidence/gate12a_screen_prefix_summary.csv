@@ -1,0 +1,31 @@
+suite,task_id,level,successes,trials,success_rate,duration_s,description
+libero_spatial,0,0,2,5,0.4,145.9,pick up the black bowl between the plate and the ramekin and place it 
+libero_spatial,1,0,2,5,0.4,134.9,pick up the black bowl from table center and place it on the plate
+libero_goal,3,0,1,5,0.2,148.1,put the bowl on the plate
+libero_spatial,6,0,1,5,0.2,152.2,pick up the black bowl on the cookie box and place it on the plate
+libero_goal,0,0,0,5,0.0,168.7,open the middle drawer of the cabinet
+libero_goal,1,0,0,5,0.0,168.0,open the top drawer and put the bowl inside
+libero_goal,2,0,0,5,0.0,168.0,push the plate to the front of the stove
+libero_goal,4,0,0,5,0.0,165.7,put the bowl on the stove
+libero_goal,5,0,0,5,0.0,169.4,put the bowl on top of the cabinet
+libero_goal,6,0,0,5,0.0,167.7,put the cream cheese in the bowl
+libero_goal,7,0,0,5,0.0,168.4,put the wine bottle on the rack
+libero_goal,8,0,0,5,0.0,168.1,put the wine bottle on top of the cabinet
+libero_goal,9,0,0,5,0.0,166.4,turn on the stove
+libero_object,0,0,0,5,0.0,168.9,pick up the alphabet soup and place it in the basket
+libero_object,1,0,0,5,0.0,169.5,pick up the bbq sauce and place it in the basket
+libero_object,2,0,0,5,0.0,168.2,pick up the butter and place it in the basket
+libero_object,3,0,0,5,0.0,168.6,pick up the chocolate pudding and place it in the basket
+libero_object,4,0,0,5,0.0,168.2,pick up the cream cheese and place it in the basket
+libero_object,5,0,0,5,0.0,168.4,pick up the ketchup and place it in the basket
+libero_object,6,0,0,5,0.0,167.6,pick up the milk and place it in the basket
+libero_object,7,0,0,5,0.0,169.6,pick up the orange juice and place it in the basket
+libero_object,8,0,0,5,0.0,169.0,pick up the salad dressing and place it in the basket
+libero_object,9,0,0,5,0.0,169.4,pick up the tomato sauce and place it in the basket
+libero_spatial,2,0,0,5,0.0,183.2,pick up the black bowl in the top drawer of the wooden cabinet and pla
+libero_spatial,3,0,0,5,0.0,180.5,pick up the black bowl next to the cookie box and place it on the plat
+libero_spatial,4,0,0,5,0.0,176.4,pick up the black bowl next to the plate and place it on the plate
+libero_spatial,5,0,0,5,0.0,179.0,pick up the black bowl next to the ramekin and place it on the plate
+libero_spatial,7,0,0,5,0.0,179.4,pick up the black bowl on the ramekin and place it on the plate
+libero_spatial,8,0,0,5,0.0,181.4,pick up the black bowl on the stove and place it on the plate
+libero_spatial,9,0,0,5,0.0,179.5,pick up the black bowl on the wooden cabinet and place it on the plate

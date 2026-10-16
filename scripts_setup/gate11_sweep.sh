@@ -47,9 +47,12 @@ COMMON="task=libero_optional_idm_2cam224_1e-4
   EVALUATION.intervention_replan_idx=1"
 
 RS_LIST=${RS_LIST:-"1 5 10"}
+# Optional tag so a post-fix re-run does NOT clobber the historical Gate 11 results
+# (this loop `rm -rf`s its output dir). e.g. OUT_TAG=pf -> results/gate11pf_<arm>_rs<N>
+TAG=${OUT_TAG:+${OUT_TAG}_}
 for RS in $RS_LIST; do
   for ARM in control disturb; do
-    OUT=$ROOT/results/gate11_${ARM}_rs${RS}
+    OUT=$ROOT/results/gate11${TAG}_${ARM}_rs${RS}
     rm -rf "$OUT"
     EXTRA=""
     if [ "$ARM" = "disturb" ]; then
@@ -76,9 +79,10 @@ def dist(a, b):
     return math.sqrt(sum((x - y) ** 2 for x, y in zip(a, b)))
 
 rows = []
+_tag = ("_" + os.environ["OUT_TAG"]) if os.environ.get("OUT_TAG") else ""
 for rs in (1, 5, 10):
     for arm in ("control", "disturb"):
-        d = f"{ROOT}/results/gate11_{arm}_rs{rs}"
+        d = f"{ROOT}/results/gate11{_tag}_{arm}_rs{rs}"
         rp = os.path.join(d, "records.jsonl")
         if not os.path.exists(rp):
             rows.append((rs, arm, None, None, None, None, None)); continue

@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-10-16 (evening) — ROOT CAUSE of the 0–4% success gap: wrong OSC action scaling
+
+**Symptom.** 30-task control screen = 6/150 (4%) on standard LIBERO vs the released README's 98.55%, on the same
+checkpoint and flags. Gate 12B cleared the harness (config, checkpoint contents, task files, init states,
+observations) and Gate 12C cleared our eval flags (1/20 upstream-flags vs 3/20 ours at n=20).
+
+**Finding.** The box runs FastWAM's stack *via the LIBERO-Safety clone*, whose vendored robosuite
+(`LIBERO-Safety/third_party/robosuite-1.4`) is a **fork with one functional change**: `controllers/config/osc_pose.json`
+sets `output_max [2,2,2,2,2,2]` / `kp 750` where stock robosuite 1.4.0 sets `[0.05,0.05,0.05,0.5,0.5,0.5]` / `kp 150`.
+OSC_POSE scales policy actions in [-1,1] into Cartesian commands, so the fork commands **40× more translation** and
+**4× more rotation**, with 5× stiffer gains. A policy trained on official-LIBERO statistics flails — exactly the
+low-but-nonzero success we saw.
+
+*(How it was found: `pip download robosuite==1.4.0 --no-binary :all:` for the stock sdist, then `diff -rq` against the
+fork after stripping CRLF — every other file is byte-identical.)*
+
+**Confirmation.** `robosuite.controllers.controller_factory.load_controller_config('OSC_POSE')` inside the `fastbench`
+env returns `output_max [2,2,2,2,2,2]`, `kp 750` — the fork's file is really loaded, not dead code.
+
+**Fix.** `osc_pose.json` restored to the official 1.4.0 values (original preserved at `osc_pose.json.forkbak`; the fix
+also ships as `patches/osc_pose.official.json`). Post-fix: `libero_spatial` t0 **5/5** and `libero_object` t0 **5/5**
+(previous: 3/20 and 0/20 at n=20); spatial t0–t3 all 5/5.
+
+**Impact.** Gates 8/11/12A's low success on standard tasks is a controller artifact, not a model property. Gate 9's
+intervention mechanism stands (45/45 unit tests, `pre_iv_max_l1=0.0`) but its behaviour needs a post-fix re-run.
+**Gate 13 is unblocked.** Files: `evidence/gate12d_rootcause.md`; post-fix screen in `results/gate12a_screen_fixed`.
+
 ## 2026-10-16 (later) — Gate 12A screen + 12B audit + 12C flag A/B: the reproduction gap
 
 **What happened**

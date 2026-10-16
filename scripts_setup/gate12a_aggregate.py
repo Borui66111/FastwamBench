@@ -16,7 +16,9 @@ import sys
 
 ROOT = "/data1/liborui/fastwam_bench"
 OUT = sys.argv[1] if len(sys.argv) > 1 else f"{ROOT}/results/gate12a_screen"
-CSV_PATH = sys.argv[2] if len(sys.argv) > 2 else f"{ROOT}/results/gate12a_screen_summary.csv"
+# Derive the CSV name from OUT so a second screen (e.g. post-fix) does not
+# silently overwrite the first one's summary.
+CSV_PATH = sys.argv[2] if len(sys.argv) > 2 else f"{OUT.rstrip('/')}_summary.csv"
 
 # suites that are 5 base tasks x 3 levels
 SAFETY = {

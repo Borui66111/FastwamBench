@@ -134,6 +134,15 @@ These are the two things that will waste your day if you don't know them:
    bounds). **Any comparison run must pin the seed**; the Gate 11 sweep does, and the analyzer reports the
    pre-intervention divergence as an explicit noise floor.
 
+3. **The vendored robosuite OSC config.** `LIBERO-Safety/third_party/robosuite-1.4/robosuite/controllers/
+   config/osc_pose.json` is **modified** relative to stock robosuite 1.4.0: `output_max` is
+   `[2,2,2,2,2,2]` / `kp 750` instead of the official `[0.05,0.05,0.05,0.5,0.5,0.5]` / `kp 150`. The
+   `OSC_POSE` controller maps policy actions in `[-1,1]` to Cartesian deltas, so the fork scales
+   translation **40x** too large. The released FastWAM checkpoint was trained on official LIBERO demos,
+   so on this fork it flails: 6/150 (4%) instead of ~99%. **Restore the official values before any
+   LIBERO run** — `patches/osc_pose.official.json` is a drop-in replacement (backup: `osc_pose.json.forkbak`).
+   With it restored, `libero_spatial` t0–t3 all score 5/5. Full write-up: `evidence/gate12d_rootcause.md`.
+
 Also worth knowing: the eval **skips any task that already has a result JSON** in the output dir, so a
 re-run silently does nothing unless you use a fresh `output_dir`.
 

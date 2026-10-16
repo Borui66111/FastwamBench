@@ -29,9 +29,18 @@
 - [x] Gate 12C — flag A/B — COMPLETE (`scripts_setup/gate12c_ab.sh`): at n=20, upstream-flags arm **1/20** vs ours
   **3/20** on `libero_spatial` t0, and **0/20** both on `libero_object` t0. Our flags (`load_text_encoder=true`,
   `compile_action_infer=false`, `seed=1`) are EXONERATED — the gap vs the published table is **environmental**.
-- [ ] NEXT (needs go-ahead — installs + downloads): rebuild the eval env against the **official LIBERO** +
-  stock `robosuite==1.4.0` as FastWAM's README (line 303) prescribes, in a *separate* env, and re-run the README
-  command on `libero_spatial` t0 / `libero_object` t0. This is the gate to Gate 13.
+- [x] Gate 12D — ROOT CAUSE FOUND & FIXED 2026-10-16 (`evidence/gate12d_rootcause.md`): the reproduction gap is a
+  **modified OSC controller config in the vendored robosuite fork**. `LIBERO-Safety/third_party/robosuite-1.4`
+  ships `controllers/config/osc_pose.json` with `output_max [2,2,2,2,2,2]` / `kp 750` where official robosuite
+  1.4.0 has `[0.05,0.05,0.05,0.5,0.5,0.5]` / `kp 150` — policy actions scaled 40× (translation) and 4× (rotation)
+  with 5× stiffer gains, so a policy trained on official-LIBERO statistics flails. Confirmed loaded at runtime via
+  `load_controller_config('OSC_POSE')`. Fixed by restoring the official file (backup at `osc_pose.json.forkbak`;
+  fix also shipped as `patches/osc_pose.official.json`). Post-fix canary: `libero_spatial` t0 **5/5** and
+  `libero_object` t0 **5/5** (were 3/20 and 0/20 at n=20).
+- [x] Gate 12A (re-run, post-fix) — 30 tasks × 5 trials with the corrected controller → see
+  `results/gate12a_screen_fixed` (aggregate CSV alongside).
+- [ ] Gate 13 — paired stale-commitment cost — **UNBLOCKED**: control success is now usable. Re-run the Gate 11
+  obstacle_avoidance arms post-fix too (its 0/2 was measured on the broken controller).
 
 ## Environment (resolved — supersedes the old limitation)
 The old "no libero/mujoco/robosuite" limitation no longer applies. On this server:
