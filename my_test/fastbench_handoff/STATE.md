@@ -229,18 +229,27 @@ Toy contract test only; verifies definitions and runner mechanics, not a robotic
 
 **STATUS:** infrastructure complete and validated; main sweep done, magnitude ladder + PSNR arm
 queued unattended (`scripts_setup/gate13_finish.sh`).
-**HEADLINE FINDING (2026-10-17, main sweep):** the commitment is real and scales *exactly* with H,
-but the task-level success cost is dominated by re-acquisition and is therefore flat in H:
-- `stale executed` = H exactly (1, 2, 5, 10 for H=1,2,5,10) — the model really does execute
-  precisely H actions chosen for the pre-change world.
-- **stale-window divergence** (eef-to-object distance growth *during* that window) is monotone in
-  H: 0.002 → 0.011 → 0.043 → 0.045 m. This is the direct signature of acting on a stale world.
-- success cost is flat: control 1.00 vs disturb 0.80 at *every* H (+0.20), with mean steps
-  104 → ~175 and 2/10 timeouts at every H. Re-grasping the displaced object costs the same
-  whether 1 or 10 stale actions were executed, so the horizon effect is masked.
-- **magnitude ladder** (0.02 / 0.03 m, H=1 vs H=10) is the decisive follow-up: at mag 0.02 the
-  H=1 disturb arm recovers almost perfectly (2/2, 106 steps vs control 102), so at a small
-  displacement the cost of a long commitment is no longer masked and H-dependence becomes visible.
+**HEADLINE FINDING (2026-10-17, main sweep complete 32/32 + ladder):**
+The *mechanism* is confirmed exactly; the *task-level cost* is large but does **not** scale with H.
+
+| evidence | result | verdict |
+|---|---|---|
+| stale actions executed after the world change | exactly H at every H (1,2,5,10); 0 contaminated episodes | mechanism REAL |
+| control success | 1.00 in all 8 (task,H) cells, n=10 | env is healthy |
+| disturb success, spatial | 0.80 at H=1,2,5,10 (cost +0.20, flat) | no H trend |
+| disturb success, object | 0.60 / 0.40 / 0.90 / 0.70 at H=1/2/5/10 | non-monotone (noise) |
+| steps to succeed | spatial 104→173-176; object ~170→258-364 | big cost, H-independent |
+| timeouts | 0 → 1-6 per 10 | failures = budget exhaustion |
+| eef-object divergence in stale window, spatial | 0.002 / 0.011 / 0.043 / 0.045 m | grows with H |
+| magnitude ladder 0.02 m | 5/5 control and 5/5 disturb at BOTH H=1 and H=10 | too small to discriminate |
+| magnitude 0.05 m | cost +0.20 at both H=1 and H=10 | flat |
+
+Interpretation: FastWAM re-plans at the next chunk boundary and recovers regardless of how long
+the stale chunk was, so the task-level penalty is set by *whether the object can be re-acquired*,
+not by H. The commitment is still demonstrably real at the action level (stale == H exactly, and
+spatial divergence grows with H). This is a **negative result for the strong "longer commitment
+costs more" claim** and a positive result for "the model executes H stale actions".
+
 **EVIDENCE:** `scripts_setup/gate13_run.py` (sweep runner), `gate13_analyze.py`,
 `gate13_figure.py`, `gate13_report.py`, `gate13_all.sh` (unattended pipeline),
 `gate13_validate_goal_aware.py`; `evidence/gate13_design_checks/` (raw captures);
