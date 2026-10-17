@@ -40,6 +40,22 @@ def load(rec_path: Path):
         return [json.loads(line) for line in fh if line.strip()]
 
 
+def wilson(k, n, z=1.96):
+    """Wilson score interval for a binomial rate.
+
+    At n=10 the standard error of a rate near 0.7 is ~0.15, so differences of
+    0.2-0.3 between horizons are NOT distinguishable. Without this the report
+    would read a noise wiggle as a trend.
+    """
+    if n <= 0:
+        return (0.0, 1.0)
+    p = k / n
+    d = 1 + z * z / n
+    c = p + z * z / (2 * n)
+    m = z * ((p * (1 - p) / n + z * z / (4 * n * n)) ** 0.5)
+    return (max(0.0, (c - m) / d), min(1.0, (c + m) / d))
+
+
 def episode_metrics(recs, body, h=None):
     """Per-episode metrics for one run.
 
@@ -219,6 +235,8 @@ def main() -> int:
                 summary.setdefault(f"{suite}_t{tid}", {})[h] = {
                     "control_rate": rows["control"]["rate"],
                     "disturb_rate": rows["disturb"]["rate"],
+                    "disturb_ci95": wilson(round(rows["disturb"]["rate"] * rows["disturb"]["n"]),
+                                           rows["disturb"]["n"]),
                     "cost": d,
                     "stale_disturb": rows["disturb"]["stale"],
                     "contaminated_disturb": rows["disturb"].get("contaminated", 0),
@@ -269,6 +287,7 @@ def main() -> int:
             summary["_pooled"][h] = {
                 "control_rate": cr,
                 "disturb_rate": dr,
+                "disturb_ci95": wilson(sum(1 for e in d if e["success"]), len(d)),
                 "cost": cr - dr,
                 "stale_disturb": sum(e["stale_action_steps"] for e in d) / len(d),
                 "contaminated_disturb": sum(1 for e in d if e.get("contaminated")),
@@ -307,8 +326,9 @@ def main() -> int:
                         summary["_pooled"][h]["mean_steps_success_disturb"])
             summary["_pooled"][h]["extra_steps_on_success"] = (
                 None if _mc is None or _md is None else _md - _mc)
-            print(f"  H{h:>3}  control {cr:.2f} (n={len(c)})  disturb {dr:.2f} (n={len(d)})"
-                  f"  cost {cr - dr:+.2f}")
+            _lo, _hi = summary["_pooled"][h]["disturb_ci95"]
+            print(f"  H{h:>3}  control {cr:.2f} (n={len(c)})  disturb {dr:.2f} "
+                  f"[{_lo:.2f},{_hi:.2f}] (n={len(d)})  cost {cr - dr:+.2f}")
 
     # carry the exact run settings so the report cannot drift from what ran
     cfgp = OUT_ROOT / "run_config.json"
