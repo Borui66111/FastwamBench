@@ -194,8 +194,11 @@ against reality. Two facts:
 **Method note (a claim that was withdrawn).** The first reading of this arm reported a 4.7x
 effect at H=10 vs H=1. That comparison was invalid: `_get_future_frame_capture_steps` derives the
 scored frame count from `replan_steps`, so H=1 was scored only at lag 0 and H=10 at lags 0/4/8.
-`EVALUATION.psnr_fixed_lags` now pins the scored lags, and `episode_frame_psnr` records per-frame
-values. See `evidence/gate13_psnr_matched_lag.md` for the full correction.
+`episode_frame_psnr` records per-frame PSNR, which is what makes a matched-lag comparison valid
+(lag 4 = frame index 1 for every H whose chunk covers 4 steps). `EVALUATION.psnr_fixed_lags`
+requests fixed lags but cannot exceed the clip, which is bounded by the executed chunk — verified:
+H=1 still yields one frame even when lags 0,4,8 are requested. See
+`evidence/gate13_psnr_matched_lag.md`.
 
 Reviewer entry points: `evidence/gate13_HOW_TO_REVIEW.md` (claim → artifact → command, with what is
 and is not claimed), `evidence/gate13_commitment_cost.md` + `.png` (generated),

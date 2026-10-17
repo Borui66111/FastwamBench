@@ -29,7 +29,15 @@ reading was that artifact. Withdrawn.
 
 ## The fix
 
-`EVALUATION.psnr_fixed_lags=[0,4,8]` (new) scores the same lags for every H.
+`EVALUATION.psnr_fixed_lags=[0,4,8]` (new) *requests* the same lags for every H, and
+`episode_frame_psnr` (new) records per-frame values.
+
+**Measured limit of the override:** the predicted clip is bounded by the executed chunk,
+so the override cannot manufacture frames that were never generated. Verified on the
+powered run: H=1 with lags `0,4,8` still yields exactly **one** frame (lag 0). So the
+override does not by itself make cross-horizon *means* comparable. What makes the
+comparison valid is the per-frame breakdown: lag 4 is frame index 1 for **every** H whose
+chunk covers 4 steps (H>=5). Lag 8 needs H>=9.
 `episode_frame_psnr` (new) records per-frame PSNR so any lag can be analysed.
 Runner: `GATE13_PSNR_LAGS=0,4,8`.
 
