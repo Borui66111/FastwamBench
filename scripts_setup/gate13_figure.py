@@ -62,9 +62,10 @@ if _pooled:
     _se = [math.sqrt(max(p * (1 - p), 1e-9) / max(n, 1)) for p, n in zip(_r, _n)]
     ax1.errorbar(ph, _r, yerr=_se, fmt="none", ecolor="k", capsize=3, lw=1.2, zorder=6)
     ax1.set_ylim(-0.05, 1.18)
+ax1.set_xticks(sorted({h for _, v in tasks for h in numeric_hs(v)} | set(ph)))
 ax1.set_xlabel("commitment horizon H (actions per replan)")
 ax1.set_ylabel("task success rate  (whiskers = ±1 SEM)")
-ax1.set_title("(A) task cost saturates: flat in H")
+ax1.set_title("A. success does not fall monotonically with H", fontsize=9.5)
 ax1.grid(alpha=0.3)
 ax1.legend(fontsize=7, loc="center right")
 
@@ -88,17 +89,25 @@ for i, (task, by_h) in enumerate(tasks):
     _dv = [by_h[str(h)].get("stale_divergence_disturb") for h in hs]
     if all(v is not None for v in _dv):
         ax3.plot(hs, _dv, "d-", color=f"C{i}", alpha=0.5, lw=1, ms=5, label=f"{task} divergence")
+_all_dv = []
+for _t, _bh in tasks:
+    _all_dv += [v for v in (_bh.get(str(h), {}).get("stale_divergence_disturb")
+                            for h in numeric_hs(_bh)) if v is not None]
 if _pooled:
     _pd = [_pooled[str(h)].get("stale_divergence_disturb") for h in ph]
     if all(v is not None for v in _pd):
         ax3.plot(ph, _pd, "ko-", lw=2, ms=5, label="POOLED divergence")
-        ax3.set_ylim(0, max(_pd) * 1.25)
+        _all_dv += [v for v in _pd if v is not None]
+if _all_dv:
+    _lo, _hi = min(_all_dv), max(_all_dv)
+    _pad = max(0.004, 0.18 * (_hi - _lo))
+    ax3.set_ylim(_lo - _pad, _hi + _pad)
 ax3.set_xlabel("commitment horizon H")
 ax3.set_ylabel("eef→object divergence during stale window (m)")
-ax3.set_title("(C) mechanism: divergence grows with H")
+ax3.set_title("(C) eef-object divergence during the stale window", fontsize=9.5)
 ax3.set_xticks(sorted({h for _, v in tasks for h in numeric_hs(v)} | set(ph)))
 ax3.grid(alpha=0.3)
-ax3.legend(fontsize=7, loc="lower right")
+ax3.legend(fontsize=7, loc="upper left")
 
 cfg = summary.get("_config") or {}
 _sub = ""
