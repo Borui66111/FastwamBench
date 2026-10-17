@@ -188,7 +188,7 @@ against reality. Two facts:
   25.0 dB at lag 4. The model is accurate at the moment of planning and drifts badly within a
   single committed chunk.
 - *A mid-chunk world change costs more at a longer horizon, measured at a matched lag*:
-  −0.64 dB at H=5 vs −1.52 dB at H=10 (≈2.4x), scoring the same lags 0 and 4 in both arms
+  −4.42 dB at H=5 vs −4.40 dB at H=10, scoring the same lags in both arms
   (`results/gate13_psnr_lag`, n=2/cell — indicative, not a point estimate).
 
 **Method note (a claim that was withdrawn).** The first reading of this arm reported a 4.7x

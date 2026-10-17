@@ -244,7 +244,7 @@ The *mechanism* is confirmed exactly; the *task-level cost* is large but does **
 | magnitude 0.02 m | 20/20 disturbed episodes succeed (both tasks, both H); cost 0.00; steps == control | **below the recovery threshold — a world change costs nothing at any H** |
 | magnitude 0.03 m | object 1/5 (H=1) and 3/5 (H=10) → pooled 4/10 vs 10/10 at 0.02 m, Fisher p=0.011; spatial still 10/10 | **threshold is task-dependent, not H-dependent**; object H=1 vs H=10 p=0.52 (noise) |
 | magnitude 0.05 m | cost +0.20 at both H=1 and H=10 | flat |
-| **PSNR arm, matched lag** (`psnr_fixed_lags=[0,4,8]`, `results/gate13_psnr_lag`) | control 37.5 dB at lag0 → 25.0 dB at lag4 (no intervention); disturbance cost at lag4 **−0.64 dB at H=5 vs −1.52 dB at H=10 (~2.4x)**, n=2/cell | prediction degrades with lookahead (robust); horizon effect on damage survives at matched lag but is ~2.4x, NOT the withdrawn 4.7x |
+| **PSNR arm, clip-isolated** (`scripts_setup/gate13_psnr_clip.py`, `results/gate13_psnr_clip`) | lag0 delta **exactly 0.00**; damage at 4-step lookahead **−4.42 dB (H=5) vs −4.40 dB (H=10)**, n=6/cell; control PSNR 39.5→27.9→27.1 dB at lag 0/4/8 | prediction degrades sharply with lookahead (robust); a mid-chunk change costs ~4.4 dB; **no measurable H dependence** |
 
 Interpretation: FastWAM re-plans at the next chunk boundary and recovers regardless of how long
 the stale chunk was, so the task-level penalty is set by *whether the object can be re-acquired*,

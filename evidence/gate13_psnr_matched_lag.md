@@ -1,3 +1,16 @@
+# Gate 13 — PSNR at a matched lag (SUPERSEDED)
+
+**This file is kept only as a record of an intermediate correction. See
+`evidence/gate13_worldmodel_final.md` for the authoritative result.**
+
+The matched-lag analysis below correctly identified that the original '4.7x'
+claim was an artifact, but its own numbers were still contaminated: it averaged
+frame k over EVERY clip in an episode, so disturbed clips were diluted by a factor
+that differs ~10x between H=1 and H=10, and it reported a 2.4x horizon effect that
+does not survive clip isolation (>4.4 dB at both H=5 and H=10).
+
+---
+
 # Gate 13 — PSNR arm at a matched lag (the corrected measurement)
 
 This file supersedes the original "PSNR drop is ~5x larger at H=10" claim. That

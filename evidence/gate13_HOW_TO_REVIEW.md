@@ -10,7 +10,7 @@
 - **Prediction fidelity collapses with lookahead** even with no intervention: 37.5 dB at lag 0 →
   25.0 dB at lag 4 (matched-lag run `results/gate13_psnr_lag`).
 - **A mid-chunk world change costs more at a longer horizon, at a matched lag**: −0.64 dB at H=5 vs
-  −1.52 dB at H=10 (≈2.4x), same lags scored, n=2/cell → indicative. This is the one measurement
+  −4.40 dB at H=10 (no measurable H dependence), n=6/cell, clip-isolated. This is the one measurement
   in the report where the horizon effect survives a fair test.
 
 **Claims that were WITHDRAWN during review of this report** (kept visible on purpose):
@@ -19,7 +19,7 @@
   (+0.0016…+0.0020 m at k=1). See panel C of the figure, which plots the fair version.
 - "a mid-chunk world change damages the prediction ~5x more at H=10" (the 4.7x figure) — the PSNR
   average covered a different number of future frames per H, so the comparison was not matched.
-  Redone at a matched lag it is ≈2.4x (H=5 vs H=10), not 4.7x; see
+  Redone clip-isolated it is ~4.4 dB at BOTH H=5 and H=10 (no H dependence), not 4.7x; see
   `evidence/gate13_psnr_matched_lag.md`.
 
 **NOT claimed (and this report says so explicitly):**
