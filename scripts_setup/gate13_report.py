@@ -135,9 +135,12 @@ w("   toward the object's new location, so the displacement did not misdirect it
 w("   divergence signature is task-dependent, not universal, and this report says so.\n")
 w("Why the task-level cost fails to grow with H: the displacement is the same size at the")
 w("same absolute step for every H, so re-acquiring the object is roughly H-independent and")
-w("dominates the small, H-dependent part. The magnitude ladder below tests that reading")
-w("directly: at a *small* displacement, where H=1 recovers almost perfectly, the")
-w("re-acquisition cost stops masking the commitment cost.\n")
+w("dominates the small, H-dependent part. The magnitude ladder below tested that reading")
+w("directly, and **it did not rescue the strong claim**: at 0.02 m both horizons recover")
+w("completely (cost +0.00 at H=1 and H=10); at 0.03 m the cost is +0.33 at H=1 and +0.20 at")
+w("H=10, i.e. the *short* horizon looks slightly worse, which is the opposite of the")
+w("prediction and well inside noise at n=10. The H-dependent component is therefore smaller")
+w("than this design can resolve, not merely masked by re-acquisition.\n")
 w("\n## Magnitude ladder\n")
 _any = False
 for _tag, _mag in (("lad002", "0.02"), ("lad003", "0.03")):
@@ -158,6 +161,19 @@ for _tag, _mag in (("lad002", "0.02"), ("lad003", "0.03")):
     _table(_pl, _tag)
 if not _any:
     w("*(ladder not run yet — see `scripts_setup/gate13_finish.sh`)*\n")
+
+# --- what would be needed to settle the question ------------------------------
+w("\n## What this design cannot resolve, and what would\n")
+w("At n=10 per cell the binomial noise floor is roughly +/-0.25 on a rate near 0.7, so")
+w("only a very large H effect could be detected. To resolve a difference of 0.10 in")
+w("success rate between H=1 and H=10 at 80% power you need roughly 300 episodes per arm")
+w("(two-proportion test, alpha=0.05; 0.80 vs 0.70 gives n~290 per arm). That is ~30x this")
+w("sweep. The cheaper route is the")
+w("mechanism metric, which is continuous rather than binary: the stale-window divergence")
+w("already separates H=1 from H=10 by more than 20x on libero_spatial (0.002 vs 0.045 m),")
+w("so the horizon effect is measurable at the action level long before it is measurable")
+w("at the task level. A reviewer wanting the strong task-level claim should treat this")
+w("report as a powered negative result at n=10, not as evidence of no effect.\n")
 
 # --- PSNR arm: the world-modelling signal -------------------------------------
 _pn = summary_path.parent.parent / "gate13_psnr" / "gate13_summary.json"

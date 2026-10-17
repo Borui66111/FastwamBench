@@ -109,14 +109,43 @@ Three things must be kept apart. They behave differently, and only the first is 
 
 Why the task-level cost fails to grow with H: the displacement is the same size at the
 same absolute step for every H, so re-acquiring the object is roughly H-independent and
-dominates the small, H-dependent part. The magnitude ladder below tests that reading
-directly: at a *small* displacement, where H=1 recovers almost perfectly, the
-re-acquisition cost stops masking the commitment cost.
+dominates the small, H-dependent part. The magnitude ladder below tested that reading
+directly, and **it did not rescue the strong claim**: at 0.02 m both horizons recover
+completely (cost +0.00 at H=1 and H=10); at 0.03 m the cost is +0.33 at H=1 and +0.20 at
+H=10, i.e. the *short* horizon looks slightly worse, which is the opposite of the
+prediction and well inside noise at n=10. The H-dependent component is therefore smaller
+than this design can resolve, not merely masked by re-acquisition.
 
 
 ## Magnitude ladder
 
-*(ladder not run yet — see `scripts_setup/gate13_finish.sh`)*
+### displacement 0.02 m
+
+| H | control | disturbed | cost | stale executed | mean steps (ctl→dis) | timeouts (ctl→dis) | contaminated | n |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 1.00 | 1.00 [0.72,1.00] | **+0.00** | 1 | 143 → 137 | 0 → 0 | 0 | 10 |
+| 10 | 1.00 | 1.00 [0.72,1.00] | **+0.00** | 10 | 137 → 138 | 0 → 0 | 0 | 10 |
+
+### displacement 0.03 m
+
+| H | control | disturbed | cost | stale executed | mean steps (ctl→dis) | timeouts (ctl→dis) | contaminated | n |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 1.00 | 0.60 [0.31,0.83] | **+0.40** | 1 | 143 → 246 | 0 → 4 | 0 | 10 |
+| 10 | 1.00 | 0.80 [0.49,0.94] | **+0.20** | 10 | 137 → 197 | 0 → 2 | 0 | 10 |
+
+
+## What this design cannot resolve, and what would
+
+At n=10 per cell the binomial noise floor is roughly +/-0.25 on a rate near 0.7, so
+only a very large H effect could be detected. To resolve a difference of 0.10 in
+success rate between H=1 and H=10 at 80% power you need roughly 300 episodes per arm
+(two-proportion test, alpha=0.05; 0.80 vs 0.70 gives n~290 per arm). That is ~30x this
+sweep. The cheaper route is the
+mechanism metric, which is continuous rather than binary: the stale-window divergence
+already separates H=1 from H=10 by more than 20x on libero_spatial (0.002 vs 0.045 m),
+so the horizon effect is measurable at the action level long before it is measurable
+at the task level. A reviewer wanting the strong task-level claim should treat this
+report as a powered negative result at n=10, not as evidence of no effect.
 
 
 ## Reproduce
