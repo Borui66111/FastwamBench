@@ -224,10 +224,12 @@ more wrong about the world it is acting in.
 | 1 | 37.43 | 37.12 | +0.31 |
 | 10 | 29.35 | 27.88 | +1.47 |
 
-**Prediction fidelity falls with the horizon even with no intervention**
-(37.43 dB at H=1 vs 29.35 dB at H=10). That is a real and expected
-world-modelling statement: the further ahead a model commits, the less accurate
-its prediction of what actually happens.
+**Do not read a horizon trend out of this table.** The per-H averages are not
+comparable: the scored frame set grows with `replan_steps`, so a longer horizon is
+scored further into the future. The valid, clip-isolated measurement is in
+`evidence/gate13_worldmodel_final.md` and `evidence/gate13_worldmodel.png`; it shows
+fidelity falling with *lookahead* (39.6 -> 27.9 -> 27.1 dB at 0/4/8 steps) and a
+~4.4 dB cost from the world change that is **the same at H=5 and H=10**.
 
 **The `drop` column is NOT a valid cross-horizon comparison — do not cite it.**
 `_get_future_frame_capture_steps` derives the number of scored frames from
