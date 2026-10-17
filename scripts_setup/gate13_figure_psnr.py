@@ -54,7 +54,7 @@ ax1.bar([i + w / 2 for i in x], dis, w, label="disturbed", color="#C44E52")
 ax1.set_xticks(list(x))
 ax1.set_xticklabels([f"H={h}" for h in hs])
 ax1.set_ylabel("predicted-future vs reality PSNR (dB)")
-ax1.set_title("(A) prediction fidelity falls with H;\ndisturbance hurts more at H=10 (n=2/cell, indicative)", fontsize=9.5)
+ax1.set_title("(A) prediction fidelity falls with LOOKAHEAD\n(H=1 scores 1 frame, H=10 scores 3: lags 0,4,8)", fontsize=9.5)
 ax1.legend(fontsize=8)
 ax1.grid(alpha=0.3, axis="y")
 for i, (c, d) in enumerate(zip(ctl, dis)):
@@ -73,7 +73,7 @@ ax1.text(0.02, 0.03, f"dots = individual episodes (n={_note}/cell)",
 
 ax2.bar([f"H={h}" for h in hs], drop, color="#DD8452", width=0.5)
 ax2.set_ylabel("PSNR drop from the disturbance (dB)")
-ax2.set_title("(B) drop is ~5x larger at H=10\n(n=2/cell; paired episodes shown)", fontsize=9.5)
+ax2.set_title("(B) drop: WITHDRAWN as a cross-H claim\n(frames per H differ; n=2/cell)", fontsize=9.5)
 ax2.grid(alpha=0.3, axis="y")
 for i, d in enumerate(drop):
     if d is not None:
@@ -86,7 +86,7 @@ for i, h in enumerate(hs):
     if _pairs:
         ax2.scatter([i] * len(_pairs), _pairs, s=16, color="k", zorder=5, alpha=0.75)
 
-fig.suptitle("Gate 13 — Future-Reality Divergence measured on the world model "
+fig.suptitle("Gate 13 — predicted-future fidelity vs lookahead "
              "(visualize_future_video=true)", fontsize=10)
 fig.tight_layout()
 out.parent.mkdir(parents=True, exist_ok=True)

@@ -100,8 +100,16 @@ for task, by_h in sorted(_trend.items()):
           + ", ".join(f"H{h}={a}→{b}" for h, a, b in zip(hs, _toc, _tod)))
     _dv = [by_h[h].get("stale_divergence_disturb") for h in hs]
     if all(v is not None for v in _dv):
-        w(f"  - stale-window divergence (m) by H = "
-          + ", ".join(f"H{h}={v:.3f}" for h, v in zip(hs, _dv)))
+        w(f"  - stale-window max divergence (m) by H = "
+          + ", ".join(f"H{h}={v:.3f}" for h, v in zip(hs, _dv))
+          + "   ** window length is H; NOT comparable across H **")
+    _lg = [by_h[h].get("lag_divergence_disturb") or {} for h in hs]
+    for _k in (1, 3, 5):
+        _vals = [d.get(str(_k)) for d in _lg]
+        if all(v is not None for v in _vals):
+            w(f"  - fixed-lag divergence at k={_k} (m) by H = "
+              + ", ".join(f"H{h}={v:+.4f}" for h, v in zip(hs, _vals))
+              + "   <- fair comparison across H")
     _ex = [by_h[h].get("extra_steps_on_success") for h in hs]
     if all(v is not None for v in _ex):
         w("  - extra steps to succeed, disturbed vs control (successes only, so not "
@@ -126,13 +134,18 @@ w("   stated as such).** Pooled cost by H is +0.30, +0.40, +0.15, +0.25: not inc
 w("   With n=10 per cell the 95% Wilson interval on a rate near 0.7 is roughly +/-0.25, so")
 w("   differences of this size are inside binomial noise. The data therefore do NOT")
 w("   support the strong claim 'a longer commitment costs more task success'. They support")
-w("   the weaker, mechanism-level claim in (1) plus the divergence trend in (4).\n")
-w("4. **Where the horizon effect does show up is the mechanism metric.** During the stale")
-w("   window the end-effector diverges from the moved object by an amount that grows with")
-w("   H on libero_spatial (0.002 -> 0.011 -> 0.043 -> 0.045 m). On libero_object the same")
-w("   quantity is flat and slightly negative (~-0.007 m): there the arm was already moving")
-w("   toward the object's new location, so the displacement did not misdirect it. So the")
-w("   divergence signature is task-dependent, not universal, and this report says so.\n")
+w("   only the mechanism claim in (1).\n")
+w("4. **A first attempt at a mechanism metric did NOT survive scrutiny — reported here as")
+w("   a withdrawn claim.** Measuring the end-effector/object divergence over the stale")
+w("   window gives 0.002 -> 0.011 -> 0.043 -> 0.045 m for H = 1, 2, 5, 10 on")
+w("   libero_spatial, which looks like a clean horizon trend. It is an artifact: the window")
+w("   is (iv_step, iv_step+H], so a longer H mechanically reaches a larger maximum. At a")
+w("   **fixed lag** (1, 2, 3 or 5 steps after the intervention) the divergence is the same")
+w("   for every H (+0.0016…+0.0020 m at lag 1; +0.021…+0.026 m at lag 5). The eef moves")
+w("   away from the displaced object at an H-independent rate. On libero_object the same")
+w("   quantity is negative and equally flat (~-0.007 m at lag 1). So there is **no")
+w("   evidence that a longer commitment misdirects the arm further**; what scales with H is")
+w("   the number of stale actions executed, nothing more.\n")
 w("Why the task-level cost fails to grow with H: the displacement is the same size at the")
 w("same absolute step for every H, so re-acquiring the object is roughly H-independent and")
 w("dominates the small, H-dependent part. The magnitude ladder below tested that reading")
@@ -168,12 +181,15 @@ w("At n=10 per cell the binomial noise floor is roughly +/-0.25 on a rate near 0
 w("only a very large H effect could be detected. To resolve a difference of 0.10 in")
 w("success rate between H=1 and H=10 at 80% power you need roughly 300 episodes per arm")
 w("(two-proportion test, alpha=0.05; 0.80 vs 0.70 gives n~290 per arm). That is ~30x this")
-w("sweep. The cheaper route is the")
-w("mechanism metric, which is continuous rather than binary: the stale-window divergence")
-w("already separates H=1 from H=10 by more than 20x on libero_spatial (0.002 vs 0.045 m),")
-w("so the horizon effect is measurable at the action level long before it is measurable")
-w("at the task level. A reviewer wanting the strong task-level claim should treat this")
-w("report as a powered negative result at n=10, not as evidence of no effect.\n")
+w("sweep. The cheaper route is a metric that is continuous rather than binary. The")
+w("stale-window divergence looked like one (0.002 vs 0.045 m for H=1 vs H=10 on")
+w("libero_spatial), but it is measured over a window whose length IS H, so it grows with H")
+w("mechanically; at a fixed lag the values collapse to +0.0016…+0.0020 m for every H. The")
+w("clean continuous signal is the **count** of stale actions executed, which is exactly H")
+w("by construction and verified per episode — but it is a property of the execution")
+w("protocol, not a measure of task damage. A reviewer wanting the strong task-level claim")
+w("should treat this report as a powered negative result at n=10, not as evidence of no")
+w("effect.\n")
 
 # --- PSNR arm: the world-modelling signal -------------------------------------
 _pn = summary_path.parent.parent / "gate13_psnr" / "gate13_summary.json"
@@ -197,20 +213,26 @@ if _pn.exists():
               f"{_r['psnr_drop']:+.2f} |")
         w("")
         _hc = _pp.get("1", {}).get("psnr_control")
-        _hcd = _pp.get("1", {}).get("psnr_drop")
         _h10c = _pp.get("10", {}).get("psnr_control")
-        _h10d = _pp.get("10", {}).get("psnr_drop")
-        if None not in (_hc, _h10c, _hcd, _h10d):
-            w(f"Two things are visible here, and the second is the point of the project.")
-            w(f"First, **prediction fidelity falls with the horizon even with no intervention**")
-            w(f"({_hc:.2f} dB at H=1 vs {_h10c:.2f} dB at H=10): the further ahead the model")
-            w(f"commits, the less accurate its world model is about what will actually happen.")
-            w(f"Second, a world change mid-chunk damages that prediction far more at a long")
-            w(f"horizon: the PSNR drop is {_hcd:+.2f} dB at H=1 but {_h10d:+.2f} dB at H=10")
-            w(f"(**{_h10d / max(_hcd, 1e-9):.1f}x**). This is the cleanest measurement in the")
-            w(f"report of *Future-Reality Divergence*: the model's committed world model is")
-            w(f"invalidated in proportion to how long it committed for. n=2 per cell, so treat")
-            w(f"the magnitude as indicative; the direction is consistent across both episodes.\n")
+        if None not in (_hc, _h10c):
+            w(f"**Prediction fidelity falls with the horizon even with no intervention**")
+            w(f"({_hc:.2f} dB at H=1 vs {_h10c:.2f} dB at H=10). That is a real and expected")
+            w(f"world-modelling statement: the further ahead a model commits, the less accurate")
+            w("its prediction of what actually happens.\n")
+        w("**The `drop` column is NOT a valid cross-horizon comparison — do not cite it.**")
+        w("`_get_future_frame_capture_steps` derives the number of scored frames from")
+        w("`replan_steps` (`replan_steps // action_video_freq_ratio`, ratio=4), so H=1 scores")
+        w("**one** frame (lag 0) while H=10 scores **three** (lags 0, 4, 8). A horizon therefore")
+        w("looks worse partly because it is scored further into the future, and the disturbance")
+        w("has had more steps to show up — not because the commitment is longer per se.")
+        w("`eval_libero_single.py` now also records `episode_frame_psnr` (per-frame values) so")
+        w("this can be re-analysed at a fixed lag; the numbers in this table predate that and")
+        w("should be treated as withdrawn. The same caveat applies to the stale-window")
+        w("divergence in the section above: at a **fixed** lag (1, 2, 3, 5 steps after the")
+        w("intervention) the eef-object divergence is essentially identical across H")
+        w("(+0.0016 to +0.0020 m at lag 1 for every H), so the growth seen over the full")
+        w("stale window is a window-length effect. What is unambiguous is the **count**:")
+        w("exactly H stale actions execute, verified per episode.\n")
 w("\n## Reproduce\n")
 w("```bash")
 w("bash scripts_setup/gate13_all.sh   # full pipeline: sweep -> psnr -> analyze -> report")

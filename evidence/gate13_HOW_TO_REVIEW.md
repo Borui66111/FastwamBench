@@ -7,12 +7,18 @@
   rise 60-100%, and failures are 400-step timeouts.
 - The model really does execute **exactly H stale actions** chosen for the pre-change world
   (stale executed = H at H=1,2,5,10; 0/160 contaminated episodes).
-- On `libero_spatial`, the end-effector diverges from the moved object during that stale
-  window by an amount that **grows with H** (0.002 → 0.011 → 0.043 → 0.045 m).
-- **The world model's prediction of the future degrades with the commitment horizon, and a
-  mid-chunk world change damages it ~5x more at H=10 than at H=1** (predicted-future-vs-reality
-  PSNR drop: +0.31 dB at H=1 vs +1.47 dB at H=10; control PSNR itself falls 37.4 → 29.4 dB as H
-  grows). This is the cleanest measurement of Future-Reality Divergence in the report. n=2/cell.
+- The world model's prediction of the future **degrades as it is asked to predict further ahead**
+  (predicted-future-vs-reality PSNR: 37.4 dB at H=1 → 29.4 dB at H=10). Read this as a statement
+  about lookahead, not about H: `_get_future_frame_capture_steps` scores `replan_steps // 4` frames,
+  so H=1 is scored on 1 frame (lag 0) and H=10 on 3 (lags 0, 4, 8).
+
+**Claims that were WITHDRAWN during review of this report** (kept visible on purpose):
+- "the end-effector diverges further the longer the commitment" — the metric was a max over a
+  window of length H, so it grew mechanically. At a fixed lag k it is flat across H
+  (+0.0016…+0.0020 m at k=1). See panel C of the figure, which plots the fair version.
+- "a mid-chunk world change damages the prediction ~5x more at H=10" — the PSNR average covers a
+  different number of future frames per H, so the comparison was not matched. `episode_frame_psnr`
+  is now recorded per frame so this can be redone at a matched lag.
 
 **NOT claimed (and this report says so explicitly):**
 - That a longer commitment costs more *task success*. Pooled cost is +0.30, +0.40, +0.15,

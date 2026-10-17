@@ -154,9 +154,11 @@ accidentally solve the task) at the same absolute step for every H.
 Two things must be reported separately, and they behave differently:
 
 1. **The commitment is real and scales exactly with H.** The model executes precisely H actions
-   chosen for the pre-change world, and the end-effector diverges from the moved object *during*
-   that window by an amount that grows with H. This is the direct mechanism-level signature of
-   acting on a world that no longer exists — and it is invisible if you only look at task success.
+   chosen for the pre-change world (`stale executed` = H for every H, 0 contaminated episodes out
+   of 160). This is a property of the fixed-horizon execution protocol, verified per episode.
+   An earlier claim that the end-effector *diverges further* at longer H did not survive a fair
+   test: the divergence was measured over a window of length H, so it grew mechanically. At a
+   fixed lag after the intervention it is the same for every H (+0.0016..+0.0020 m at k=1).
 2. **The task-level cost is bimodal, not graded.** A disturbed episode either recovers about as
    fast as control (+4..+9 steps, and *not* monotone in H) or it fails outright by exhausting the
    400-step budget. Because the displacement has the same size at the same absolute step for every
@@ -170,13 +172,16 @@ prediction, and well inside binomial noise at n=10. So the H-dependent component
 this design can resolve, not merely masked. Resolving a 0.10 success difference at 80% power needs
 ~300 episodes per arm.
 
-**Where the horizon effect IS large: the world model's own prediction.** With
-`visualize_future_video=true` the model renders its predicted future and the eval scores it against
-reality (PSNR). Prediction fidelity falls with H even with no intervention (37.4 dB at H=1 → 29.4 dB
-at H=10), and a mid-chunk world change damages it **~5x more at a long horizon** (+0.31 dB at H=1 vs
-+1.47 dB at H=10). That is the cleanest measurement of Future-Reality Divergence in the project:
-the model's committed world model is invalidated in proportion to how long it committed for
-(`evidence/gate13_psnr.png`; n=2/cell, so indicative).
+**The world model's own prediction (PSNR arm).** With `visualize_future_video=true` the model
+renders its predicted future and the eval scores it against reality. Prediction fidelity falls as
+the model is asked to predict further ahead (37.4 dB at H=1 → 29.4 dB at H=10). **A first reading
+of this arm claimed the disturbance damages the prediction ~5x more at H=10; that claim is
+withdrawn.** `_get_future_frame_capture_steps` derives the number of scored frames from
+`replan_steps`, so H=1 is scored on ONE frame (lag 0) and H=10 on THREE (lags 0, 4, 8) — the
+longer horizon is partly just being scored further into the future. `eval_libero_single.py` now
+records `episode_frame_psnr` (per-frame values) so this can be re-analysed at a matched lag; until
+that is done, `evidence/gate13_psnr.png` should be read as "prediction degrades with lookahead",
+not as a horizon-dependent damage claim.
 
 Reviewer entry points: `evidence/gate13_HOW_TO_REVIEW.md` (claim → artifact → command, with what is
 and is not claimed), `evidence/gate13_commitment_cost.md` + `.png` (generated),

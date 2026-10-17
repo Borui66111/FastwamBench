@@ -40,6 +40,12 @@ def load(rec_path: Path):
         return [json.loads(line) for line in fh if line.strip()]
 
 
+# lags (steps after the intervention) at which we measure divergence. Fixed lags
+# make the comparison across H fair: max-over-window would grow with H simply
+# because a longer window has more chances to reach a large distance.
+LAGS = (1, 2, 3, 5)
+
+
 def wilson(k, n, z=1.96):
     """Wilson score interval for a binomial rate.
 
@@ -93,6 +99,7 @@ def episode_metrics(recs, body, h=None):
         net = None
         stale_end_dist = None
         max_stale_dist = None
+        lag_dist = {}
         if body:
             first = last = None
             for r in es:
@@ -118,6 +125,15 @@ def episode_metrics(recs, body, h=None):
                         if max_stale_dist is None or d > max_stale_dist:
                             max_stale_dist = d
                         stale_end_dist = d
+                    # FIXED-LAG divergence: the distance change at exactly k steps
+                    # after the intervention. Unlike max-over-window this is NOT
+                    # confounded by window length, because every H is measured at
+                    # the same elapsed time. At lag k<=H the model is still running
+                    # the stale chunk; at lag k>H it has already replanned against
+                    # the moved world. Comparing the same k across H therefore
+                    # isolates "stale plan vs fresh plan" directly.
+                    if pre_dist is not None and r["t"] - iv_step in LAGS:
+                        lag_dist[r["t"] - iv_step] = d - pre_dist
             if first is not None and last is not None:
                 net = dist(first, last)
         out.append({
@@ -138,6 +154,7 @@ def episode_metrics(recs, body, h=None):
             "max_stale_dist": max_stale_dist,
             "stale_divergence": (max_stale_dist - pre_dist)
             if (max_stale_dist is not None and pre_dist is not None) else None,
+            "lag_divergence": lag_dist,
         })
     return out
 
@@ -221,6 +238,13 @@ def main() -> int:
                 sd = [e["stale_divergence"] for e in eps
                       if e.get("stale_divergence") is not None]
                 sd_s = sum(sd) / len(sd) if sd else float("nan")
+                # fixed-lag divergence (not confounded by window length)
+                lag_means = {}
+                for k in LAGS:
+                    v = [e["lag_divergence"][k] for e in eps
+                         if k in (e.get("lag_divergence") or {})]
+                    if v:
+                        lag_means[k] = sum(v) / len(v)
                 print(f"{h:>4} {arm:>8} {s:>4}/{n:<4} {s/n:>7.2f} {stale:>6.1f} "
                       f"{iv:>8.0f} {lat_s:>6.1f} {mv_s:>9.3f} {bad:>4} {ps_s:>7.2f} "
                       f"{stp_s:>9.1f} {to:>4} {sd_s:>9.3f}")
@@ -228,7 +252,7 @@ def main() -> int:
                              "iv_step": iv, "reacq": lat_s, "obj_move": mv_s,
                              "contaminated": bad, "psnr": ps_s,
                              "mean_steps": stp_s, "timeouts": to,
-                             "stale_divergence": sd_s}
+                             "stale_divergence": sd_s, "lag_divergence": lag_means}
             if "control" in rows and "disturb" in rows:
                 d = rows["control"]["rate"] - rows["disturb"]["rate"]
                 print(f"{h:>4} {'DELTA':>8} {'':>9} {d:>7.2f}")
@@ -255,6 +279,7 @@ def main() -> int:
                     "timeouts_control": rows["control"].get("timeouts"),
                     "timeouts_disturb": rows["disturb"].get("timeouts"),
                     "stale_divergence_disturb": rows["disturb"].get("stale_divergence"),
+                    "lag_divergence_disturb": rows["disturb"].get("lag_divergence"),
                 }
         # trend
         hh = sorted(k for k in summary.get(f"{suite}_t{tid}", {}))

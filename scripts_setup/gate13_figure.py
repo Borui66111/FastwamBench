@@ -83,39 +83,33 @@ ax2.set_xticks(sorted({h for _, v in tasks for h in numeric_hs(v)} | set(ph)))
 ax2.grid(alpha=0.3)
 ax2.legend(fontsize=7, loc="upper left")
 
-# ---- (C) mechanism: divergence during the stale window grows with H
+# ---- (C) fixed-lag divergence: the fair comparison across H -------------------
+# The max-over-stale-window metric grows with H purely because the window is H long.
+# Plotting the SAME lag after the intervention for every H removes that artifact.
+_LAGK = (1, 2, 3, 5)
 for i, (task, by_h) in enumerate(tasks):
     hs = numeric_hs(by_h)
-    _dv = [by_h[str(h)].get("stale_divergence_disturb") for h in hs]
-    if all(v is not None for v in _dv):
-        ax3.plot(hs, _dv, "d-", color=f"C{i}", alpha=0.5, lw=1, ms=5, label=f"{task} divergence")
-_all_dv = []
-for _t, _bh in tasks:
-    _all_dv += [v for v in (_bh.get(str(h), {}).get("stale_divergence_disturb")
-                            for h in numeric_hs(_bh)) if v is not None]
-if _pooled:
-    _pd = [_pooled[str(h)].get("stale_divergence_disturb") for h in ph]
-    if all(v is not None for v in _pd):
-        ax3.plot(ph, _pd, "ko-", lw=2, ms=5, label="POOLED divergence")
-        _all_dv += [v for v in _pd if v is not None]
-if _all_dv:
-    _lo, _hi = min(_all_dv), max(_all_dv)
-    _pad = max(0.004, 0.18 * (_hi - _lo))
-    ax3.set_ylim(_lo - _pad, _hi + _pad)
+    for _k in _LAGK:
+        _v = [(by_h[str(h)].get("lag_divergence_disturb") or {}).get(str(_k)) for h in hs]
+        if all(x is not None for x in _v):
+            ax3.plot(hs, _v, "-", color=f"C{i}", alpha=0.35 + 0.12 * _LAGK.index(_k),
+                     lw=1.3, ms=4, marker="o",
+                     label=f"{task} k={_k}")
 ax3.set_xlabel("commitment horizon H")
-ax3.set_ylabel("eef→object divergence during stale window (m)")
-ax3.set_title("(C) eef-object divergence during the stale window", fontsize=9.5)
+ax3.set_ylabel("eef→object divergence at fixed lag k (m)")
+ax3.set_title("(C) at a FIXED lag, divergence does not grow with H", fontsize=9.5)
 ax3.set_xticks(sorted({h for _, v in tasks for h in numeric_hs(v)} | set(ph)))
 ax3.grid(alpha=0.3)
-ax3.legend(fontsize=7, loc="upper left")
+ax3.legend(fontsize=6, loc="best", framealpha=0.92, ncol=2)
 
 cfg = summary.get("_config") or {}
 _sub = ""
 if cfg.get("world_step") is not None:
     _sub = (f"\n[disturbance {cfg.get('magnitude_m')} m at step {cfg.get('world_step')}; "
             f"H={cfg.get('horizons')}; {cfg.get('trials')} trials/task/H]")
-fig.suptitle("Gate 13 — a world change mid-chunk: the commitment is real (B,C), "
-             "its task-level cost is not monotone in H (A)" + _sub, fontsize=10)
+fig.suptitle("Gate 13 — a world change mid-chunk: exactly H stale actions execute (B), "
+             "the task cost is not monotone in H (A), and divergence does not grow with H (C)" + _sub,
+             fontsize=10)
 fig.tight_layout()
 out_png.parent.mkdir(parents=True, exist_ok=True)
 fig.savefig(out_png, dpi=160)

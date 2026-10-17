@@ -240,16 +240,18 @@ The *mechanism* is confirmed exactly; the *task-level cost* is large but does **
 | disturb success, object | 0.60 / 0.40 / 0.90 / 0.70 at H=1/2/5/10 | non-monotone (noise) |
 | steps to succeed | spatial 104→173-176; object ~170→258-364 | big cost, H-independent |
 | timeouts | 0 → 1-6 per 10 | failures = budget exhaustion |
-| eef-object divergence in stale window, spatial | 0.002 / 0.011 / 0.043 / 0.045 m | grows with H |
+| eef-object divergence, max over stale window, spatial | 0.002 / 0.011 / 0.043 / 0.045 m | **ARTIFACT**: window length = H. At fixed lag k=1 it is +0.0016/+0.0020/+0.0017/+0.0017 m — no H effect |
 | magnitude ladder 0.02 m | 5/5 control and 5/5 disturb at BOTH H=1 and H=10 | too small to discriminate |
 | magnitude 0.05 m | cost +0.20 at both H=1 and H=10 | flat |
-| **PSNR arm** (predicted future vs reality, `visualize_future_video=true`) | control 37.43 → 29.35 dB (H=1→10); drop from the disturbance **+0.31 dB at H=1 vs +1.47 dB at H=10 (4.7x)** | **world model IS invalidated in proportion to H** |
+| **PSNR arm** (predicted future vs reality, `visualize_future_video=true`) | control 37.43 → 29.35 dB (H=1→10) | prediction degrades with lookahead (real). The "4.7x bigger drop at H=10" reading is **WITHDRAWN**: frame count = replan_steps//4, so H=1 scores 1 frame and H=10 scores 3 (lags 0,4,8) |
 
 Interpretation: FastWAM re-plans at the next chunk boundary and recovers regardless of how long
 the stale chunk was, so the task-level penalty is set by *whether the object can be re-acquired*,
-not by H. The commitment is still demonstrably real at the action level (stale == H exactly, and
-spatial divergence grows with H). This is a **negative result for the strong "longer commitment
-costs more" claim** and a positive result for "the model executes H stale actions".
+not by H. The commitment is still demonstrably real at the action level (stale == H exactly). A
+first mechanism metric (eef-object divergence over the stale window) appeared to grow with H but
+is a window-length artifact — at a fixed lag it is flat across H. This is a **negative result for
+the strong "longer commitment costs more" claim** and a positive result for "the model executes H
+stale actions".
 
 **EVIDENCE:** `scripts_setup/gate13_run.py` (sweep runner), `gate13_analyze.py`,
 `gate13_figure.py`, `gate13_report.py`, `gate13_all.sh` (unattended pipeline),

@@ -59,20 +59,26 @@ exhausts the 400-step budget, is reported too.
   - stale executed by H = H1=1, H2=2, H5=5, H10=10
   - mean disturbed steps by H = H1=261, H2=269, H5=215, H10=252
   - timeouts by H (control→disturb) = H1=0→7, H2=0→8, H5=0→3, H10=0→5
-  - stale-window divergence (m) by H = H1=-0.003, H2=0.002, H5=0.018, H10=0.019
+  - stale-window max divergence (m) by H = H1=-0.003, H2=0.002, H5=0.018, H10=0.019   ** window length is H; NOT comparable across H **
   - extra steps to succeed, disturbed vs control (successes only, so not inflated by timeouts) = H1=+46, H2=+21, H5=+41, H10=+58
   - monotone increasing cost with horizon: **False**
 - **libero_object_t0**: cost by H = H1=+0.40, H2=+0.60, H5=+0.10, H10=+0.30
   - stale executed by H = H1=1, H2=2, H5=5, H10=10
   - mean disturbed steps by H = H1=346, H2=364, H5=258, H10=331
   - timeouts by H (control→disturb) = H1=0→5, H2=0→6, H5=0→1, H10=0→3
-  - stale-window divergence (m) by H = H1=-0.008, H2=-0.007, H5=-0.007, H10=-0.007
+  - stale-window max divergence (m) by H = H1=-0.008, H2=-0.007, H5=-0.007, H10=-0.007   ** window length is H; NOT comparable across H **
+  - fixed-lag divergence at k=1 (m) by H = H1=-0.0075, H2=-0.0075, H5=-0.0074, H10=-0.0074   <- fair comparison across H
+  - fixed-lag divergence at k=3 (m) by H = H1=-0.0226, H2=-0.0224, H5=-0.0217, H10=-0.0216   <- fair comparison across H
+  - fixed-lag divergence at k=5 (m) by H = H1=-0.0370, H2=-0.0367, H5=-0.0352, H10=-0.0347   <- fair comparison across H
   - monotone increasing cost with horizon: **False**
 - **libero_spatial_t0**: cost by H = H1=+0.20, H2=+0.20, H5=+0.20, H10=+0.20
   - stale executed by H = H1=1, H2=2, H5=5, H10=10
   - mean disturbed steps by H = H1=176, H2=175, H5=173, H10=173
   - timeouts by H (control→disturb) = H1=0→2, H2=0→2, H5=0→2, H10=0→2
-  - stale-window divergence (m) by H = H1=0.002, H2=0.011, H5=0.043, H10=0.045
+  - stale-window max divergence (m) by H = H1=0.002, H2=0.011, H5=0.043, H10=0.045   ** window length is H; NOT comparable across H **
+  - fixed-lag divergence at k=1 (m) by H = H1=+0.0016, H2=+0.0020, H5=+0.0017, H10=+0.0017   <- fair comparison across H
+  - fixed-lag divergence at k=3 (m) by H = H1=+0.0109, H2=+0.0117, H5=+0.0126, H10=+0.0124   <- fair comparison across H
+  - fixed-lag divergence at k=5 (m) by H = H1=+0.0209, H2=+0.0220, H5=+0.0246, H10=+0.0255   <- fair comparison across H
   - monotone increasing cost with horizon: **True**
 
 ## Interpretation
@@ -98,14 +104,19 @@ Three things must be kept apart. They behave differently, and only the first is 
    With n=10 per cell the 95% Wilson interval on a rate near 0.7 is roughly +/-0.25, so
    differences of this size are inside binomial noise. The data therefore do NOT
    support the strong claim 'a longer commitment costs more task success'. They support
-   the weaker, mechanism-level claim in (1) plus the divergence trend in (4).
+   only the mechanism claim in (1).
 
-4. **Where the horizon effect does show up is the mechanism metric.** During the stale
-   window the end-effector diverges from the moved object by an amount that grows with
-   H on libero_spatial (0.002 -> 0.011 -> 0.043 -> 0.045 m). On libero_object the same
-   quantity is flat and slightly negative (~-0.007 m): there the arm was already moving
-   toward the object's new location, so the displacement did not misdirect it. So the
-   divergence signature is task-dependent, not universal, and this report says so.
+4. **A first attempt at a mechanism metric did NOT survive scrutiny — reported here as
+   a withdrawn claim.** Measuring the end-effector/object divergence over the stale
+   window gives 0.002 -> 0.011 -> 0.043 -> 0.045 m for H = 1, 2, 5, 10 on
+   libero_spatial, which looks like a clean horizon trend. It is an artifact: the window
+   is (iv_step, iv_step+H], so a longer H mechanically reaches a larger maximum. At a
+   **fixed lag** (1, 2, 3 or 5 steps after the intervention) the divergence is the same
+   for every H (+0.0016…+0.0020 m at lag 1; +0.021…+0.026 m at lag 5). The eef moves
+   away from the displaced object at an H-independent rate. On libero_object the same
+   quantity is negative and equally flat (~-0.007 m at lag 1). So there is **no
+   evidence that a longer commitment misdirects the arm further**; what scales with H is
+   the number of stale actions executed, nothing more.
 
 Why the task-level cost fails to grow with H: the displacement is the same size at the
 same absolute step for every H, so re-acquiring the object is roughly H-independent and
@@ -140,12 +151,15 @@ At n=10 per cell the binomial noise floor is roughly +/-0.25 on a rate near 0.7,
 only a very large H effect could be detected. To resolve a difference of 0.10 in
 success rate between H=1 and H=10 at 80% power you need roughly 300 episodes per arm
 (two-proportion test, alpha=0.05; 0.80 vs 0.70 gives n~290 per arm). That is ~30x this
-sweep. The cheaper route is the
-mechanism metric, which is continuous rather than binary: the stale-window divergence
-already separates H=1 from H=10 by more than 20x on libero_spatial (0.002 vs 0.045 m),
-so the horizon effect is measurable at the action level long before it is measurable
-at the task level. A reviewer wanting the strong task-level claim should treat this
-report as a powered negative result at n=10, not as evidence of no effect.
+sweep. The cheaper route is a metric that is continuous rather than binary. The
+stale-window divergence looked like one (0.002 vs 0.045 m for H=1 vs H=10 on
+libero_spatial), but it is measured over a window whose length IS H, so it grows with H
+mechanically; at a fixed lag the values collapse to +0.0016…+0.0020 m for every H. The
+clean continuous signal is the **count** of stale actions executed, which is exactly H
+by construction and verified per episode — but it is a property of the execution
+protocol, not a measure of task damage. A reviewer wanting the strong task-level claim
+should treat this report as a powered negative result at n=10, not as evidence of no
+effect.
 
 
 ## Predicted-future vs reality (PSNR arm)
@@ -160,16 +174,25 @@ more wrong about the world it is acting in.
 | 1 | 37.43 | 37.12 | +0.31 |
 | 10 | 29.35 | 27.88 | +1.47 |
 
-Two things are visible here, and the second is the point of the project.
-First, **prediction fidelity falls with the horizon even with no intervention**
-(37.43 dB at H=1 vs 29.35 dB at H=10): the further ahead the model
-commits, the less accurate its world model is about what will actually happen.
-Second, a world change mid-chunk damages that prediction far more at a long
-horizon: the PSNR drop is +0.31 dB at H=1 but +1.47 dB at H=10
-(**4.7x**). This is the cleanest measurement in the
-report of *Future-Reality Divergence*: the model's committed world model is
-invalidated in proportion to how long it committed for. n=2 per cell, so treat
-the magnitude as indicative; the direction is consistent across both episodes.
+**Prediction fidelity falls with the horizon even with no intervention**
+(37.43 dB at H=1 vs 29.35 dB at H=10). That is a real and expected
+world-modelling statement: the further ahead a model commits, the less accurate
+its prediction of what actually happens.
+
+**The `drop` column is NOT a valid cross-horizon comparison — do not cite it.**
+`_get_future_frame_capture_steps` derives the number of scored frames from
+`replan_steps` (`replan_steps // action_video_freq_ratio`, ratio=4), so H=1 scores
+**one** frame (lag 0) while H=10 scores **three** (lags 0, 4, 8). A horizon therefore
+looks worse partly because it is scored further into the future, and the disturbance
+has had more steps to show up — not because the commitment is longer per se.
+`eval_libero_single.py` now also records `episode_frame_psnr` (per-frame values) so
+this can be re-analysed at a fixed lag; the numbers in this table predate that and
+should be treated as withdrawn. The same caveat applies to the stale-window
+divergence in the section above: at a **fixed** lag (1, 2, 3, 5 steps after the
+intervention) the eef-object divergence is essentially identical across H
+(+0.0016 to +0.0020 m at lag 1 for every H), so the growth seen over the full
+stale window is a window-length effect. What is unambiguous is the **count**:
+exactly H stale actions execute, verified per episode.
 
 
 ## Reproduce
