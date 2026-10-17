@@ -115,7 +115,7 @@ if cfg.get("world_step") is not None:
     _sub = (f"\n[disturbance {cfg.get('magnitude_m')} m at step {cfg.get('world_step')}; "
             f"H={cfg.get('horizons')}; {cfg.get('trials')} trials/task/H]")
 fig.suptitle("Gate 13 — a world change mid-chunk: the commitment is real (B,C), "
-             "its task-level cost saturates (A)" + _sub, fontsize=10)
+             "its task-level cost is not monotone in H (A)" + _sub, fontsize=10)
 fig.tight_layout()
 out_png.parent.mkdir(parents=True, exist_ok=True)
 fig.savefig(out_png, dpi=160)
