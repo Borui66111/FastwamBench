@@ -38,10 +38,19 @@ def sem(xs):
     return math.sqrt(sum((x - m) ** 2 for x in xs) / (len(xs) - 1) / len(xs))
 
 
-def collect(root):
-    """rows[H][arm][frame_index] = [psnr per episode]"""
+def collect(root, mode="clip"):
+    """rows[H][arm][frame_index] = [psnr per episode].
+
+    mode="clip"   : use ONLY the clip that the intervention lands in (start_step ==
+                    intervention_step). This is the clean comparison: frame 0 of that
+                    clip is the pre-displacement observation, identical in both arms,
+                    and later frames show the damage. Requires episode_clip_psnr.
+    mode="episode": fall back to episode-level frame means. NOTE this mixes clips
+                    from before and after the arms diverge, so frame 0 is NOT a null.
+    """
     rows = collections.defaultdict(
         lambda: collections.defaultdict(lambda: collections.defaultdict(list)))
+    used = {"clip": 0, "episode": 0}
     for p in sorted(glob.glob(os.path.join(root, "*", "H*", "*", "records.jsonl"))):
         try:
             h = int(p.split("/H")[1].split("/")[0])
@@ -55,10 +64,32 @@ def collect(root):
             r = json.loads(line)
             if r.get("event") != "episode_end":
                 continue
-            fp = r.get("episode_frame_psnr") or {}
-            for k, v in fp.items():
-                rows[h][arm][int(k)].append(float(v))
-    return rows
+            clips = r.get("episode_clip_psnr") or []
+            iv = r.get("intervention_step", -1)
+            picked = None
+            if mode == "clip" and clips:
+                if arm == "control":
+                    # no intervention: use the clip planned at the same step
+                    for c in clips:
+                        if c.get("start_step") == iv or c.get("replan_idx") == 1:
+                            picked = c
+                            break
+                    if picked is None and len(clips) > 1:
+                        picked = clips[1]
+                else:
+                    for c in clips:
+                        if c.get("start_step") == iv:
+                            picked = c
+                            break
+            if picked is not None:
+                used["clip"] += 1
+                for k, v in enumerate(picked.get("frame_psnr") or []):
+                    rows[h][arm][k].append(float(v))
+            else:
+                used["episode"] += 1
+                for k, v in (r.get("episode_frame_psnr") or {}).items():
+                    rows[h][arm][int(k)].append(float(v))
+    return rows, used
 
 
 def main():
@@ -66,10 +97,11 @@ def main():
     ap.add_argument("root")
     ap.add_argument("--ratio", type=int, default=4,
                     help="action_video_freq_ratio (frames per scored step)")
+    ap.add_argument("--mode", default="clip", choices=["clip", "episode"])
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
 
-    rows = collect(args.root)
+    rows, used = collect(args.root, args.mode)
     if not rows:
         raise SystemExit(f"no records under {args.root}")
 
