@@ -121,11 +121,15 @@ Three things must be kept apart. They behave differently, and only the first is 
 Why the task-level cost fails to grow with H: the displacement is the same size at the
 same absolute step for every H, so re-acquiring the object is roughly H-independent and
 dominates the small, H-dependent part. The magnitude ladder below tested that reading
-directly, and **it did not rescue the strong claim**: at 0.02 m both horizons recover
-completely (cost +0.00 at H=1 and H=10); at 0.03 m the cost is +0.33 at H=1 and +0.20 at
-H=10, i.e. the *short* horizon looks slightly worse, which is the opposite of the
-prediction and well inside noise at n=10. The H-dependent component is therefore smaller
-than this design can resolve, not merely masked by re-acquisition.
+directly, and **it did not rescue the strong claim** — but it produced a clean result of
+its own: at 0.02 m a world change is fully absorbed (20/20 disturbed episodes succeed, both
+tasks, both horizons, steps indistinguishable from control), so the commitment penalty is
+gated by whether the displacement exceeds what the next replan can correct rather than being
+a fixed property of the protocol. At 0.03 m the object task crosses that threshold
+(4/10 pooled over H, Fisher p=0.011 vs 0.02 m) while the spatial task still absorbs it
+completely (10/10): the threshold is **task-dependent, not horizon-dependent**. Within the
+object task at 0.03 m, H=1 vs H=10 is p=0.52 — noise. The H-dependent component is therefore
+smaller than this design can resolve, not merely masked by re-acquisition.
 
 
 ## Magnitude ladder
