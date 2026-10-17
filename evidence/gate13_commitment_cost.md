@@ -148,6 +148,30 @@ at the task level. A reviewer wanting the strong task-level claim should treat t
 report as a powered negative result at n=10, not as evidence of no effect.
 
 
+## Predicted-future vs reality (PSNR arm)
+
+`visualize_future_video=true` makes the model render its predicted future; the
+PSNR of that prediction against what actually happened is the most direct
+world-modelling signal available. A larger drop = the model's world model is
+more wrong about the world it is acting in.
+
+| H | PSNR control | PSNR disturbed | drop |
+|---|---|---|---|
+| 1 | 37.43 | 37.12 | +0.31 |
+| 10 | 29.35 | 27.88 | +1.47 |
+
+Two things are visible here, and the second is the point of the project.
+First, **prediction fidelity falls with the horizon even with no intervention**
+(37.43 dB at H=1 vs 29.35 dB at H=10): the further ahead the model
+commits, the less accurate its world model is about what will actually happen.
+Second, a world change mid-chunk damages that prediction far more at a long
+horizon: the PSNR drop is +0.31 dB at H=1 but +1.47 dB at H=10
+(**4.7x**). This is the cleanest measurement in the
+report of *Future-Reality Divergence*: the model's committed world model is
+invalidated in proportion to how long it committed for. n=2 per cell, so treat
+the magnitude as indicative; the direction is consistent across both episodes.
+
+
 ## Reproduce
 
 ```bash

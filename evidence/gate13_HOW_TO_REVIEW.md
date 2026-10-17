@@ -9,6 +9,10 @@
   (stale executed = H at H=1,2,5,10; 0/160 contaminated episodes).
 - On `libero_spatial`, the end-effector diverges from the moved object during that stale
   window by an amount that **grows with H** (0.002 → 0.011 → 0.043 → 0.045 m).
+- **The world model's prediction of the future degrades with the commitment horizon, and a
+  mid-chunk world change damages it ~5x more at H=10 than at H=1** (predicted-future-vs-reality
+  PSNR drop: +0.31 dB at H=1 vs +1.47 dB at H=10; control PSNR itself falls 37.4 → 29.4 dB as H
+  grows). This is the cleanest measurement of Future-Reality Divergence in the report. n=2/cell.
 
 **NOT claimed (and this report says so explicitly):**
 - That a longer commitment costs more *task success*. Pooled cost is +0.30, +0.40, +0.15,
