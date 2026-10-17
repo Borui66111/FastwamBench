@@ -1,0 +1,31 @@
+GATE 13 goal-aware disturbance validation
+==============================================================================
+Naive fixed delta under test: [0.06, 0.06, 0.0]
+Goal-away magnitude: 0.10 m
+
+------------------------------------------------------------------------------
+libero_spatial t0: pick up the black bowl between the plate and the ramekin and place it on the plate
+goal targets      : [('akita_black_bowl_1', 'plate_1')]
+auto-resolved body: akita_black_bowl_1_main
+success at init   : False
+goal-away delta   : [-0.09838, -0.01793, 0.0]
+applied           : True  delta_used=[-0.09838, -0.01793, 0.0]
+POST_IV_SUCCESS   : False   (MUST be False)
+rejected cands    : []
+body pos after    : [-0.1395, 0.1707, 0.97]
+naive delta -> delta_used=[0.06, 0.06, 0.0] post_iv_success=False
+naive rejected    : []
+------------------------------------------------------------------------------
+libero_object t0: pick up the alphabet soup and place it in the basket
+goal targets      : [('alphabet_soup_1', 'basket_1_contain_region')]
+auto-resolved body: alphabet_soup_1_main
+success at init   : False
+goal-away delta   : [-0.02083, -0.09781, 0.0]
+applied           : True  delta_used=[-0.02083, -0.09781, 0.0]
+POST_IV_SUCCESS   : False   (MUST be False)
+rejected cands    : []
+body pos after    : [-0.1408, -0.3378, 0.015]
+naive delta -> delta_used=[0.06, 0.06, 0.0] post_iv_success=False
+naive rejected    : []
+==============================================================================
+VALIDATION DONE

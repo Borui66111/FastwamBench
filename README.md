@@ -163,12 +163,24 @@ Two things must be reported separately, and they behave differently:
    H, the difficulty of re-acquiring the object is roughly H-independent — so at this displacement
    the success cost saturates and *masks* the horizon effect rather than showing it is absent.
 
-The magnitude ladder (`results/gate13_lad002*` / `_lad003*`, 0.02 / 0.03 m at H=1 vs H=10) is the
-decisive follow-up: at a small displacement H=1 replans the problem away almost perfectly, so the
-cost of a long commitment is no longer hidden behind the cost of re-grasping.
+The magnitude ladder (0.02 / 0.03 m at H=1 vs H=10) tested that reading directly and **did not
+rescue the strong claim**: at 0.02 m both horizons recover completely (cost +0.00); at 0.03 m the
+cost is +0.33 at H=1 and +0.20 at H=10 — the short horizon looks *worse*, the opposite of the
+prediction, and well inside binomial noise at n=10. So the H-dependent component is smaller than
+this design can resolve, not merely masked. Resolving a 0.10 success difference at 80% power needs
+~300 episodes per arm.
 
-Reviewer entry points: `evidence/gate13_HOW_TO_REVIEW.md` (claim → artifact → command),
-`evidence/gate13_commitment_cost.md` + `.png` (generated), and
+**Where the horizon effect IS large: the world model's own prediction.** With
+`visualize_future_video=true` the model renders its predicted future and the eval scores it against
+reality (PSNR). Prediction fidelity falls with H even with no intervention (37.4 dB at H=1 → 29.4 dB
+at H=10), and a mid-chunk world change damages it **~5x more at a long horizon** (+0.31 dB at H=1 vs
++1.47 dB at H=10). That is the cleanest measurement of Future-Reality Divergence in the project:
+the model's committed world model is invalidated in proportion to how long it committed for
+(`evidence/gate13_psnr.png`; n=2/cell, so indicative).
+
+Reviewer entry points: `evidence/gate13_HOW_TO_REVIEW.md` (claim → artifact → command, with what is
+and is not claimed), `evidence/gate13_commitment_cost.md` + `.png` (generated),
+`evidence/gate13_psnr.png` (world-model signal), and
 `evidence/gate13_design_checks/DESIGN_FINDINGS.md` (the four design flaws that were found and
 fixed, with raw captures).
 

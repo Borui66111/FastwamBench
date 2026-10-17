@@ -1,0 +1,51 @@
+====================================================================================================
+GATE 13 - cost of world-model commitment vs replan horizon
+====================================================================================================
+
+### libero_object t0   (manipulated body: alphabet_soup_1_main)
+   H      arm      succ    rate  stale  iv_step  reacq  obj_move  bad    psnr     steps   TO       div
+------------------------------------------------------------------------------------------------------
+   1  control   10/10      1.00    0.0       -1   -1.0       nan    0     nan     181.2    0       nan
+   1  disturb    6/10      0.60    1.0       40    1.0     0.348    0     nan     346.0    5    -0.008
+   1    DELTA              0.40
+   2  control   10/10      1.00    0.0       -1   -1.0       nan    0     nan     177.1    0       nan
+   2  disturb    4/10      0.40    2.0       40    1.0     0.327    0     nan     363.7    6    -0.007
+   2    DELTA              0.60
+   5  control   10/10      1.00    0.0       -1   -1.0       nan    0     nan     171.2    0       nan
+   5  disturb    9/10      0.90    5.0       40    1.0     0.482    0     nan     258.2    1    -0.007
+   5    DELTA              0.10
+  10  control   10/10      1.00    0.0       -1   -1.0       nan    0     nan     165.0    0       nan
+  10  disturb    7/10      0.70   10.0       40    1.0     0.430    0     nan     330.8    3    -0.007
+  10    DELTA              0.30
+
+  cost by H: H1=+0.40, H2=+0.60, H5=+0.10, H10=+0.30
+  stale by H: H1=1, H2=2, H5=5, H10=10
+  monotone increasing cost with horizon: False
+
+### libero_spatial t0   (manipulated body: akita_black_bowl_1_main)
+   H      arm      succ    rate  stale  iv_step  reacq  obj_move  bad    psnr     steps   TO       div
+------------------------------------------------------------------------------------------------------
+   1  control   10/10      1.00    0.0       -1   -1.0       nan    0     nan     103.6    0       nan
+   1  disturb    8/10      0.80    1.0       40    1.1     0.302    0     nan     176.4    2     0.002
+   1    DELTA              0.20
+   2  control   10/10      1.00    0.0       -1   -1.0       nan    0     nan     105.3    0       nan
+   2  disturb    8/10      0.80    2.0       40    1.2     0.302    0     nan     175.2    2     0.011
+   2    DELTA              0.20
+   5  control   10/10      1.00    0.0       -1   -1.0       nan    0     nan     101.5    0       nan
+   5  disturb    8/10      0.80    5.0       40    1.2     0.304    0     nan     172.7    2     0.043
+   5    DELTA              0.20
+  10  control   10/10      1.00    0.0       -1   -1.0       nan    0     nan     104.4    0       nan
+  10  disturb    8/10      0.80   10.0       40    1.2     0.305    0     nan     172.6    2     0.045
+  10    DELTA              0.20
+
+  cost by H: H1=+0.20, H2=+0.20, H5=+0.20, H10=+0.20
+  stale by H: H1=1, H2=2, H5=5, H10=10
+  monotone increasing cost with horizon: True
+
+### POOLED across tasks (headline)
+  H  1  control 1.00 (n=20)  disturb 0.70 (n=20)  cost +0.30
+  H  2  control 1.00 (n=20)  disturb 0.60 (n=20)  cost +0.40
+  H  5  control 1.00 (n=20)  disturb 0.85 (n=20)  cost +0.15
+  H 10  control 1.00 (n=20)  disturb 0.75 (n=20)  cost +0.25
+
+wrote results/gate13_main/gate13_summary.json

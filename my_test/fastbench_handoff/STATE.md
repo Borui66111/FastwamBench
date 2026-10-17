@@ -243,6 +243,7 @@ The *mechanism* is confirmed exactly; the *task-level cost* is large but does **
 | eef-object divergence in stale window, spatial | 0.002 / 0.011 / 0.043 / 0.045 m | grows with H |
 | magnitude ladder 0.02 m | 5/5 control and 5/5 disturb at BOTH H=1 and H=10 | too small to discriminate |
 | magnitude 0.05 m | cost +0.20 at both H=1 and H=10 | flat |
+| **PSNR arm** (predicted future vs reality, `visualize_future_video=true`) | control 37.43 → 29.35 dB (H=1→10); drop from the disturbance **+0.31 dB at H=1 vs +1.47 dB at H=10 (4.7x)** | **world model IS invalidated in proportion to H** |
 
 Interpretation: FastWAM re-plans at the next chunk boundary and recovers regardless of how long
 the stale chunk was, so the task-level penalty is set by *whether the object can be re-acquired*,

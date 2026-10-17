@@ -41,6 +41,15 @@ reverted and the next direction is tried. The chosen direction, magnitude, wheth
 was goal-aware, and the rejected candidates are all written into the intervention
 record, so a reviewer can audit the disturbance rather than trust it.
 
+**Why the guard must run at the intervention step, not at init.** `validate_goal_aware.out`
+applies the naive `[+0.06,+0.06,0]` to the *initial* state and finds it harmless
+(`post_iv_success=False`), because at t=0 the bowl is still on the table far from the plate.
+In the canary episode the same delta was applied at t=60, when the bowl was already held
+aloft at z≈0.90 near the plate — there it landed the bowl on the target and ended the
+episode. Contamination is therefore **state-dependent**, which is exactly why the guard
+validates against the live `_check_success()` at the actual intervention step instead of
+using a hard-coded safe offset.
+
 Raw evidence: `validate_goal_aware.out` (`post_iv_success=False` for both suites),
 `test_gate9_intervention.out` (unit checks for the reject/revert/fallback path).
 
