@@ -7,18 +7,20 @@
   rise 60-100%, and failures are 400-step timeouts.
 - The model really does execute **exactly H stale actions** chosen for the pre-change world
   (stale executed = H at H=1,2,5,10; 0/160 contaminated episodes).
-- The world model's prediction of the future **degrades as it is asked to predict further ahead**
-  (predicted-future-vs-reality PSNR: 37.4 dB at H=1 → 29.4 dB at H=10). Read this as a statement
-  about lookahead, not about H: `_get_future_frame_capture_steps` scores `replan_steps // 4` frames,
-  so H=1 is scored on 1 frame (lag 0) and H=10 on 3 (lags 0, 4, 8).
+- **Prediction fidelity collapses with lookahead** even with no intervention: 37.5 dB at lag 0 →
+  25.0 dB at lag 4 (matched-lag run `results/gate13_psnr_lag`).
+- **A mid-chunk world change costs more at a longer horizon, at a matched lag**: −0.64 dB at H=5 vs
+  −1.52 dB at H=10 (≈2.4x), same lags scored, n=2/cell → indicative. This is the one measurement
+  in the report where the horizon effect survives a fair test.
 
 **Claims that were WITHDRAWN during review of this report** (kept visible on purpose):
 - "the end-effector diverges further the longer the commitment" — the metric was a max over a
   window of length H, so it grew mechanically. At a fixed lag k it is flat across H
   (+0.0016…+0.0020 m at k=1). See panel C of the figure, which plots the fair version.
-- "a mid-chunk world change damages the prediction ~5x more at H=10" — the PSNR average covers a
-  different number of future frames per H, so the comparison was not matched. `episode_frame_psnr`
-  is now recorded per frame so this can be redone at a matched lag.
+- "a mid-chunk world change damages the prediction ~5x more at H=10" (the 4.7x figure) — the PSNR
+  average covered a different number of future frames per H, so the comparison was not matched.
+  Redone at a matched lag it is ≈2.4x (H=5 vs H=10), not 4.7x; see
+  `evidence/gate13_psnr_matched_lag.md`.
 
 **NOT claimed (and this report says so explicitly):**
 - That a longer commitment costs more *task success*. Pooled cost is +0.30, +0.40, +0.15,

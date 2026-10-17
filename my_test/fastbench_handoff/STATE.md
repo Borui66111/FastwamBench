@@ -243,7 +243,7 @@ The *mechanism* is confirmed exactly; the *task-level cost* is large but does **
 | eef-object divergence, max over stale window, spatial | 0.002 / 0.011 / 0.043 / 0.045 m | **ARTIFACT**: window length = H. At fixed lag k=1 it is +0.0016/+0.0020/+0.0017/+0.0017 m — no H effect |
 | magnitude ladder 0.02 m | 5/5 control and 5/5 disturb at BOTH H=1 and H=10 | too small to discriminate |
 | magnitude 0.05 m | cost +0.20 at both H=1 and H=10 | flat |
-| **PSNR arm** (predicted future vs reality, `visualize_future_video=true`) | control 37.43 → 29.35 dB (H=1→10) | prediction degrades with lookahead (real). The "4.7x bigger drop at H=10" reading is **WITHDRAWN**: frame count = replan_steps//4, so H=1 scores 1 frame and H=10 scores 3 (lags 0,4,8) |
+| **PSNR arm, matched lag** (`psnr_fixed_lags=[0,4,8]`, `results/gate13_psnr_lag`) | control 37.5 dB at lag0 → 25.0 dB at lag4 (no intervention); disturbance cost at lag4 **−0.64 dB at H=5 vs −1.52 dB at H=10 (~2.4x)**, n=2/cell | prediction degrades with lookahead (robust); horizon effect on damage survives at matched lag but is ~2.4x, NOT the withdrawn 4.7x |
 
 Interpretation: FastWAM re-plans at the next chunk boundary and recovers regardless of how long
 the stale chunk was, so the task-level penalty is set by *whether the object can be re-acquired*,

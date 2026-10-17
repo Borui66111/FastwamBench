@@ -172,16 +172,22 @@ prediction, and well inside binomial noise at n=10. So the H-dependent component
 this design can resolve, not merely masked. Resolving a 0.10 success difference at 80% power needs
 ~300 episodes per arm.
 
-**The world model's own prediction (PSNR arm).** With `visualize_future_video=true` the model
-renders its predicted future and the eval scores it against reality. Prediction fidelity falls as
-the model is asked to predict further ahead (37.4 dB at H=1 → 29.4 dB at H=10). **A first reading
-of this arm claimed the disturbance damages the prediction ~5x more at H=10; that claim is
-withdrawn.** `_get_future_frame_capture_steps` derives the number of scored frames from
-`replan_steps`, so H=1 is scored on ONE frame (lag 0) and H=10 on THREE (lags 0, 4, 8) — the
-longer horizon is partly just being scored further into the future. `eval_libero_single.py` now
-records `episode_frame_psnr` (per-frame values) so this can be re-analysed at a matched lag; until
-that is done, `evidence/gate13_psnr.png` should be read as "prediction degrades with lookahead",
-not as a horizon-dependent damage claim.
+**The world model's own prediction (PSNR arm) — the one place the horizon effect survives.**
+With `visualize_future_video=true` the model renders its predicted future and the eval scores it
+against reality. Two facts:
+
+- *Prediction fidelity collapses with lookahead, with no intervention at all*: 37.5 dB at lag 0 →
+  25.0 dB at lag 4. The model is accurate at the moment of planning and drifts badly within a
+  single committed chunk.
+- *A mid-chunk world change costs more at a longer horizon, measured at a matched lag*:
+  −0.64 dB at H=5 vs −1.52 dB at H=10 (≈2.4x), scoring the same lags 0 and 4 in both arms
+  (`results/gate13_psnr_lag`, n=2/cell — indicative, not a point estimate).
+
+**Method note (a claim that was withdrawn).** The first reading of this arm reported a 4.7x
+effect at H=10 vs H=1. That comparison was invalid: `_get_future_frame_capture_steps` derives the
+scored frame count from `replan_steps`, so H=1 was scored only at lag 0 and H=10 at lags 0/4/8.
+`EVALUATION.psnr_fixed_lags` now pins the scored lags, and `episode_frame_psnr` records per-frame
+values. See `evidence/gate13_psnr_matched_lag.md` for the full correction.
 
 Reviewer entry points: `evidence/gate13_HOW_TO_REVIEW.md` (claim → artifact → command, with what is
 and is not claimed), `evidence/gate13_commitment_cost.md` + `.png` (generated),
