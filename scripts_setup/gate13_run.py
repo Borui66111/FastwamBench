@@ -141,6 +141,12 @@ def run_job(job, gpu: int, args) -> tuple[str, int]:
     cmd += [f"EVALUATION.output_dir={out}", f"EVALUATION.recorder_path={out/'records.jsonl'}"]
     if job["psnr"]:
         cmd.append("EVALUATION.visualize_future_video=true")
+        # [fastbench] score the SAME lookahead lags for every H, otherwise the
+        # number of scored frames is tied to replan_steps and cross-H PSNR is
+        # not comparable (see evidence/gate13_psnr_matched_lag.md).
+        _fl = os.environ.get("GATE13_PSNR_LAGS", "").strip()
+        if _fl:
+            cmd.append(f"+EVALUATION.psnr_fixed_lags=[{_fl}]")
     if job["arm"] == "disturb":
         cmd += [
             "EVALUATION.intervention_enabled=true",
