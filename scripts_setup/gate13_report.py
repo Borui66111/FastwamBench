@@ -171,7 +171,23 @@ for _tag, _mag in (("lad002", "0.02"), ("lad003", "0.03")):
         continue
     _any = True
     w(f"### displacement {_mag} m\n")
+    w("*pooled over both tasks*\n")
     _table(_pl, _tag)
+    # per-task split: the pooled row hides the fact that the two tasks differ
+    # by far more than the horizons do
+    for _k in sorted(x for x in _s if not x.startswith("_")):
+        w(f"\n*{_k}*\n")
+        _table(_s[_k], _tag + _k)
+if _any:
+    w("**Reading the ladder.** The pooled row is the least informative one here: the two tasks")
+    w("differ from each other by much more than the horizons differ within a task.")
+    w("At 0.02 m the world change is fully absorbed on **both** tasks at **both** horizons")
+    w("(20/20 successes) — so the commitment penalty is not a fixed property of the protocol;")
+    w("it is gated by whether the displacement exceeds what the next replan can correct.")
+    w("At 0.03 m the object task breaks (4/10 pooled over H, Fisher p=0.011 vs 0.02 m) while")
+    w("the spatial task still absorbs it completely (10/10). Within the object task at 0.03 m,")
+    w("H=1 (1/5) vs H=10 (3/5) is **not** significant (Fisher p=0.52) — the apparent reverse")
+    w("trend is noise, not evidence that short horizons are worse.\n")
 if not _any:
     w("*(ladder not run yet — see `scripts_setup/gate13_finish.sh`)*\n")
 

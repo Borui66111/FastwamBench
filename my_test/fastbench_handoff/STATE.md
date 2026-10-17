@@ -241,7 +241,8 @@ The *mechanism* is confirmed exactly; the *task-level cost* is large but does **
 | steps to succeed | spatial 104→173-176; object ~170→258-364 | big cost, H-independent |
 | timeouts | 0 → 1-6 per 10 | failures = budget exhaustion |
 | eef-object divergence, max over stale window, spatial | 0.002 / 0.011 / 0.043 / 0.045 m | **ARTIFACT**: window length = H. At fixed lag k=1 it is +0.0016/+0.0020/+0.0017/+0.0017 m — no H effect |
-| magnitude ladder 0.02 m | 5/5 control and 5/5 disturb at BOTH H=1 and H=10 | too small to discriminate |
+| magnitude 0.02 m | 20/20 disturbed episodes succeed (both tasks, both H); cost 0.00; steps == control | **below the recovery threshold — a world change costs nothing at any H** |
+| magnitude 0.03 m | object 1/5 (H=1) and 3/5 (H=10) → pooled 4/10 vs 10/10 at 0.02 m, Fisher p=0.011; spatial still 10/10 | **threshold is task-dependent, not H-dependent**; object H=1 vs H=10 p=0.52 (noise) |
 | magnitude 0.05 m | cost +0.20 at both H=1 and H=10 | flat |
 | **PSNR arm, matched lag** (`psnr_fixed_lags=[0,4,8]`, `results/gate13_psnr_lag`) | control 37.5 dB at lag0 → 25.0 dB at lag4 (no intervention); disturbance cost at lag4 **−0.64 dB at H=5 vs −1.52 dB at H=10 (~2.4x)**, n=2/cell | prediction degrades with lookahead (robust); horizon effect on damage survives at matched lag but is ~2.4x, NOT the withdrawn 4.7x |
 

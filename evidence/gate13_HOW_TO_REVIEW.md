@@ -45,7 +45,8 @@ is real at the action level and invisible at the task level at this sample size.
 | `results/gate13_main/gate13_summary.json` | machine-readable per-(task,H) numbers + `_config` |
 | `results/gate13_main/*/H*/*/records.jsonl` | raw per-episode records (the ground truth) |
 | `evidence/gate13_design_checks/` | the four design flaws + raw probe/validation/unit captures |
-| `results/gate13_lad00{2,3}/` | magnitude ladder (0.02 / 0.03 m, H=1 vs H=10) |
+| `evidence/gate13_magnitude_ladder.md` | the ladder, complete: 0.02 m is fully absorbed (20/20) → a threshold exists, and it is task-dependent (object breaks at 0.03 m, p=0.011; spatial does not) |
+| `results/gate13_lad00{2,3}/` | raw ladder records (0.02 / 0.03 m, H=1 vs H=10) |
 | `results/gate13_psnr/` | predicted-future-vs-reality PSNR arm |
 
 ## Reproduce

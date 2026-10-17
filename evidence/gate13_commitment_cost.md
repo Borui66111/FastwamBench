@@ -132,17 +132,63 @@ than this design can resolve, not merely masked by re-acquisition.
 
 ### displacement 0.02 m
 
+*pooled over both tasks*
+
 | H | control | disturbed | cost | stale executed | mean steps (ctl→dis) | timeouts (ctl→dis) | contaminated | n |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 1.00 | 1.00 [0.72,1.00] | **+0.00** | 1 | 143 → 137 | 0 → 0 | 0 | 10 |
 | 10 | 1.00 | 1.00 [0.72,1.00] | **+0.00** | 10 | 137 → 138 | 0 → 0 | 0 | 10 |
 
+
+*libero_object_t0*
+
+| H | control | disturbed | cost | stale executed | mean steps (ctl→dis) | timeouts (ctl→dis) | contaminated | n |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 1.00 | 1.00 [0.57,1.00] | **+0.00** | 1 | 182 → 168 | 0 → 0 | 0 | 5 |
+| 10 | 1.00 | 1.00 [0.57,1.00] | **+0.00** | 10 | 170 → 170 | 0 → 0 | 0 | 5 |
+
+
+*libero_spatial_t0*
+
+| H | control | disturbed | cost | stale executed | mean steps (ctl→dis) | timeouts (ctl→dis) | contaminated | n |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 1.00 | 1.00 [0.57,1.00] | **+0.00** | 1 | 104 → 106 | 0 → 0 | 0 | 5 |
+| 10 | 1.00 | 1.00 [0.57,1.00] | **+0.00** | 10 | 104 → 105 | 0 → 0 | 0 | 5 |
+
 ### displacement 0.03 m
+
+*pooled over both tasks*
 
 | H | control | disturbed | cost | stale executed | mean steps (ctl→dis) | timeouts (ctl→dis) | contaminated | n |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 1.00 | 0.60 [0.31,0.83] | **+0.40** | 1 | 143 → 246 | 0 → 4 | 0 | 10 |
 | 10 | 1.00 | 0.80 [0.49,0.94] | **+0.20** | 10 | 137 → 197 | 0 → 2 | 0 | 10 |
+
+
+*libero_object_t0*
+
+| H | control | disturbed | cost | stale executed | mean steps (ctl→dis) | timeouts (ctl→dis) | contaminated | n |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 1.00 | 0.20 [0.04,0.62] | **+0.80** | 1 | 182 → 382 | 0 → 4 | 0 | 5 |
+| 10 | 1.00 | 0.60 [0.23,0.88] | **+0.40** | 10 | 170 → 288 | 0 → 2 | 0 | 5 |
+
+
+*libero_spatial_t0*
+
+| H | control | disturbed | cost | stale executed | mean steps (ctl→dis) | timeouts (ctl→dis) | contaminated | n |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 1.00 | 1.00 [0.57,1.00] | **+0.00** | 1 | 104 → 110 | 0 → 0 | 0 | 5 |
+| 10 | 1.00 | 1.00 [0.57,1.00] | **+0.00** | 10 | 104 → 107 | 0 → 0 | 0 | 5 |
+
+**Reading the ladder.** The pooled row is the least informative one here: the two tasks
+differ from each other by much more than the horizons differ within a task.
+At 0.02 m the world change is fully absorbed on **both** tasks at **both** horizons
+(20/20 successes) — so the commitment penalty is not a fixed property of the protocol;
+it is gated by whether the displacement exceeds what the next replan can correct.
+At 0.03 m the object task breaks (4/10 pooled over H, Fisher p=0.011 vs 0.02 m) while
+the spatial task still absorbs it completely (10/10). Within the object task at 0.03 m,
+H=1 (1/5) vs H=10 (3/5) is **not** significant (Fisher p=0.52) — the apparent reverse
+trend is noise, not evidence that short horizons are worse.
 
 
 ## What this design cannot resolve, and what would

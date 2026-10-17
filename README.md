@@ -165,12 +165,20 @@ Two things must be reported separately, and they behave differently:
    H, the difficulty of re-acquiring the object is roughly H-independent — so at this displacement
    the success cost saturates and *masks* the horizon effect rather than showing it is absent.
 
-The magnitude ladder (0.02 / 0.03 m at H=1 vs H=10) tested that reading directly and **did not
-rescue the strong claim**: at 0.02 m both horizons recover completely (cost +0.00); at 0.03 m the
-cost is +0.33 at H=1 and +0.20 at H=10 — the short horizon looks *worse*, the opposite of the
-prediction, and well inside binomial noise at n=10. So the H-dependent component is smaller than
-this design can resolve, not merely masked. Resolving a 0.10 success difference at 80% power needs
-~300 episodes per arm.
+The magnitude ladder (0.02 / 0.03 m, H=1 vs H=10, `evidence/gate13_magnitude_ladder.md`) tested that
+reading and **did not rescue the strong claim**, but it did produce a clean result of its own:
+
+- At **0.02 m the world change is fully absorbed**: 20/20 disturbed episodes succeed, both tasks,
+  both horizons, steps indistinguishable from control. So the commitment penalty is not a fixed
+  property of the protocol — it is gated by whether the displacement exceeds what the next replan
+  can correct.
+- At **0.03 m the object task crosses that threshold** (10/10 → 4/10 pooled over H, Fisher exact
+  p=0.011) while the spatial task still absorbs it completely (10/10). The threshold is
+  **task-dependent, not horizon-dependent**: a small can into a basket is fragile; a bowl onto a
+  plate is not.
+- Within the object task at 0.03 m, H=1 (1/5) vs H=10 (3/5) is p=0.52 — the apparent *reverse*
+  trend is noise. So the H-dependent component is smaller than this design can resolve, not merely
+  masked. Resolving a 0.10 success difference at 80% power needs ~300 episodes per arm.
 
 **The world model's own prediction (PSNR arm) — the one place the horizon effect survives.**
 With `visualize_future_video=true` the model renders its predicted future and the eval scores it
