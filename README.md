@@ -321,11 +321,14 @@ height until the step budget expires (tail slope +0.0001 m/step over the last 60
 m for a successful placement). Only one of nine failures was still descending when time ran out, so
 this is not a time-budget artifact.
 
-**The cost saturates at 5 mm.** Halving the displacement did not halve the damage (2/6 at both
-horizons, against 6/6 control). Whatever the strike breaks, it is fully broken well below 1 cm.
-Pooled over horizon (legitimate because the horizon contrast is null): 0.005 m is **4/12 vs 12/12,
-Fisher p=0.0013**; 0.01 m is **3/12 vs 12/12, p=0.0003**; and the two magnitudes do not differ from
-each other (p=1.000).
+**No measurable dose-response over 5–20 mm.** Halving the displacement did not halve the damage
+(2/6 at both horizons, against 6/6 control), and a third arm at 0.02 m (`results/gate13_carry_mag02`,
+n=3/cell) is 0/3 at both horizons against 3/3. Success therefore runs 33% → 25% → 0% across 5/10/20 mm,
+but **no pair of magnitudes is distinguishable**: 0.005 vs 0.01 m p=1.000, 0.005 vs 0.02 m p=0.245,
+0.01 vs 0.02 m p=0.515. So "the cost saturates at 5 mm" is too strong — the defensible statement is
+that the cost is at or near ceiling by 5 mm and no trend is resolvable at this n. Pooled over horizon
+(legitimate because the horizon contrast is null), against control: 0.005 m **4/12, Fisher p=0.0013**;
+0.01 m **3/12, p=0.0003**; 0.02 m **0/6, p=0.0022**.
 
 This also corrects the mechanism sentence above: the grasp is *not* broken, so "once the grasp is
 broken the episode is lost" was the wrong picture. The stale carry actions cost the episode by
@@ -335,6 +338,42 @@ Full write-up: `evidence/gate13d_mechanism.md`. Results: `results/gate13_carry_m
 Figure: `evidence/gate13d_mechanism.png`.
 
 ![Gate 13D](evidence/gate13d_mechanism.png)
+
+---
+
+## Gate 14 — is the cost specific to a future-aware world model?
+
+Every gate above used one checkpoint and one action-inference pathway (`idm`, which conditions
+actions on predicted future frames). Gate 14 asks the obvious control question: **would a
+controller that never sees a predicted future be damaged the same way?** Same checkpoint, same
+task, same seeds, same strike schedule, same horizons — the only change is
+`EVALUATION.action_infer_mode=first_frame` (the non-future branch of the same network; see
+`fastwam_optional_idm.py:101`).
+
+| pathway | control | disturb | cost |
+|---|---|---|---|
+| `idm` (future-aware) | 6/6 @ H1, 6/6 @ H10 | 2/6 @ H1, 1/6 @ H10 | +0.67, +0.83 |
+| `first_frame` (non-future) | 5/6 @ H1, 6/6 @ H10 | **2/6 @ H1, 1/6 @ H10** | +0.50, +0.83 |
+
+**The disturbed cells are numerically identical** (Fisher p=1.0000 at both horizons), and the failure
+signature is the same too: the object is carried to the basket and never released (7 of 9
+`first_frame` failures never release it; the two that do let go 33 and 34 steps after the strike),
+with 12/12 strikes again landing after the lift. The baseline is not broken — it is slightly clumsier
+under no intervention (11/12 vs 12/12) and otherwise behaves the same.
+
+**This is a negative result for WAM-specificity.** The carry-phase cost survives removal of
+future-aware action inference, so it is a property of **fixed-horizon chunk execution**, not a
+world-modeling commitment cost. That reframes Gates 13/13B/13C/13D: they measure the protocol, and
+they do so reliably.
+
+What it does *not* say: that the WAM has no world-modeling advantage. It says this particular
+intervention does not measure one. The predicted-future fidelity result (≈−4.4 dB at lag ≥ 4) comes
+from the video pathway and is not exercised by this ablation.
+
+Full write-up: `evidence/gate14_wam_specificity.md`. Data: `results/gate13_g14ff` (baseline) vs
+`results/gate13_repeat_carry_full` (future-aware). Compare with
+`scripts_setup/gate14_compare.py`. This gate also added `--max-steps`, which overrides the
+per-suite step budget so that "slower" can be separated from "never".
 
 ---
 

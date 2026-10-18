@@ -1,5 +1,5 @@
 diff --git a/experiments/libero/eval_libero_single.py b/experiments/libero/eval_libero_single.py
-index 62c8fa8..47e7568 100644
+index 62c8fa8..73386ac 100644
 --- a/experiments/libero/eval_libero_single.py
 +++ b/experiments/libero/eval_libero_single.py
 @@ -24,6 +24,14 @@ project_root = Path(__file__).resolve().parents[2]
@@ -92,7 +92,20 @@ index 62c8fa8..47e7568 100644
      }
      if task_suite_name not in suite_steps:
          raise ValueError(f"Unknown task suite: {task_suite_name}")
-@@ -482,6 +537,21 @@ def run_single_episode(
+@@ -475,13 +530,33 @@ def run_single_episode(
+     input_h: int,
+     model_device: str,
+ ) -> tuple[bool, list, list[dict[str, Any]], Optional[float]]:
+-    max_steps = _get_max_steps(cfg.EVALUATION.task_suite_name)
++    # [fastbench] Gate 14: allow an explicit step budget so a slow-but-competent
++    # policy is not scored as a failure purely because it hit the suite default.
++    # Absent the override this is exactly the upstream per-suite value.
++    max_steps = int(cfg.EVALUATION.get(
++        "max_steps", _get_max_steps(cfg.EVALUATION.task_suite_name)
++    ))
+     replan_steps = int(cfg.EVALUATION.get("replan_steps", 5))
+     num_steps_wait = int(cfg.EVALUATION.get("num_steps_wait", 5))
+     use_action_ensembler = bool(cfg.EVALUATION.get("use_action_ensembler", False))
      visualize_future_video = bool(cfg.EVALUATION.get("visualize_future_video", False))
      capture_steps = set(_get_future_frame_capture_steps(cfg)[1:])
  
@@ -114,7 +127,7 @@ index 62c8fa8..47e7568 100644
      env.reset()
      obs = env.set_init_state(initial_state)
      if use_action_ensembler:
-@@ -491,10 +561,26 @@ def run_single_episode(
+@@ -491,10 +566,26 @@ def run_single_episode(
      replay_images = []
      predicted_future_video_clips: list[dict[str, Any]] = []
      episode_future_clip_psnr: list[float] = []
@@ -141,7 +154,7 @@ index 62c8fa8..47e7568 100644
  
      t = 0
      done = False
-@@ -518,10 +604,19 @@ def run_single_episode(
+@@ -518,10 +609,19 @@ def run_single_episode(
                  input_h=input_h,
                  model_device=model_device,
              )
@@ -162,7 +175,7 @@ index 62c8fa8..47e7568 100644
                      "gt_frames": [imgs.copy()],
                      "pred_frames": predicted_future_frames,
                  }
-@@ -533,14 +628,141 @@ def run_single_episode(
+@@ -533,14 +633,141 @@ def run_single_episode(
                  pending_actions = [ensembler.get_action(ts).tolist() for ts in range(t, t + replan_steps)]
              else:
                  pending_actions = action_chunk[:replan_steps].tolist()
@@ -306,7 +319,7 @@ index 62c8fa8..47e7568 100644
              if current_replan_step in capture_steps:
                  current_predicted_future_clip["gt_frames"].append(get_libero_image(obs))
              if done or len(pending_actions) == 0:
-@@ -587,6 +809,19 @@ def run_single_episode(
+@@ -587,6 +814,19 @@ def run_single_episode(
                  )
                  if clip_psnr is not None:
                      episode_future_clip_psnr.append(clip_psnr)
@@ -326,7 +339,7 @@ index 62c8fa8..47e7568 100644
                  predicted_future_video_clips.append(current_predicted_future_clip)
                  current_predicted_future_clip = None
          if done:
-@@ -597,6 +832,37 @@ def run_single_episode(
+@@ -597,6 +837,37 @@ def run_single_episode(
      episode_mean_psnr = (
          float(np.mean(episode_future_clip_psnr)) if len(episode_future_clip_psnr) > 0 else None
      )
@@ -364,7 +377,7 @@ index 62c8fa8..47e7568 100644
      return bool(done), replay_images, predicted_future_video_clips, episode_mean_psnr
  
  
-@@ -730,10 +996,9 @@ def _run_task_to_file(
+@@ -730,10 +1001,9 @@ def _run_task_to_file(
  
      task_suite = benchmark.get_benchmark_dict()[suite_name]()
      task = task_suite.get_task(task_id)

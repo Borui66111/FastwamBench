@@ -82,8 +82,8 @@ def free_gpus(min_free_mib: int = 5000):
 
 
 def common_overrides(suite: str, tid: int, trials: int, seed: int, h: int,
-                     mode: str = "idm") -> list[str]:
-    return [
+                     mode: str = "idm", max_steps: int | None = None) -> list[str]:
+    ov = [
         "task=libero_optional_idm_2cam224_1e-4",
         f"ckpt={CKPT}",
         "model.load_text_encoder=true",
@@ -101,6 +101,10 @@ def common_overrides(suite: str, tid: int, trials: int, seed: int, h: int,
         "EVALUATION.recorder_state=true",
         f"EVALUATION.replan_steps={h}",
     ]
+    if max_steps is not None:
+        # Gate 14: a longer budget separates "slower" from "never".
+        ov.append(f"+EVALUATION.max_steps={int(max_steps)}")
+    return ov
 
 
 def build_jobs(args):
@@ -114,6 +118,7 @@ def build_jobs(args):
                         "suite": suite, "tid": tid, "h": h, "arm": arm,
                         "seed": seed, "trials": args.trials, "out": out,
                         "psnr": args.psnr, "mode": args.action_infer_mode,
+                        "max_steps": args.max_steps,
                     })
     return jobs
 
@@ -139,7 +144,7 @@ def run_job(job, gpu: int, args) -> tuple[str, int]:
     log = args.log_dir / f"{job['suite']}_t{job['tid']}_H{job['h']}_{job['arm']}_s{job['seed']}.log"
     cmd = [PY, "experiments/libero/eval_libero_single.py"]
     cmd += common_overrides(job["suite"], job["tid"], job["trials"], job["seed"], job["h"],
-                            job.get("mode", "idm"))
+                            job.get("mode", "idm"), job.get("max_steps"))
     cmd += [f"EVALUATION.output_dir={out}", f"EVALUATION.recorder_path={out/'records.jsonl'}"]
     if job["psnr"]:
         cmd.append("EVALUATION.visualize_future_video=true")
@@ -226,6 +231,10 @@ def main() -> int:
                     help="idm = future-aware (WAM); first_frame = non-future baseline (Gate 14)")
     ap.add_argument("--arms", default="control,disturb",
                     help="comma-separated arms to run (default both)")
+    ap.add_argument("--max-steps", type=int, default=None,
+                    help="Gate 14: override the per-suite step budget (default: suite value, "
+                         "400 for libero_object/spatial). Use a larger value to separate "
+                         "'slower' from 'never'.")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--force", action="store_true", help="re-run even if complete")
     args = ap.parse_args()
@@ -250,6 +259,7 @@ def main() -> int:
             "seeds": args.seeds,
             "trials": args.trials,
             "action_infer_mode": args.action_infer_mode,
+            "max_steps": args.max_steps,
             "arms": args.arm_list,
             "magnitude_m": float(args.magnitude),
             "world_step": args.world_step,

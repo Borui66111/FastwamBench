@@ -524,6 +524,19 @@ try:
     check("action_infer_mode defaults to idm",
           "+EVALUATION.action_infer_mode=idm" in
           _g13.common_overrides("libero_object", 0, 1, 1, 1))
+    # Gate 14 budget override: absent by default (so every pre-existing run keeps
+    # the upstream per-suite cap), present and correct when asked for.
+    _def = _g13.common_overrides("libero_object", 0, 1, 1, 1)
+    check("no max_steps override unless requested",
+          not any("max_steps" in x for x in _def),
+          repr([x for x in _def if "max_steps" in x]))
+    _long = _g13.common_overrides("libero_object", 0, 1, 1, 1, "first_frame", 800)
+    check("max_steps=800 reaches the command line",
+          "+EVALUATION.max_steps=800" in _long,
+          repr([x for x in _long if "max_steps" in x]))
+    check("max_steps and action_infer_mode coexist",
+          "+EVALUATION.action_infer_mode=first_frame" in _long and
+          "+EVALUATION.max_steps=800" in _long)
 except Exception as _e:  # pragma: no cover
     check("gate13_run importable for the Gate 14 plumbing check", False, repr(_e))
 

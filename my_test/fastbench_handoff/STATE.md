@@ -280,9 +280,12 @@ knocks the object out of the gripper" is wrong. At 0.01 m the dominant mode is H
 (6 of 9 failures): the robot reaches the basket (xy within 5 cm) and parks 5–9 cm above the
 placement height until the budget expires (tail slope +0.0001 m/step vs 0.136 m for a success). Only
 1 of 9 failures was still descending at the 400-step cap, so it is not a time-budget artifact.
-**Cost saturates at 5 mm**: `results/gate13_carry_mag005` (n=6/cell) gives control 6/6, disturb 2/6
-at both horizons, stale 3.5 -> 40.0 — the same cost as 0.01 m, i.e. halving the displacement did not
-halve the damage. Third independent replication of the horizon null. **Retracts the 13C mechanism
+**No measurable dose-response over 5–20 mm**: `results/gate13_carry_mag005` (n=6/cell) gives control 6/6,
+disturb 2/6 at both horizons, stale 3.5 -> 40.0 — the same cost as 0.01 m, i.e. halving the displacement did not
+halve the damage; the 0.02 m arm (n=3/cell) is 0/3 vs 3/3. Success 33% -> 25% -> 0% across 5/10/20 mm, but
+**every pairwise contrast is n.s. (p >= 0.245)**, so "saturates" is too strong: the honest statement is that
+the cost is at or near ceiling by 5 mm and no trend is resolvable at this n. Third independent replication of
+the horizon null. **Retracts the 13C mechanism
 sentence "once the grasp is broken the episode is lost"** — the grasp is never broken; the stale
 carry actions cost the episode by wrecking the *placement*. Not established: *why* the policy stops
 short (no grasp/contact state in the records, so that stays an inference). Evidence:
