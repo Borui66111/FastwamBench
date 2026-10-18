@@ -1,0 +1,26 @@
+{
+  "arms": [
+    "control",
+    "disturb"
+  ],
+  "horizons": [
+    5,
+    10
+  ],
+  "magnitude_m": 0.05,
+  "num_steps_wait": 30,
+  "psnr": true,
+  "seeds": [
+    1
+  ],
+  "tag": "psnr_lag",
+  "tasks": [
+    [
+      "libero_spatial",
+      0
+    ]
+  ],
+  "trials": 2,
+  "world_body": "auto",
+  "world_step": 40
+}

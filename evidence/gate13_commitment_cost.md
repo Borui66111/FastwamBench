@@ -208,8 +208,8 @@ mechanically; at a fixed lag the values collapse to +0.0016…+0.0020 m for ever
 clean continuous signal is the **count** of stale actions executed, which is exactly H
 by construction and verified per episode — but it is a property of the execution
 protocol, not a measure of task damage. A reviewer wanting the strong task-level claim
-should treat this report as a powered negative result at n=10, not as evidence of no
-effect.
+should read this report as showing **no detected monotone effect** at n=10; it is
+**underpowered to rule out modest effects**, not evidence that there is no effect.
 
 
 ## Predicted-future vs reality (PSNR arm)
@@ -219,33 +219,25 @@ PSNR of that prediction against what actually happened is the most direct
 world-modelling signal available. A larger drop = the model's world model is
 more wrong about the world it is acting in.
 
-| H | PSNR control | PSNR disturbed | drop |
-|---|---|---|---|
-| 1 | 37.43 | 37.12 | +0.31 |
-| 10 | 29.35 | 27.88 | +1.47 |
+The per-H PSNR averages this report used to print are **withdrawn** and no longer
+shown: the scored frame set grows with `replan_steps`, so the per-H means are not a
+matched comparison. The authoritative, clip-isolated table is
+`evidence/gate13_worldmodel_final.md` (reproduced by `scripts_setup/gate13_audit.py`):
+-4.42 dB at H=5 and -4.40 dB at H=10 at matched lag 4, n=6/cell -- **no detected H
+dependence**, and 0.02 dB does not establish equivalence at this power. With no
+intervention, fidelity falls 39.6 -> 27.9 -> 27.1 dB at lags 0/4/8.
 
-**Do not read a horizon trend out of this table.** The per-H averages are not
-comparable: the scored frame set grows with `replan_steps`, so a longer horizon is
-scored further into the future. The valid, clip-isolated measurement is in
-`evidence/gate13_worldmodel_final.md` and `evidence/gate13_worldmodel.png`; it shows
-fidelity falling with *lookahead* (39.6 -> 27.9 -> 27.1 dB at 0/4/8 steps) and a
-~4.4 dB cost from the world change that is **the same at H=5 and H=10**.
+This is **counterfactual forecast invalidation**, not prediction incompetence: the
+plan was made before an unannounced change, so a perfect world model must also
+disagree with the realized rollout. The measurement says nothing about mismatch
+detection, post-replan quality, or task recovery; see the five-quantity breakdown in
+`evidence/gate13_worldmodel_final.md`.
 
-**The `drop` column is NOT a valid cross-horizon comparison — do not cite it.**
-`_get_future_frame_capture_steps` derives the number of scored frames from
-`replan_steps` (`replan_steps // action_video_freq_ratio`, ratio=4), so H=1 scores
-**one** frame (lag 0) while H=10 scores **three** (lags 0, 4, 8). A horizon therefore
-looks worse partly because it is scored further into the future, and the disturbance
-has had more steps to show up — not because the commitment is longer per se.
-`eval_libero_single.py` now also records `episode_frame_psnr` (per-frame values) so
-this can be re-analysed at a fixed lag; the numbers in this table predate that and
-should be treated as withdrawn. The same caveat applies to the stale-window
-divergence in the section above: at a **fixed** lag (1, 2, 3, 5 steps after the
-intervention) the eef-object divergence is essentially identical across H
-(+0.0016 to +0.0020 m at lag 1 for every H), so the growth seen over the full
-stale window is a window-length effect. What is unambiguous is the **count**:
-exactly H stale actions execute, verified per episode.
-
+The same caution applies to the stale-window divergence above: at a **fixed** lag
+(1, 2, 3, 5 steps after the intervention) the eef-object divergence is essentially
+identical across H (+0.0016 to +0.0020 m at lag 1 for every H), so the growth seen
+over the full stale window is a window-length effect. What is unambiguous is the
+**count**: exactly H stale actions execute, verified per episode.
 
 ## Reproduce
 

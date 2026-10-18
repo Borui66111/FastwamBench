@@ -1,0 +1,310 @@
+{
+  "bundle_version": 1,
+  "gates": {
+    "gate13_lad002": {
+      "arms": [
+        "control",
+        "disturb"
+      ],
+      "cells": 8,
+      "clips": 0,
+      "episodes": 40,
+      "horizons": [
+        1,
+        10
+      ],
+      "run_config": {
+        "arms": [
+          "control",
+          "disturb"
+        ],
+        "horizons": [
+          1,
+          10
+        ],
+        "magnitude_m": 0.02,
+        "num_steps_wait": 30,
+        "psnr": false,
+        "seeds": [
+          1
+        ],
+        "tag": "lad002",
+        "tasks": [
+          [
+            "libero_spatial",
+            0
+          ],
+          [
+            "libero_object",
+            0
+          ]
+        ],
+        "trials": 5,
+        "world_body": "auto",
+        "world_step": 40
+      },
+      "seeds": [
+        1
+      ],
+      "status": "ok",
+      "tasks": [
+        "libero_object_t0",
+        "libero_spatial_t0"
+      ],
+      "trials_per_cell": [
+        5
+      ]
+    },
+    "gate13_lad003": {
+      "arms": [
+        "control",
+        "disturb"
+      ],
+      "cells": 8,
+      "clips": 0,
+      "episodes": 40,
+      "horizons": [
+        1,
+        10
+      ],
+      "run_config": {
+        "arms": [
+          "control",
+          "disturb"
+        ],
+        "horizons": [
+          1,
+          10
+        ],
+        "magnitude_m": 0.03,
+        "num_steps_wait": 30,
+        "psnr": false,
+        "seeds": [
+          1
+        ],
+        "tag": "lad003",
+        "tasks": [
+          [
+            "libero_spatial",
+            0
+          ],
+          [
+            "libero_object",
+            0
+          ]
+        ],
+        "trials": 5,
+        "world_body": "auto",
+        "world_step": 40
+      },
+      "seeds": [
+        1
+      ],
+      "status": "ok",
+      "tasks": [
+        "libero_object_t0",
+        "libero_spatial_t0"
+      ],
+      "trials_per_cell": [
+        5
+      ]
+    },
+    "gate13_main": {
+      "arms": [
+        "control",
+        "disturb"
+      ],
+      "cells": 32,
+      "clips": 0,
+      "episodes": 160,
+      "horizons": [
+        1,
+        2,
+        5,
+        10
+      ],
+      "run_config": {
+        "_note": "written by hand: the running sweep was launched before gate13_run.py began auto-writing this file. Values are the exact CLI settings of that launch (see scripts_setup/gate13_all.sh).",
+        "action_horizon": 32,
+        "action_infer_mode": "idm",
+        "arms": [
+          "control",
+          "disturb"
+        ],
+        "goal_aware": true,
+        "gpus": [
+          5,
+          7
+        ],
+        "horizons": [
+          1,
+          2,
+          5,
+          10
+        ],
+        "magnitude_m": 0.05,
+        "ngpu": 2,
+        "num_steps_wait": 30,
+        "psnr": false,
+        "replan_steps_is_horizon": true,
+        "seeds": [
+          1,
+          2
+        ],
+        "sigma_shift": 1.0,
+        "tag": "main",
+        "tasks": [
+          "libero_spatial:0",
+          "libero_object:0"
+        ],
+        "trials": 5,
+        "world_body": "auto",
+        "world_step": 40
+      },
+      "seeds": [
+        1,
+        2
+      ],
+      "status": "ok",
+      "tasks": [
+        "libero_object_t0",
+        "libero_spatial_t0"
+      ],
+      "trials_per_cell": [
+        5
+      ]
+    },
+    "gate13_psnr_clip": {
+      "arms": [
+        "control",
+        "disturb"
+      ],
+      "cells": 8,
+      "clips": 483,
+      "episodes": 24,
+      "horizons": [
+        5,
+        10
+      ],
+      "run_config": {
+        "arms": [
+          "control",
+          "disturb"
+        ],
+        "horizons": [
+          5,
+          10
+        ],
+        "magnitude_m": 0.05,
+        "num_steps_wait": 30,
+        "psnr": true,
+        "seeds": [
+          1,
+          2
+        ],
+        "tag": "psnr_clip",
+        "tasks": [
+          [
+            "libero_spatial",
+            0
+          ]
+        ],
+        "trials": 3,
+        "world_body": "auto",
+        "world_step": 40
+      },
+      "seeds": [
+        1,
+        2
+      ],
+      "status": "ok",
+      "tasks": [
+        "libero_spatial_t0"
+      ],
+      "trials_per_cell": [
+        3
+      ]
+    },
+    "gate13_psnr_lag": {
+      "arms": [
+        "control",
+        "disturb"
+      ],
+      "cells": 4,
+      "clips": 0,
+      "episodes": 8,
+      "horizons": [
+        5,
+        10
+      ],
+      "run_config": {
+        "arms": [
+          "control",
+          "disturb"
+        ],
+        "horizons": [
+          5,
+          10
+        ],
+        "magnitude_m": 0.05,
+        "num_steps_wait": 30,
+        "psnr": true,
+        "seeds": [
+          1
+        ],
+        "tag": "psnr_lag",
+        "tasks": [
+          [
+            "libero_spatial",
+            0
+          ]
+        ],
+        "trials": 2,
+        "world_body": "auto",
+        "world_step": 40
+      },
+      "seeds": [
+        1
+      ],
+      "status": "ok",
+      "tasks": [
+        "libero_spatial_t0"
+      ],
+      "trials_per_cell": [
+        2
+      ]
+    }
+  },
+  "generator": "scripts_setup/evidence_bundle.py",
+  "note": "Text-only reduction of results/. No RGB frames, videos, or qpos dumps. Every Gate 13 headline number is recomputable from these files with scripts_setup/gate13_audit.py (CPU only).",
+  "provenance": {
+    "checkpoints": {
+      "libero_optional_idm_2cam224.pt": {
+        "exists": true,
+        "path": "/data1/liborui/fastwam_bench/checkpoints/fastwam_release/libero_optional_idm_2cam224.pt",
+        "sha256": "041e6a4abbbe6e9d298eb48a99de51ad4d665d4c15e23917177b48de801b6f86",
+        "sha256_scope": "head+tail 1 MiB (fingerprint, not full-file)",
+        "size_bytes": 12041735545
+      },
+      "libero_optional_idm_2cam224_dataset_stats.json": {
+        "exists": true,
+        "path": "/data1/liborui/fastwam_bench/checkpoints/fastwam_release/libero_optional_idm_2cam224_dataset_stats.json",
+        "sha256": "30f81ad7d5076e97323e3328bce003e01a04cb21327b5bacd21bb72846768638",
+        "sha256_scope": "head+tail 1 MiB (fingerprint, not full-file)",
+        "size_bytes": 40939
+      }
+    },
+    "controller_config": "LIBERO-Safety/third_party/robosuite-1.4/robosuite/controllers/config/osc_pose.json",
+    "controller_config_sha256": "e328b6ed7bbb6faa6df9eb798c4283a13dabfa1a0a62d39f61ebc0babfb90f23",
+    "fastwam_dirty": true,
+    "fastwam_sha": "7faa71108368fbb3b6885649f112af607427a2d4",
+    "libero_safety_dirty": true,
+    "libero_safety_sha": "19ec8df23eedfbb9265bafd3e56495fcebfcfcd0",
+    "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35",
+    "python": "3.12.4",
+    "repo_branch": "main",
+    "repo_dirty": true,
+    "repo_sha": "d78266b60b5210e44229d3060694a2e0e8e6b539"
+  },
+  "world_step": 40
+}

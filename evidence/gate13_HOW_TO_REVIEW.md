@@ -7,11 +7,15 @@
   rise 60-100%, and failures are 400-step timeouts.
 - The model really does execute **exactly H stale actions** chosen for the pre-change world
   (stale executed = H at H=1,2,5,10; 0/160 contaminated episodes).
-- **Prediction fidelity collapses with lookahead** even with no intervention: 37.5 dB at lag 0 →
-  25.0 dB at lag 4 (matched-lag run `results/gate13_psnr_lag`).
-- **A mid-chunk world change costs more at a longer horizon, at a matched lag**: −0.64 dB at H=5 vs
-  −4.40 dB at H=10 (no measurable H dependence), n=6/cell, clip-isolated. This is the one measurement
-  in the report where the horizon effect survives a fair test.
+- **Prediction fidelity collapses with lookahead** even with no intervention: 39.6 dB at lag 0 →
+  27.9 dB at lag 4 → 27.1 dB at lag 8 (clip-isolated, one task, n=6/cell).
+- **A mid-chunk world change costs ~4.4 dB at the first scored lag, and the cost does not grow
+  with H**: −4.42 dB at H=5 vs −4.40 dB at H=10, matched lag 4, clip-isolated, n=6/cell. A
+  0.02 dB difference does **not** establish equivalence — at this n the design is underpowered
+  to rule out a modest H effect. This number measures **counterfactual forecast invalidation**
+  (the plan was made before an unannounced change), not prediction incompetence, mismatch
+  detection, or any benefit of world modelling; see the five-quantity breakdown in
+  `evidence/gate13_worldmodel_final.md`.
 
 **Claims that were WITHDRAWN during review of this report** (kept visible on purpose):
 - "the end-effector diverges further the longer the commitment" — the metric was a max over a
@@ -19,14 +23,19 @@
   (+0.0016…+0.0020 m at k=1). See panel C of the figure, which plots the fair version.
 - "a mid-chunk world change damages the prediction ~5x more at H=10" (the 4.7x figure) — the PSNR
   average covered a different number of future frames per H, so the comparison was not matched.
-  Redone clip-isolated it is ~4.4 dB at BOTH H=5 and H=10 (no H dependence), not 4.7x; see
-  `evidence/gate13_psnr_matched_lag.md`.
+  Redone clip-isolated it is ~4.4 dB at BOTH H=5 and H=10 (no detected H dependence), not 4.7x;
+  see `evidence/gate13_worldmodel_final.md`. An intermediate version of that fix reported a 2.4x
+  effect ("-0.64 dB at H=5 vs -1.52 at H=10"); that too is withdrawn — its averages were still
+  per-episode. Both retractions are recorded in `evidence/gate13_psnr_matched_lag.md`.
 
 **NOT claimed (and this report says so explicitly):**
 - That a longer commitment costs more *task success*. Pooled cost is +0.30, +0.40, +0.15,
   +0.25 at H=1,2,5,10 — **not monotone**. At n=10 the binomial noise floor is ±0.25, so the
-  data neither support nor refute a small H effect. This is a **powered negative result**,
-  not evidence of no effect.
+  data show **no detected monotone effect and are underpowered to rule out modest effects**
+  (they are not evidence of no effect).
+- That the −4.4 dB PSNR loss demonstrates mismatch detection, adaptive recovery, or a benefit
+  of world modelling. It is forecast invalidation under an unannounced intervention, and the
+  lag-8 value is a descriptive statement about the same pre-intervention clip, not recovery.
 
 ## The one-paragraph version
 
@@ -40,6 +49,8 @@ is real at the action level and invisible at the task level at this sample size.
 
 | file | what it is |
 |---|---|
+| `evidence/gate13_bundle/` | **committed raw evidence** (~700 KB text): one row per episode, one row per predicted clip, the pre-intervention action streams, run configs, `manifest.json` (SHAs + controller hash + checkpoint fingerprints), `SHA256SUMS`. This is the copy to read if you do not have `results/`. |
+| `evidence/gate13_canonical.md` | **every quoted number, regenerated from the bundle on CPU** by `scripts_setup/gate13_audit.py`, with PASS/FAIL validity checks |
 | `evidence/gate13_commitment_cost.md` | generated report: tables, CIs, interpretation, power note |
 | `evidence/gate13_commitment_cost.png` / `.pdf` | 3-panel figure (success / stale / divergence vs H) |
 | `results/gate13_main/gate13_summary.json` | machine-readable per-(task,H) numbers + `_config` |
@@ -48,6 +59,27 @@ is real at the action level and invisible at the task level at this sample size.
 | `evidence/gate13_magnitude_ladder.md` | the ladder, complete: 0.02 m is fully absorbed (20/20) → a threshold exists, and it is task-dependent (object breaks at 0.03 m, p=0.011; spatial does not) |
 | `results/gate13_lad00{2,3}/` | raw ladder records (0.02 / 0.03 m, H=1 vs H=10) |
 | `results/gate13_psnr/` | predicted-future-vs-reality PSNR arm |
+
+## Verify without a GPU (2 minutes, no `results/`, no checkpoints)
+
+```bash
+python scripts_setup/gate13_audit.py
+```
+
+Reads only `evidence/gate13_bundle/` and regenerates every number quoted in this
+document and in `README.md`; it exits non-zero if any validity check fails. The four
+checks are: (1) every (task, H, seed) has both arms on identical init states, (2)
+control and disturbed action streams are bit-identical before step 40 (max |L1| = 0),
+(3) `stale_action_steps == H` in disturbed and `== 0` in control episodes, (4) both
+arms present per H on identical (seed, init state) in the PSNR arm.
+
+The bundle is produced from `results/` by `scripts_setup/evidence_bundle.py`; it drops
+RGB frames, predicted videos and qpos dumps and keeps only what the numbers need. To
+regenerate it on a machine that has the raw runs:
+
+```bash
+python scripts_setup/evidence_bundle.py            # rebuild evidence/gate13_bundle/
+```
 
 ## Reproduce
 

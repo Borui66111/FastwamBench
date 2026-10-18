@@ -214,7 +214,7 @@ reading and **did not rescue the strong claim**, but it did produce a clean resu
   trend is noise. So the H-dependent component is smaller than this design can resolve, not merely
   masked. Resolving a 0.10 success difference at 80% power needs ~300 episodes per arm.
 
-**The world model's own prediction (PSNR arm) — the one place the horizon effect survives.**
+**The world model's own prediction (PSNR arm) — a fixed cost, not a horizon effect.**
 With `visualize_future_video=true` the model renders its predicted future and the eval scores it
 against reality. Two facts:
 
@@ -231,14 +231,23 @@ scored frame count from `replan_steps`, so H=1 was scored only at lag 0 and H=10
 `episode_frame_psnr` records per-frame PSNR, which is what makes a matched-lag comparison valid
 (lag 4 = frame index 1 for every H whose chunk covers 4 steps). `EVALUATION.psnr_fixed_lags`
 requests fixed lags but cannot exceed the clip, which is bounded by the executed chunk — verified:
-H=1 still yields one frame even when lags 0,4,8 are requested. See
-`evidence/gate13_psnr_matched_lag.md`.
+H=1 still yields one frame even when lags 0,4,8 are requested. A second correction was then
+needed because the matched-lag averages were still per-episode and diluted disturbed clips by a
+factor that differed ~10x between H=1 and H=10; the clip-isolated table in
+`evidence/gate13_worldmodel_final.md` is the authoritative one. The retraction record is kept at
+`evidence/gate13_psnr_matched_lag.md` (marked WITHDRAWN; do not cite its numbers).
 
 Reviewer entry points: `evidence/gate13_HOW_TO_REVIEW.md` (claim → artifact → command, with what is
 and is not claimed), `evidence/gate13_commitment_cost.md` + `.png` (generated),
 `evidence/gate13_psnr.png` (world-model signal), and
 `evidence/gate13_design_checks/DESIGN_FINDINGS.md` (the four design flaws that were found and
 fixed, with raw captures).
+
+**No GPU needed to check the numbers.** `results/` is gitignored, so the raw evidence is
+committed in reduced form at `evidence/gate13_bundle/` (~700 KB of text: per-episode outcomes,
+per-clip PSNR, the pre-intervention action streams, run configs, SHAs). Run
+`python scripts_setup/gate13_audit.py` — CPU only — to regenerate every table in
+`evidence/gate13_canonical.md` and the PASS/FAIL validity checks behind them.
 
 ---
 

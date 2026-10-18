@@ -60,8 +60,9 @@ sweep; only the displacement magnitude changes. 5 trials/cell, 2 tasks × H{1,10
 - n = 5 per cell per magnitude. The only comparison with adequate separation is 0.02 vs
   0.03 m pooled over horizons (p = 0.011); everything finer is underpowered.
 - These runs used the default (horizon-dependent) PSNR capture, so the `psnr` column is
-  blank here. The matched-lag PSNR experiment is separate
-  (`evidence/gate13_psnr_matched_lag.md`).
+  blank here. The matched-lag PSNR experiment is separate and clip-isolated
+  (`evidence/gate13_worldmodel_final.md`); the earlier matched-lag file of the same name is a
+  withdrawn record.
 - The disturbance direction is goal-aware and therefore depends on the object's pose at
   step 40, which varies slightly across episodes. Direction is recorded per episode in
   `records.jsonl` for anyone who wants to check it.

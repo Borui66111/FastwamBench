@@ -31,19 +31,46 @@ displacement lands inside — not the episode average.
    have meant the arms differed for an unrelated reason. They do not.
 
 2. **A mid-chunk world change costs the world model ~4.4 dB of prediction fidelity** at the
-   first scored lookahead after the change (27.9 -> 23.5 dB, a 1.9x increase in MSE).
+   first scored lookahead after the change (27.90 -> 23.48 dB, i.e. MSE 105.5 -> 291.8 in
+   8-bit units squared, a 2.8x increase; `+186.3` in the canonical table).
    This is the direct, causal measurement of "the model's committed prediction is wrong
    because the world moved."
 
-3. **The damage does NOT depend on the commitment horizon** (H=5: -4.42, H=10: -4.40; a
-   0.02 dB difference). Within the 4-step lookahead, a longer commitment is not
-   measurably worse. The damage does decay with lookahead (-4.40 at 4 steps, -3.41 at 8),
-   i.e. the world model partially recovers as it re-observes.
+3. **No horizon dependence was detected** (H=5: -4.42, H=10: -4.40; a 0.02 dB difference,
+   n=6/cell). Within the 4-step lookahead, a longer commitment is not measurably worse. A
+   0.02 dB difference does **not** establish equivalence: at n=6 the design is underpowered
+   to rule out a modest H effect. Across lags, the measured damage is -4.40 dB at 4 steps
+   and -3.41 dB at 8 steps (H=10 only). That is a purely descriptive lag-wise statement
+   about a single clip planned *before* the intervention; it is not evidence that the model
+   "re-observes" or recovers, because no new plan is formed inside that clip.
 
 4. **Prediction fidelity itself collapses with lookahead, with no intervention at all**:
    39.5 dB at lag 0 -> 27.9 dB at lag 4 -> 27.1 dB at lag 8. This is the cleanest
    world-modelling finding in the project and it is a property of the model, not of the
    disturbance.
+
+## What the -4.4 dB measures — and what it does not
+
+The displacement is applied *after* the clip was planned and is unobservable until the next
+replan. A predictor whose future was generated before that exogenous change **must**
+disagree with the realized rollout even if its learned dynamics are perfect. The -4.4 dB
+therefore measures **counterfactual forecast invalidation under an unannounced
+intervention**. On its own it is not a measure of prediction incompetence, of
+mismatch-detection ability, or of any benefit of world modelling.
+
+Five quantities have to be kept apart; this experiment measures only the first two:
+
+| # | quantity | measured here? |
+|---|---|---|
+| i | pre-intervention prediction fidelity | yes — lag-0 delta is exactly 0.00 dB by construction, and the control arm's lookahead curve (39.6 → 27.9 → 27.1 dB at 0/4/8 steps) is the no-intervention baseline |
+| ii | induced surprise after the change | yes — the -4.4 dB at lag 4 |
+| iii | mismatch detection | no — nothing in this run reads the PSNR signal to trigger a replan |
+| iv | post-replan prediction / action quality | no — the scored clips are plans made *before* the strike; the first new plan is outside this measurement |
+| v | task recovery | no — that is the task-success arm of Gate 13 (and Gates 13B–13D) |
+
+Likewise `stale_action_steps == H` is a **runner contract** (the intervention lands
+immediately after planning and replanning is forbidden until the chunk ends), not a learned
+property of the model.
 
 ## Why the earlier claims were wrong
 
@@ -55,6 +82,15 @@ displacement lands inside — not the episode average.
   and H=10 on three (lags 0, 4, 8). Averaging frame k over all clips in the episode then
   diluted the disturbed clips by a factor that itself depends on H (~10x more clips at
   H=1). The clip-isolated measurement above removes both confounds.
+
+## Provenance and how to check this file
+
+Every number above is regenerated on CPU from the committed bundle by
+`python scripts_setup/gate13_audit.py` (see `evidence/gate13_canonical.md`, section 3). The
+bundle (`evidence/gate13_bundle/`) carries the per-clip `frame_psnr` rows these means come
+from, plus `manifest.json` with the repo SHAs, the `osc_pose.json` controller hash and the
+checkpoint fingerprints of the exact run. `results/` is gitignored, so this bundle — not
+`results/` — is the citable evidence.
 
 ## Limits
 

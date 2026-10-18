@@ -1,0 +1,38 @@
+{
+  "_note": "written by hand: the running sweep was launched before gate13_run.py began auto-writing this file. Values are the exact CLI settings of that launch (see scripts_setup/gate13_all.sh).",
+  "action_horizon": 32,
+  "action_infer_mode": "idm",
+  "arms": [
+    "control",
+    "disturb"
+  ],
+  "goal_aware": true,
+  "gpus": [
+    5,
+    7
+  ],
+  "horizons": [
+    1,
+    2,
+    5,
+    10
+  ],
+  "magnitude_m": 0.05,
+  "ngpu": 2,
+  "num_steps_wait": 30,
+  "psnr": false,
+  "replan_steps_is_horizon": true,
+  "seeds": [
+    1,
+    2
+  ],
+  "sigma_shift": 1.0,
+  "tag": "main",
+  "tasks": [
+    "libero_spatial:0",
+    "libero_object:0"
+  ],
+  "trials": 5,
+  "world_body": "auto",
+  "world_step": 40
+}

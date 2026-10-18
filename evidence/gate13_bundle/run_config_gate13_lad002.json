@@ -1,0 +1,30 @@
+{
+  "arms": [
+    "control",
+    "disturb"
+  ],
+  "horizons": [
+    1,
+    10
+  ],
+  "magnitude_m": 0.02,
+  "num_steps_wait": 30,
+  "psnr": false,
+  "seeds": [
+    1
+  ],
+  "tag": "lad002",
+  "tasks": [
+    [
+      "libero_spatial",
+      0
+    ],
+    [
+      "libero_object",
+      0
+    ]
+  ],
+  "trials": 5,
+  "world_body": "auto",
+  "world_step": 40
+}

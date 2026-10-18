@@ -165,7 +165,8 @@ def run_job(job, gpu: int, args) -> tuple[str, int]:
         cmd.append("EVALUATION.visualize_future_video=true")
         # [fastbench] score the SAME lookahead lags for every H, otherwise the
         # number of scored frames is tied to replan_steps and cross-H PSNR is
-        # not comparable (see evidence/gate13_psnr_matched_lag.md).
+        # not comparable (see evidence/gate13_worldmodel_final.md; the older
+        # gate13_psnr_matched_lag.md is a withdrawn record).
         _fl = os.environ.get("GATE13_PSNR_LAGS", "").strip()
         if _fl:
             cmd.append(f"+EVALUATION.psnr_fixed_lags=[{_fl}]")
