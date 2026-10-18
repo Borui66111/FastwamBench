@@ -309,6 +309,21 @@ plus 3 plumbing checks (tests now 102). Evidence: `evidence/gate14_wam_specifici
 `results/gate13_g14ff` vs `results/gate13_repeat_carry_full`; compare with
 `scripts_setup/gate14_compare.py`.
 
+  *Correction (same day, after a fair-metric check):* "numerically identical" was the wrong words for
+  a null at n=6. Newcombe 95% CI on the between-pathway difference is **[−0.44, +0.44]** at H=1,
+  [−0.42, +0.42] at H=10, [−0.34, +0.34] at 800 steps — so the pathways are **not shown to be equal**,
+  only shown to be indistinguishable here. What actually refutes specificity is the *within*-pathway
+  drop: `first_frame` 11/12 control → 3/12 disturb, **p=0.0028** (H=10 alone p=0.015, H=1 alone
+  p=0.24). That argument does not require the two pathways to match. Also added the heatmap
+  (`evidence/gate14_matrix.png`) and a curated rollout (`evidence/gate14_rollout.png`, trial 2:
+  control success at 222 steps vs disturbed failure at 430 steps, held above the basket).
+
+**NEXT (scoped, not run): seed extension for the equivalence question.** Excluding a 20-point
+difference between pathways at 80% power needs ≈93 episodes/arm/horizon (~6 GPU-h/arm). Plan: seeds
+3–8 on `libero_object:0`, carry regime, both pathways, H=1 and H=10, 3 trials/seed → 18/cell, then
+re-run `gate14_compare.py` with the pooled runs. Until then the doc's claim stays the within-pathway
+one.
+
 **HEADLINE FINDING (2026-10-17, main sweep complete 32/32 + ladder):**
 The *mechanism* is confirmed exactly; the *task-level cost* is large but does **not** scale with H.
 

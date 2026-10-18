@@ -163,8 +163,8 @@ horizons, with `EVALUATION.action_infer_mode` switched between `idm` (future-awa
 
 | regime | `idm` control → disturb | `first_frame` control → disturb | verdict |
 |---|---|---|---|
-| carry (strikes after lift) | 6/6 → 2/6 (H1), 1/6 (H10) | 5/6 → **2/6** (H1), 6/6 → **1/6** (H10) | identical (p=1.00) |
-| carry, 800-step budget | 4/12 | **4/12** | identical (p=1.00) |
+| carry (strikes after lift) | 6/6 → 2/6 (H1), 1/6 (H10) | 5/6 → **2/6** (H1), 6/6 → **1/6** (H10) | same counts (p=1.00); CI ±0.44, so "not equal", "no detectable difference" |
+| carry, 800-step budget | 4/12 | **4/12** | same counts (p=1.00), CI ±0.34 |
 | approach (strike at step 40) | 12/12 → 11/12 | 11/12 → **5/12** | pathway difference, but **7/7 failures are 430-step timeouts** |
 
 So the carry-phase damage is **not** specific to future-aware inference — it is a property of

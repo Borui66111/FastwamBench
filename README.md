@@ -24,8 +24,10 @@ Every gate below (A–D, 7–14) is reproducible from this repo:
 - **Magnitude is a weak lever.** 5 → 20 mm changes nothing resolvable (success 33% → 25% → 0%, all
   pairwise contrasts p ≥ 0.245), whereas *when* the strike lands flips the result from null to large.
 - **And the cost is not specific to a world model** (Gate 14): the same checkpoint driven by the
-  non-future `first_frame` pathway is damaged identically — 2/6 and 1/6, Fisher p=1.0000 at both
-  horizons — and fails in the same dominant way (object carried to the basket, never released).
+  non-future `first_frame` pathway is damaged just as much — 2/6 and 1/6 against 2/6 and 1/6, Fisher
+  p=1.0000 at both horizons — and fails in the same dominant way (object carried to the basket,
+  never released). Note what carries the claim: the *within*-pathway drop (11/12 → 3/12, p=0.0028),
+  not the between-pathway null, whose 95% interval is ±0.44 at this n.
 
 So the defensible claim is **a property of fixed-horizon chunk execution, not a world-modeling
 commitment cost**: replaying a stale chunk is costly exactly when the stale actions are load-bearing,
@@ -395,13 +397,16 @@ task, same seeds, same strike schedule, same horizons — the only change is
 | `idm` (future-aware) | 6/6 @ H1, 6/6 @ H10 | 2/6 @ H1, 1/6 @ H10 | +0.67, +0.83 |
 | `first_frame` (non-future) | 5/6 @ H1, 6/6 @ H10 | **2/6 @ H1, 1/6 @ H10** | +0.50, +0.83 |
 
-**The disturbed cells are numerically identical** (Fisher p=1.0000 at both horizons), and the
-dominant failure mode is the same: the object is carried to the basket and never released (7 of 9
-`first_frame` failures never release it; the two that do let go 33 and 34 steps after the strike),
-with 12/12 strikes again landing after the lift. The H=1 mix is more scattered than in the
-future-aware arm (1 held-above, 1 lost-far, 1 held-elsewhere, 1 still descending), so this is a
-shared dominant mode rather than a byte-for-byte identical signature. The baseline is not broken —
-it is slightly clumsier under no intervention (11/12 vs 12/12) and otherwise behaves the same.
+**The disturbed cells show the same counts** (Fisher p=1.0000 at both horizons) — which is *not* an
+equivalence result: the 95% interval on that difference is ±0.44 at n=6, so the pathways could differ
+by up to 44 points either way. What refutes WAM-specificity is the within-pathway drop (11/12 → 3/12,
+p=0.0028), and that does not need the pathways to be equal. The dominant failure mode is the same
+too: the object is carried to the basket and never released (7 of 9 `first_frame` failures never
+release it; the two that do let go 33 and 34 steps after the strike), with 12/12 strikes again landing
+after the lift. The H=1 mix is more scattered than in the future-aware arm (1 held-above, 1 lost-far,
+1 held-elsewhere, 1 still descending), so this is a shared dominant mode rather than a byte-for-byte
+identical signature. The baseline is not broken — it is slightly clumsier under no intervention
+(11/12 vs 12/12) and otherwise behaves the same.
 
 **This is a negative result for WAM-specificity.** The carry-phase cost survives removal of
 future-aware action inference, so it is a property of **fixed-horizon chunk execution**, not a

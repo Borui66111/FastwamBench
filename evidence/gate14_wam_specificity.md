@@ -39,10 +39,19 @@ pathway is doing work; it simply does not change what the disturbance costs.
 | `idm` (future-aware) | 6/6 @ H1, 6/6 @ H10 | 2/6 @ H1, 1/6 @ H10 | +0.67, +0.83 |
 | `first_frame` (non-future) | 5/6 @ H1, 6/6 @ H10 | **2/6 @ H1, 1/6 @ H10** | +0.50, +0.83 |
 
-The disturbed cells are **numerically identical**: 2/6 and 1/6 at both horizons.
+The disturbed cells show **the same counts**: 2/6 and 1/6 at both horizons.
 Fisher on `idm` disturb vs `first_frame` disturb: **p=1.0000 at H=1, p=1.0000 at
-H=10** (pooled 15/24 vs 3/12, p=0.075, which is a reflection of the dumber
-baseline failing one extra control, not of greater WAM robustness).
+H=10** (pooled 3/12 vs 3/12, p=1.000).
+
+**p=1.00 here is not equivalence, and section 4b quantifies why**: at n=6 per cell
+the 95% interval on the difference spans roughly ±0.44, so these data are equally
+compatible with `first_frame` being substantially worse or substantially better.
+The refutation of the specificity hypothesis does **not** rest on that null. It
+rests on the *within-pathway* comparison: the specificity hypothesis predicts
+that removing future-aware inference should remove the damage, i.e. that
+`first_frame` disturb would look like `first_frame` control. It does not —
+pooled over horizons, 11/12 control vs 3/12 disturb, **Fisher p=0.0028**
+(H=10 alone: 6/6 → 1/6, p=0.015; H=1 alone: 5/6 → 2/6, p=0.24).
 
 **This is a negative result for the WAM-specificity hypothesis, and it is the
 most important measurement in Gate 14.** The world-model commitment cost
@@ -183,10 +192,41 @@ independent read of the same data. It also makes the per-horizon split of the po
 visible (3/6 at H=1 and 1/6 at H=10 in each pathway, summing to the 4/12 quoted in section 3b) —
 useful because the pooled figure alone hides that the H=10 cells are the weaker ones.
 
+## 4b. What `p=1.00` does and does not buy
+
+The between-pathway comparisons are nulls, and a null at n=6 is a weak statement.
+Quantifying it (Newcombe hybrid-score 95% interval for the difference of two
+independent proportions):
+
+| comparison | difference | 95% CI | reading |
+|---|---|---|---|
+| carry H=1, `idm` 2/6 vs `first_frame` 2/6 | 0.00 | **[−0.44, +0.44]** | no detectable difference; anything up to ±44 points still fits |
+| carry H=10, 1/6 vs 1/6 | 0.00 | **[−0.42, +0.42]** | same |
+| carry @800, 4/12 vs 4/12 | 0.00 | **[−0.34, +0.34]** | tighter, still wide |
+| approach, `idm` 11/12 vs `first_frame` 5/12 | **+0.50** | **[+0.12, +0.73]** | the only between-pathway contrast that excludes zero |
+
+So the honest claim is **not** "the two pathways are equally damaged" — that would
+require an equivalence test with a pre-declared margin, and at this n no margin
+tighter than ~±0.35 is even testable. The claim is:
+
+> Under the specificity hypothesis, removing future-aware action inference should
+> have removed the damage. It did not: the non-future pathway still drops from
+> 11/12 to 3/12 (p=0.0028), with the same failure mode.
+
+That is a refutation of the hypothesis, and it does not depend on the two
+pathways being *equal* — only on the baseline being damaged at all. The
+difference between the pathways could be as large as 44 points in either
+direction and the refutation would stand.
+
+**What would settle the equality question:** to exclude a 20-point difference
+between pathways at 80% power around p≈0.3–0.5 needs ≈93 episodes per arm. At
+~4 min/episode that is ~6 GPU-hours per arm per horizon; the seed extension in
+`STATE.md` is scoped for that, not run yet.
+
 ## Power
 
-n=6 per cell. The equivalence claim (idm = first_frame) rests on *identical*
-counts at both horizons, not on a power calculation: a real difference of the
-size Gate 13 found (6/6 → 2/6) would have been visible. Differences smaller than
-about 1 in 6 successes per cell are not excluded. The pooled p=0.075 for disturb
-is not evidence of a WAM advantage — it is one extra baseline control failure.
+n=6 per cell. A real difference of the size Gate 13 found (6/6 → 2/6) would have
+been visible; differences smaller than about 1 in 6 successes per cell are not
+excluded, which section 4b makes explicit rather than leaving to the reader. The
+pooled disturb comparison is not evidence of a WAM advantage either way — with
+3/12 vs 3/12 there is nothing to prefer.
