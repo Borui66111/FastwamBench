@@ -1,5 +1,5 @@
 diff --git a/experiments/libero/eval_libero_single.py b/experiments/libero/eval_libero_single.py
-index 62c8fa8..06239eb 100644
+index 62c8fa8..50df659 100644
 --- a/experiments/libero/eval_libero_single.py
 +++ b/experiments/libero/eval_libero_single.py
 @@ -24,6 +24,14 @@ project_root = Path(__file__).resolve().parents[2]
@@ -250,7 +250,7 @@ index 62c8fa8..06239eb 100644
              action_chunk, imgs, predicted_future_frames = _predict_action_chunk(
                  obs=obs,
                  task_description=task_description,
-@@ -518,10 +698,31 @@ def run_single_episode(
+@@ -518,10 +698,32 @@ def run_single_episode(
                  input_h=input_h,
                  model_device=model_device,
              )
@@ -268,6 +268,7 @@ index 62c8fa8..06239eb 100644
 +            if _CHUNK_DUMP_PATH:
 +                with open(_CHUNK_DUMP_PATH, "a") as _cf:
 +                    _cf.write(json.dumps({
++                        "episode": int(episode_idx),
 +                        "t": int(t),
 +                        "replan_idx": int(current_replan_idx),
 +                        "chunk": np.asarray(action_chunk[:10]).tolist(),
@@ -283,7 +284,7 @@ index 62c8fa8..06239eb 100644
                      "gt_frames": [imgs.copy()],
                      "pred_frames": predicted_future_frames,
                  }
-@@ -533,14 +734,177 @@ def run_single_episode(
+@@ -533,14 +735,177 @@ def run_single_episode(
                  pending_actions = [ensembler.get_action(ts).tolist() for ts in range(t, t + replan_steps)]
              else:
                  pending_actions = action_chunk[:replan_steps].tolist()
@@ -463,7 +464,7 @@ index 62c8fa8..06239eb 100644
              if current_replan_step in capture_steps:
                  current_predicted_future_clip["gt_frames"].append(get_libero_image(obs))
              if done or len(pending_actions) == 0:
-@@ -587,6 +951,19 @@ def run_single_episode(
+@@ -587,6 +952,19 @@ def run_single_episode(
                  )
                  if clip_psnr is not None:
                      episode_future_clip_psnr.append(clip_psnr)
@@ -483,7 +484,7 @@ index 62c8fa8..06239eb 100644
                  predicted_future_video_clips.append(current_predicted_future_clip)
                  current_predicted_future_clip = None
          if done:
-@@ -597,6 +974,39 @@ def run_single_episode(
+@@ -597,6 +975,39 @@ def run_single_episode(
      episode_mean_psnr = (
          float(np.mean(episode_future_clip_psnr)) if len(episode_future_clip_psnr) > 0 else None
      )
@@ -523,7 +524,7 @@ index 62c8fa8..06239eb 100644
      return bool(done), replay_images, predicted_future_video_clips, episode_mean_psnr
  
  
-@@ -730,10 +1140,9 @@ def _run_task_to_file(
+@@ -730,10 +1141,9 @@ def _run_task_to_file(
  
      task_suite = benchmark.get_benchmark_dict()[suite_name]()
      task = task_suite.get_task(task_id)

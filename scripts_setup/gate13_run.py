@@ -301,6 +301,10 @@ def main() -> int:
             "action_infer_mode": args.action_infer_mode,
             "max_steps": args.max_steps,
             "drop_stale_after_strike": bool(args.drop_stale_after_strike),
+            # Gate 14E provenance: without this the artifact cannot say which arm
+            # it is. (Episode records also carry zero_stale_strikes, which is the
+            # authoritative check; this is for reading run_config alone.)
+            "zero_stale": bool(args.zero_stale),
             "arms": args.arm_list,
             "magnitude_m": float(args.magnitude),
             "world_step": args.world_step,
