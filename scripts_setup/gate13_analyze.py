@@ -165,6 +165,7 @@ def episode_metrics(recs, body, h=None):
             "success": bool(e.get("success")),
             "steps": e.get("steps"),
             "stale_action_steps": stale_n,
+            "strike_count": e.get("strike_count"),
             "contaminated": contaminated,
             "post_iv_success": post_iv,
             "delta_used": ivrec.get("delta_used"),
@@ -411,6 +412,33 @@ def main() -> int:
             for k, h, a, o, w in short
         ],
     }
+    # A disturb cell whose strike_count is 0 is not a disturbed cell at all: the
+    # intervention silently did not fire, so the arm is a duplicate of control.
+    # Seen in results/gate13_repeat05_canary (object H1: strikes=0, step counts
+    # byte-identical to control). Counting episodes cannot catch this, because
+    # every episode completed normally.
+    dead = []
+    for key, per_h in data.items():
+        for h, arms in per_h.items():
+            for arm, eps in arms.items():
+                if not arm.startswith("disturb") or not eps:
+                    continue
+                sc = [e.get("strike_count") for e in eps]
+                sc = [v for v in sc if v is not None]
+                if sc and max(sc) == 0:
+                    dead.append((key, h, arm, len(sc)))
+    summary["_completeness"]["disturb_cells_with_no_strike"] = [
+        {"cell": k, "H": h, "arm": a, "episodes_checked": n} for k, h, a, n in dead
+    ]
+    if dead:
+        print("\n" + "!" * 78)
+        print("INTERVENTION NEVER FIRED - these disturb cells recorded strike_count=0")
+        print("for every episode, so they are control replicates, not disturbed arms.")
+        for k, h, a, n in dead:
+            print(f"  {k}  H={h}  {a}: 0 strikes in {n} episodes")
+        print("Do not compare these against control; re-run with the strike enabled.")
+        print("!" * 78)
+
     if short:
         print("\n" + "!" * 78)
         print("INCOMPLETE CELLS - a job crashed or was cut short. These cells are")

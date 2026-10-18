@@ -57,9 +57,9 @@ so the H=10 arm landed every strike, and the H=1 arm landed all four in most but
 The strikes do cost something: on the object task they add 89-133 steps of re-approach. They do not
 cost success, and the size of that cost does not depend on how long the commitment was.
 
-## Two design flaws found and fixed here
+## Three failure modes found here
 
-Both were caught by looking at the data rather than trusting the harness.
+All were caught by looking at the data rather than trusting the harness.
 
 1. **Mirrored strikes made the task easier.** The first version alternated strike direction, so odd
    strikes pushed the object *toward* the goal. Struck episodes then finished in 51 steps against
@@ -69,9 +69,18 @@ Both were caught by looking at the data rather than trusting the harness.
    but the object starts ~0.1-0.2 m from the goal, so after one strike the cap tripped and later
    strikes were skipped: measured stale was 1.0 instead of 4. Fixed: the cap is now a drift budget
    measured from the object's distance at the first strike. A test pins the new semantics.
+3. **The intervention can silently not fire at all.** In `results/gate13_repeat05_canary` the
+   `libero_object_t0/H1/disturb` arm recorded `strike_count=0` on every episode, and its step counts
+   (186, 164, 222) are byte-identical to the control arm's. That cell is not a disturbed arm — it is
+   a second copy of control, and comparing the two would report a clean cost of exactly zero for a
+   manipulation that never happened. Every episode completed normally, so an episode count cannot
+   detect this. `gate13_analyze.py` now reads `strike_count` and prints an `INTERVENTION NEVER
+   FIRED` block for any disturb cell where it is 0 in every episode.
 
-The earlier 0.05 m repeated-strike run (`results/gate13_repeat05`) is superseded by this one: it
-ran under flaw 2, so its effective design was a single strike.
+`results/gate13_repeat05_canary` is invalid on two counts (failure modes 1 and 3) and is not cited
+anywhere; it is retained only as the capture that exposed them. The earlier 0.05 m repeated-strike
+run (`results/gate13_repeat05`) is superseded: it ran under failure mode 2, so its effective design
+was a single strike.
 
 ## Interpretation
 
