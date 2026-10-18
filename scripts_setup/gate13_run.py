@@ -155,6 +155,12 @@ def run_job(job, gpu: int, args) -> tuple[str, int]:
             "+EVALUATION.intervention_world_auto=true",
             f"+EVALUATION.intervention_world_magnitude={args.magnitude}",
             f"+EVALUATION.intervention_world_step={args.world_step}",
+            # Gate 14: repeated strikes. Only emitted when requested so the
+            # Gate 13 one-shot runs stay bit-identical.
+            *([f"+EVALUATION.intervention_world_repeat_every={args.world_repeat_every}"]
+              if args.world_repeat_every else []),
+            *([f"+EVALUATION.intervention_world_repeat_count={args.world_repeat_count}"]
+              if args.world_repeat_count else []),
         ]
         if DELTA:
             cmd.append(f"+EVALUATION.intervention_world_delta={DELTA}")
@@ -200,6 +206,10 @@ def main() -> int:
     ap.add_argument("--ngpu", type=int, default=2)
     ap.add_argument("--world-body", default=os.environ.get("GATE13_BODY", BODY),
                     help="'auto' resolves the body from the task goal (default)")
+    ap.add_argument("--world-repeat-every", type=int, default=None,
+                    help="repeat the world change every N steps (Gate 14 compounding mode)")
+    ap.add_argument("--world-repeat-count", type=int, default=None,
+                    help="max number of strikes in repeat mode")
     ap.add_argument("--magnitude", default=os.environ.get("GATE13_MAG", WORLD_MAG),
                     help="disturbance magnitude in metres (goal-aware default)")
     ap.add_argument("--psnr", action="store_true", help="also render predicted future video")
@@ -231,6 +241,8 @@ def main() -> int:
             "arms": args.arm_list,
             "magnitude_m": float(args.magnitude),
             "world_step": args.world_step,
+            "world_repeat_every": args.world_repeat_every,
+            "world_repeat_count": args.world_repeat_count,
             "world_body": args.world_body,
             "psnr": bool(args.psnr),
             "num_steps_wait": 30,

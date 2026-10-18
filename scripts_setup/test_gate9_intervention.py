@@ -359,6 +359,38 @@ check("fallback candidate is used and is non-contaminating", post2 is False, str
 check("contaminating displacement was reverted", abs(e3.sim.data.qpos[9]) < 0.15, str(e3.sim.data.qpos[9]))
 check("success is False after the guarded displacement", check_success(e3) is False)
 
+print("== 17. Gate 14 repeated strikes (compounding world change) ==")
+# Rationale: one strike can only invalidate H actions once, and re-acquisition
+# absorbs that. Repeating the strike leaves H stale actions PER STRIKE, so any
+# horizon effect compounds with strike count instead of being absorbed.
+rcfg = cfg(world_enabled=True, replan_idx=0, world_body="akita_black_bowl_2_main",
+           world_delta=[0.1, 0, 0], world_step=60, world_repeat_every=10,
+           world_repeat_count=3)
+check("repeat_every parsed", rcfg.get("world_repeat_every") == 10,
+      str(rcfg.get("world_repeat_every")))
+check("silent before first strike",
+      maybe_displace_world(env, rcfg, 0, step_t=59) is None)
+strikes = []
+for t in (60, 70, 80, 90, 100, 110):
+    env.sim.data.qpos[16:19] = [1.0, 2.0, 3.0]
+    r = maybe_displace_world(env, rcfg, t // 10, step_t=t)
+    strikes.append((t, r))
+fired = [t for t, r in strikes if r is not None]
+check("fires on every multiple of the interval within the cap",
+      fired == [60, 70, 80], str(fired))
+check("count cap stops further strikes", 90 not in fired and 100 not in fired, str(fired))
+check("no strike between multiples",
+      maybe_displace_world(env, rcfg, 6, step_t=65) is None)
+idx = [r.get("strike") for t, r in strikes if r is not None]
+check("strike index increments", idx == [0, 1, 2], str(idx))
+d0 = [r.get("delta") for t, r in strikes if r is not None][0]
+d1 = [r.get("delta") for t, r in strikes if r is not None][1]
+check("even strike uses the goal-away direction", d0[0] > 0, str(d0))
+check("odd strike mirrors direction (object oscillates, stays reachable)",
+      d1[0] < 0 and abs(d1[0] - (-d0[0])) < 1e-9, f"{d0} vs {d1}")
+check("repeat strikes are JSON-serialisable",
+      all(json.loads(json.dumps(r)) is not None for t, r in strikes if r is not None))
+
 print()
 if FAILS:
     print(f"RESULT: {len(FAILS)} FAILURE(S): {FAILS}")

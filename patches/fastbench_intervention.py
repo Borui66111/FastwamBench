@@ -82,6 +82,15 @@ def resolve_intervention_cfg(cfg: Any) -> dict:
         # intervention_world_step (or intervention_stale_metric_step) pins the
         # disturbance to one absolute env step regardless of horizon.
         "world_step": ev.get("intervention_world_step", None),
+        # [fastbench] Gate 14 repeated-strike mode. A single mid-chunk change can
+        # only ever invalidate H actions once, and re-acquisition dominates that
+        # one-off cost, so the horizon cannot show through. Repeating the change
+        # every `world_repeat_every` steps leaves H stale actions PER STRIKE, so
+        # any horizon effect compounds with the strike count instead of being
+        # absorbed. The sign alternates so the object oscillates around its
+        # original position and stays reachable at every horizon.
+        "world_repeat_every": ev.get("intervention_world_repeat_every", None),
+        "world_repeat_count": ev.get("intervention_world_repeat_count", None),
         "stale_metric_step": ev.get("intervention_stale_metric_step", None),
         "stale_metric": ev.get("intervention_stale_metric", True),
         "record_state": bool(ev.get("recorder_state", False)),
@@ -584,8 +593,21 @@ def maybe_displace_world(env: Any, icfg: dict, replan_idx: int, step_t: Optional
             return {"kind": "world_displacement", "applied": False,
                     "reason": "auto: could not resolve manipulated body from goal state"}
     wstep = icfg.get("world_step")
+    repeat_every = icfg.get("world_repeat_every")
+    strike_idx = 0
     if wstep is not None:
-        if step_t is None or int(step_t) != int(wstep):
+        if step_t is None:
+            return None
+        if repeat_every:
+            every = max(1, int(repeat_every))
+            delta_t = int(step_t) - int(wstep)
+            if delta_t < 0 or delta_t % every != 0:
+                return None
+            strike_idx = delta_t // every
+            cap = icfg.get("world_repeat_count")
+            if cap is not None and strike_idx >= int(cap):
+                return None
+        elif int(step_t) != int(wstep):
             return None
     elif replan_idx != int(icfg.get("replan_idx", 0)):
         return None
@@ -597,6 +619,10 @@ def maybe_displace_world(env: Any, icfg: dict, replan_idx: int, step_t: Optional
     primary = icfg.get("world_delta")
     if not primary:
         primary = goal_away_delta(env, body, magnitude) if auto else [0.0, 0.0, 0.0]
+    if repeat_every and strike_idx % 2 == 1 and primary:
+        # odd strike: mirror the displacement so the object oscillates rather
+        # than drifting out of the workspace as the strikes accumulate.
+        primary = [-float(primary[0]), -float(primary[1]), float(primary[2])]
     snap_before = snapshot_state(env, body_names=[body])
     pre_success = check_success(env)
     res, delta_used, post_success, rejected = apply_world_displacement(
@@ -606,6 +632,8 @@ def maybe_displace_world(env: Any, icfg: dict, replan_idx: int, step_t: Optional
     return {
         "kind": "world_displacement",
         "mode": "displace",
+        "strike": int(strike_idx),
+        "repeat_every": (int(repeat_every) if repeat_every else None),
         "body": body,
         "auto": bool(auto),
         "magnitude": float(magnitude),
