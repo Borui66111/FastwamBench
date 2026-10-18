@@ -73,15 +73,50 @@ That retires the framing this repo was built around. "The cost of world-model co
 *the cost of replaying a chunk whose premise has expired*, does not describe what the data shows:
 the episode fails whether the chunk is replayed, truncated, or never replayed at all.
 
+## Gate 14F — the policy does respond; the response is small
+
+Identical per-episode outcomes across the three arms admit two explanations: the policy does not
+react to the displacement at all, or it reacts too little to matter. Those are different claims about
+the model and only the first would be alarming, so I measured it instead of inferring it from step
+counts.
+
+Method: dump every action chunk (`FASTBENCH_DUMP_CHUNK=<path>`, one JSON line per replan) from two
+one-episode runs at the same seed and trial — the keep arm, whose chunk at t=100 is planned from the
+**pre**-strike observation, and the zero-stale arm, whose chunk at t=100 is planned from the
+**refreshed post**-strike observation. Same task, seed, horizon, magnitude and strike step.
+
+| replan step | max abs chunk difference | reading |
+|---|---|---|
+| t=30 … t=90 (8 chunks) | **0.00000** | bit-identical — the two runs are the same trajectory before the strike |
+| **t=100 (the strike)** | **0.09979** | the plan changes when the model sees the object move |
+| t=110 … t=200 (10 chunks) | 0.009 – 0.058 | the difference persists and decays |
+
+Two things follow.
+
+1. **Internal validity.** The eight pre-strike chunks agree to the last bit, so the comparison at
+   t=100 is not contaminated by run-to-run variation. This is the same role lag-0 Δ=0 plays in the
+   PSNR analysis.
+2. **The model is not blind to the strike.** Its plan shifts by up to ≈0.10 in normalized action
+   units at the strike replan (mean |Δ| ≈ 0.021). So the failure is not "the model ignores the
+   displacement" — it is that a response of this size does not change the episode outcome. Both the
+   identical success counts and the identical step counts survive a plan that is measurably, but
+   slightly, different.
+
+What this rules out: "the policy produces an unchanged trajectory". What it does not rule out: that
+the response is simply too small relative to the placement precision the task requires, or that the
+dominant failure is geometric (the object ends up ~1 cm off and the success check is exact) rather
+than a control failure.
+
 ## What it does not establish
 
 - **Not** that the policy is unaffected by the strike. It is not: the object moves, and the episode
   fails 4/6 times. The displacement is doing the damage; stale execution is not the channel.
-- **Not** that the policy ignores the displacement. The identical step counts are *consistent* with
-  the policy producing an essentially unchanged trajectory from the refreshed observation, but that
-  is an inference from step counts, not a measurement of the actions. The direct test — diff the
-  chunk produced from the pre-strike observation against the chunk produced from the refreshed one —
-  has not been run. Until it is, "the policy does not compensate for a 1 cm shift" is a hypothesis.
+- **Not** that the policy ignores the displacement. It does not — and this is now measured rather than
+  inferred. Dumping the chunks from the keep arm (planned pre-strike) and the zero-stale arm (planned
+  post-strike) at the same seed shows the eight pre-strike chunks are **bit-identical** and the chunk
+  at the strike differs by up to **0.0998** (mean |Δ| 0.021). The model sees the move and responds;
+  the response is simply not big enough to change the outcome. What remains open is whether that is a
+  magnitude problem or a geometric one — the object ends up ~1 cm off and the success check is exact.
 - **Not** a claim about the horizon gradient. Gate 13C/13D measured that four strikes cost more than
   one, and H=10 more than H=1. With stale-action count now inert, that gradient has **no mechanistic
   account** and must not be restated as "commitment compounds with horizon".

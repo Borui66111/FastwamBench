@@ -46,10 +46,11 @@ fixed ≈4.4 dB of PSNR at lag ≥ 4, and that damage does not grow with the rep
 
 **Not established:** why the policy stops short of releasing (the records carry no grasp/contact
 state); whether the WAM has any world-modeling advantage at all under a different intervention;
-whether a stronger no-video baseline would also pay the same cost; and **why** the displacement costs
-success when the controller is free to re-plan from a correct observation. The identical step counts
-across the three arms are *consistent* with the policy producing an essentially unchanged trajectory,
-but that is an inference from step counts — the direct chunk-diff test has not been run.
+whether a stronger no-video baseline would also pay the same cost; and whether the small response is a
+*magnitude* problem or a *geometric* one. What is now measured: the policy is not blind to the strike.
+Chunk dumps at the same seed show the pre-strike plans are bit-identical across arms and the plan at
+the strike differs by up to 0.0998 — the model reacts, and the reaction is too small to change the
+outcome.
 
 ---
 

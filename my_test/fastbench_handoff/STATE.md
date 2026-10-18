@@ -472,6 +472,9 @@ Honesty notes:
 - `gate13_analyze.py`'s contamination rule (`stale_n <= 0` ⇒ "manipulation never ran") is now
   mode-aware: for a zero-stale episode it instead requires `obs_refreshed is True`. Without that,
   every 14E episode was flagged `bad`, which would have made a reviewer distrust a correct cell.
-- **Not measured:** that the policy produces an unchanged trajectory. Identical step counts are
-  consistent with it, but the chunk-diff test has not been run.
+- **Not measured:** ~~that the policy produces an unchanged trajectory~~ — measured and **falsified**
+  (Gate 14F). Chunk dumps at the same seed: the 8 pre-strike chunks are bit-identical across arms
+  (internal validity), and the chunk at the strike differs by max 0.0998 / mean 0.021. The model
+  reacts; the reaction is too small to change the outcome. Diagnostic:
+  `FASTBENCH_DUMP_CHUNK=<path>`, one JSON line per replan.
 
