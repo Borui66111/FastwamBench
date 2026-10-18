@@ -1,8 +1,9 @@
 # Gate 13B — does commitment cost compound when the world changes repeatedly?
 
-**Short answer: no.** With 10x more stale actions and identical total world drift, task success is
-unchanged and effort differences are inside noise. This is the strongest form of the Gate 13
-negative result, because the experiment was built specifically to expose compounding.
+**Short answer: no.** With 10x more stale actions and identical total world drift, task success does
+not worsen with horizon (the one visible difference runs the other way) and effort differences are
+inside noise. This is the strongest form of the Gate 13 negative result, because the experiment was
+built specifically to expose compounding.
 
 ## Why a single strike was not enough
 
@@ -37,7 +38,9 @@ accumulation rather than one large shock.
 | object | 10 | 40.0 | 10.0x |
 
 The manipulation worked: H=10 executed an order of magnitude more actions against a world that had
-already moved. `strike_count` confirms all four strikes landed in both horizons (3.3 and 4.0 mean).
+already moved. `strike_count` shows a mean of 3.3 (H=1) and 4.0 (H=10) strikes out of 4 requested —
+so the H=10 arm landed every strike, and the H=1 arm landed all four in most but not all episodes
+(an episode ends early on success, before the later strike steps are reached).
 
 ## Result
 
@@ -77,9 +80,39 @@ many blind actions it executed in the meantime does not change whether it succee
 consistent with Gate 13: the binding constraint is the recovery threshold (whether the object can
 be re-reached at all), not the length of the open-loop commitment.
 
-The negative result is now supported by five independent runs: the Gate 13 main sweep (n=10),
-`psnr2` (n=6), the magnitude ladder (n=10), the 0.05 m repeat run (n=12), and this sub-threshold
-repeat run (n=6). All agree that stale-action count varies by design while success does not.
+The negative result is supported by five independent runs in which the stale-action count genuinely
+varies by design (verified against each `gate13_summary.json`, `stale_disturb`):
+
+| run | magnitude | n/cell | stale at H1 -> H10 |
+|---|---|---|---|
+| `gate13_main` | 0.05 m | 10 | 1.0 / 2.0 / 5.0 / 10.0 (H=1,2,5,10) |
+| `gate13_psnr2` | 0.05 m | 6 | 1.0 -> 10.0 |
+| `gate13_lad002` | 0.02 m | 5 | 1.0 -> 10.0 |
+| `gate13_lad003` | 0.03 m | 5 | 1.0 -> 10.0 |
+| `gate13_repeat_sub` | 0.01 m x4 | 6 | 3.3 -> 32.7 |
+
+The claim these five support is narrower than "success does not vary" — success does fluctuate run to
+run. What holds in every one of them is that the success cost **never increases with H**: it is
+either flat or it moves the wrong way for a compounding mechanism.
+
+| run | success cost at H1 -> H10 | shape |
+|---|---|---|
+| `gate13_main` spatial | +0.20 -> +0.20 (H=1,2,5,10 all equal) | flat |
+| `gate13_main` object | +0.40 / +0.60 / +0.10 / +0.30 | non-monotone |
+| `gate13_psnr2` spatial | +0.33 -> +0.33 | flat |
+| `gate13_lad002` both | +0.00 -> +0.00 | flat |
+| `gate13_lad003` object | +0.80 -> +0.40 | decreases |
+| `gate13_repeat_sub` object | +0.17 -> +0.00 | decreases |
+
+Not one of them shows the monotone rise that compounding commitment cost would require. The visible
+run-to-run spread is binomial noise at these n (0.03 m object: Fisher p=0.52 for H1 vs H10).
+
+`results/gate13_repeat05` is deliberately **not** counted among them, even though its success numbers
+point the same way: under flaw 2 its stale count was ~1.0 at both H1 and H10, so it cannot support a
+claim about staleness varying by design — it is a single-strike replication, which Gate 13 already
+covers. It is also incomplete: the `libero_object_t0/H1/control_s1` cell is absent (H1 control is
+9/9 rather than 12/12). Neither point changes its superseded status, but it must not be cited as
+independent evidence.
 
 ## Reproduce
 
