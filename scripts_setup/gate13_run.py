@@ -97,7 +97,8 @@ def free_gpus(min_free_mib: int = 5000):
 
 
 def common_overrides(suite: str, tid: int, trials: int, seed: int, h: int,
-                     mode: str = "idm", max_steps: int | None = None) -> list[str]:
+                     mode: str = "idm", max_steps: int | None = None,
+                     drop_stale: bool = False) -> list[str]:
     ov = [
         "task=libero_optional_idm_2cam224_1e-4",
         f"ckpt={CKPT}",
@@ -119,6 +120,10 @@ def common_overrides(suite: str, tid: int, trials: int, seed: int, h: int,
     if max_steps is not None:
         # Gate 14: a longer budget separates "slower" from "never".
         ov.append(f"+EVALUATION.max_steps={int(max_steps)}")
+    if drop_stale:
+        # Gate 14D positive control: discard the executing chunk on every strike,
+        # so the same world change happens but no stale action is ever executed.
+        ov.append("+EVALUATION.intervention_world_drop_stale=true")
     return ov
 
 
@@ -134,6 +139,9 @@ def build_jobs(args):
                         "seed": seed, "trials": args.trials, "out": out,
                         "psnr": args.psnr, "mode": args.action_infer_mode,
                         "max_steps": args.max_steps,
+                        # Gate 14D: only the disturb arm can have a strike to
+                        # drop; the control arm is unaffected either way.
+                        "drop_stale": bool(args.drop_stale_after_strike),
                     })
     return jobs
 
@@ -159,7 +167,8 @@ def run_job(job, gpu: int, args) -> tuple[str, int]:
     log = args.log_dir / f"{job['suite']}_t{job['tid']}_H{job['h']}_{job['arm']}_s{job['seed']}.log"
     cmd = [PY, "experiments/libero/eval_libero_single.py"]
     cmd += common_overrides(job["suite"], job["tid"], job["trials"], job["seed"], job["h"],
-                            job.get("mode", "idm"), job.get("max_steps"))
+                            job.get("mode", "idm"), job.get("max_steps"),
+                            job.get("drop_stale", False))
     cmd += [f"EVALUATION.output_dir={out}", f"EVALUATION.recorder_path={out/'records.jsonl'}"]
     if job["psnr"]:
         cmd.append("EVALUATION.visualize_future_video=true")
@@ -188,6 +197,9 @@ def run_job(job, gpu: int, args) -> tuple[str, int]:
             # absolute step, so they land inside the carry phase.
             *([f"+EVALUATION.intervention_world_trigger_after_lift={args.world_trigger_after_lift}"]
               if args.world_trigger_after_lift is not None else []),
+            # Gate 14D: same strike, but the stale remainder of the chunk is
+            # dropped so no already-planned action executes. Emitted from
+            # common_overrides (where the flag is testable), not here.
         ]
         if DELTA:
             cmd.append(f"+EVALUATION.intervention_world_delta={DELTA}")
@@ -247,6 +259,9 @@ def main() -> int:
                     help="idm = future-aware (WAM); first_frame = non-future baseline (Gate 14)")
     ap.add_argument("--arms", default="control,disturb",
                     help="comma-separated arms to run (default both)")
+    ap.add_argument("--drop-stale-after-strike", action="store_true",
+                    help="Gate 14D positive control: on every strike, discard the rest of the "
+                         "executing chunk so no stale action runs. Same strike, no stale execution.")
     ap.add_argument("--max-steps", type=int, default=None,
                     help="Gate 14: override the per-suite step budget (default: suite value, "
                          "400 for libero_object/spatial). Use a larger value to separate "
@@ -276,6 +291,7 @@ def main() -> int:
             "trials": args.trials,
             "action_infer_mode": args.action_infer_mode,
             "max_steps": args.max_steps,
+            "drop_stale_after_strike": bool(args.drop_stale_after_strike),
             "arms": args.arm_list,
             "magnitude_m": float(args.magnitude),
             "world_step": args.world_step,

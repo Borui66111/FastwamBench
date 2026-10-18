@@ -538,6 +538,29 @@ try:
     check("max_steps and action_infer_mode coexist",
           "+EVALUATION.action_infer_mode=first_frame" in _long and
           "+EVALUATION.max_steps=800" in _long)
+    # Gate 14D: the drop-stale positive control must be off unless asked for, and
+    # must survive resolve_intervention_cfg (the same class of bug as the lift
+    # trigger, which reached argparse but never the subprocess).
+    check("drop_stale absent by default",
+          not any("drop_stale" in x for x in _g13.common_overrides(
+              "libero_object", 0, 1, 1, 1)),
+          repr([x for x in _g13.common_overrides("libero_object", 0, 1, 1, 1)
+                if "drop_stale" in x]))
+    check("drop_stale reaches the command line when requested",
+          "+EVALUATION.intervention_world_drop_stale=true" in
+          _g13.common_overrides("libero_object", 0, 1, 1, 1, "idm", None, True))
+    _ds = resolve_intervention_cfg({"EVALUATION": {
+        "intervention_enabled": True, "intervention_mode": "world",
+        "intervention_world_enabled": True, "intervention_world_step": 40,
+        "intervention_world_drop_stale": True,
+    }})
+    check("drop_stale survives resolve_intervention_cfg",
+          _ds.get("world_drop_stale") is True, repr(_ds.get("world_drop_stale")))
+    check("drop_stale defaults to False",
+          resolve_intervention_cfg({"EVALUATION": {
+              "intervention_enabled": True, "intervention_mode": "world",
+              "intervention_world_enabled": True, "intervention_world_step": 40,
+          }}).get("world_drop_stale") is False)
     # GPU selection must honour CUDA_VISIBLE_DEVICES. Ignoring it silently put
     # two 5B models on one card (the heuristic picks by free memory, and both
     # launches saw the same GPU as free) -> CUDA OOM, rc=1, cell lost.
