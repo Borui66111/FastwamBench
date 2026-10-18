@@ -87,13 +87,13 @@ one-episode runs at the same seed and trial — the keep arm, whose chunk at t=1
 
 | replan step | max abs chunk difference | reading |
 |---|---|---|
-| t=30 … t=90 (8 chunks) | **0.00000** | bit-identical — the two runs are the same trajectory before the strike |
+| t=30 … t=90 (7 chunks) | **0.00000** | bit-identical — the two runs are the same trajectory before the strike |
 | **t=100 (the strike)** | **0.09979** | the plan changes when the model sees the object move |
 | t=110 … t=200 (10 chunks) | 0.009 – 0.058 | the difference persists and decays |
 
 Two things follow.
 
-1. **Internal validity.** The eight pre-strike chunks agree to the last bit, so the comparison at
+1. **Internal validity.** The seven pre-strike chunks agree to the last bit, so the comparison at
    t=100 is not contaminated by run-to-run variation. This is the same role lag-0 Δ=0 plays in the
    PSNR analysis.
 2. **The model is not blind to the strike.** Its plan shifts by up to ≈0.10 in normalized action
@@ -136,3 +136,10 @@ python scripts_setup/gate13_run.py ... --world-repeat-count 1 --drop-stale-after
 
 Data: `results/gate13_g14keep1`, `results/gate13_g14drop1`, `results/gate13_g14zero1`,
 `results/gate13_g14ediff` (the pixel-diff canary).
+
+Gate 14F chunk dumps are committed (they are small, and `results/` is gitignored):
+
+```bash
+python scripts_setup/gate14f_chunkdiff.py \
+    evidence/gate14f_chunks_keep.jsonl evidence/gate14f_chunks_zero.jsonl
+```

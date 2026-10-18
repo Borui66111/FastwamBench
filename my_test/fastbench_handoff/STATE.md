@@ -473,7 +473,7 @@ Honesty notes:
   mode-aware: for a zero-stale episode it instead requires `obs_refreshed is True`. Without that,
   every 14E episode was flagged `bad`, which would have made a reviewer distrust a correct cell.
 - **Not measured:** ~~that the policy produces an unchanged trajectory~~ — measured and **falsified**
-  (Gate 14F). Chunk dumps at the same seed: the 8 pre-strike chunks are bit-identical across arms
+  (Gate 14F). Chunk dumps at the same seed: the 7 pre-strike chunks are bit-identical across arms
   (internal validity), and the chunk at the strike differs by max 0.0998 / mean 0.021. The model
   reacts; the reaction is too small to change the outcome. Diagnostic:
   `FASTBENCH_DUMP_CHUNK=<path>`, one JSON line per replan.
