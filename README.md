@@ -47,16 +47,25 @@ from 2 mm to 40 mm with one strike: success falls monotonically 6/6 → 5/6 → 
 5 mm and then **stops growing** — a further 4× displacement buys −1.5%. The model responds, and its
 response is capped; the error is not.
 
+**And the cap is specifically in the placement, not the approach** (Gate 14H). Measuring the object
+itself from the same records: successful episodes end at a **fixed** height — 0.1136–0.1206 m across
+a 20× magnitude change, indistinguishable from control's 0.1145 — while failures are left **above**
+the basket at 0.174 → 0.196 → 0.202 m for 10/20/40 mm (among failures rho=+0.73, p=0.0014). The
+horizontal part works: minimum xy distance to the basket is under 0.03 m even at 10 and 20 mm, where
+success is 2/6 and 1/6. So the object is delivered to the basket and not put in it. That is not a
+timeout: over the last 40 steps the height slope is median +0.12 mm/step and **11 of 16 failures are
+still rising** when the budget runs out.
+
 What is still specific to the video pathway is predicted-future fidelity: a mid-chunk strike costs a
 fixed ≈4.4 dB of PSNR at lag ≥ 4, and that damage does not grow with the replan horizon either.
 
-**Not established:** why the policy stops short of releasing (the records carry no grasp/contact
-state); whether the WAM has any world-modeling advantage at all under a different intervention;
-whether a stronger no-video baseline would also pay the same cost; and whether the small response is a
-*magnitude* problem or a *geometric* one. What is now measured: the policy is not blind to the strike.
-Chunk dumps at the same seed show the pre-strike plans are bit-identical across arms and the plan at
-the strike differs by up to 0.0998 — the model reacts, and the reaction is too small to change the
-outcome.
+**Not established:** why the descent does not complete (the records carry no grasp/contact state, so
+"it stops descending" is measured and "because the release logic fails" is not); whether the WAM has
+any world-modeling advantage at all under a different intervention; whether a stronger no-video
+baseline would also pay the same cost; and whether the small response is a *magnitude* problem or a
+*geometric* one. What is now measured: the policy is not blind to the strike. Chunk dumps at the same
+seed show the pre-strike plans are bit-identical across arms and the plan at the strike differs by up
+to 0.0998 — the model reacts, and the reaction is too small to change the outcome.
 
 ---
 
@@ -550,8 +559,9 @@ WAM-vs-VLA claim. The current task is 0% success in both arms, so it cannot yiel
 > stale window is a property of the execution protocol. It is **not** the repo's conclusion about what
 > *costs success* — that was tested later and did not hold up. Gates 14D/14E show the success cost is
 > not carried by stale execution (10, 1 and 0 stale actions all give 2/6), and Gate 14G attributes it
-> to a **capped corrective response** instead. Read the H3 section for the divergence measurement, not
-> for the cost claim.
+> to a **capped corrective response**, which Gate 14H localises to the final placement: the object
+> reaches the basket in xy and stalls above it. Read the H3 section for the divergence measurement,
+> not for the cost claim.
 
 ---
 

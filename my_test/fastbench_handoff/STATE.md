@@ -515,3 +515,35 @@ Plumbing note: the chunk dump now carries the eval seed via `FASTBENCH_RUN_SEED`
 `gate13_run.py` per job. `icfg["seed"]` is the *intervention* RNG seed (always 0) — using it silently
 collapsed both seeds onto the same dump keys and cost two sweep reruns. Same class of bug as
 `cfg["seed"]` (0) and the `_s<N>` directory suffix: read provenance from the artifact that owns it.
+
+## Gate 14H — the cap is in the placement, not the approach (2026-10-19, COMPLETE)
+
+No new GPU runs: measured from the Gate 14G sweep's own records (every step record carries
+`state.bodies[...]["pos"]` and `state.eef["pos"]`). `scripts_setup/gate14h_geometry.py` +
+`gate14h_figure.py`; evidence in `evidence/gate14h_geometry.md`.
+
+**Result.** Successful episodes end at a *fixed* height regardless of strike: 0.1171 / 0.1193 /
+0.1206 / 0.1136 m at 2/5/10/20 mm (control 0.1145). Failures are left above the basket at
+0.1735 → 0.1960 → 0.2019 m at 10/20/40 mm. Among failures, z_end vs magnitude rho=+0.728
+(p=0.0014, n=16); success vs failure heights 0.1181 vs 0.1825 (MWU p=2.6e-4). xy transport is
+fine — min xy distance to the basket is <0.03 m even in the 2/6 and 1/6 cells, and the 10/20 mm
+failures end 8.5 / 13.4 mm from the basket centre. So the capped response suffices for transport
+and fails at the final descent/release.
+
+**Not a timeout.** All failures hit 430 steps; the height slope over the last 40 steps is median
++0.12 mm/step (range −0.58 to +1.25) and **11/16 are still rising** at the end. Consistent with
+Gate 14 §3b's 800-step replication.
+
+**Two modes, as in 13D:** held-high (14/16) and lost-far (2/16 — 5 mm at xy 0.385 m / z 0.034,
+40 mm at xy 0.292 m / z 0.038; both had been lifted to z 0.216 / 0.274 first). The lost-far mode
+does not scale with magnitude.
+
+**Figure pitfall (fixed):** panel B was first drawn with a linear y axis pinned to the 0.05 m
+basket footprint, which put both lost-far episodes outside the plot and stranded a k/n label at
+the top border. A vision pass caught it. The axis is now log (0.0008–0.75) so both modes are
+visible, and the suptitle was cut back from "the dominant cost is the placement" to a
+description of what is plotted.
+
+**Not established:** *why* the descent does not complete (no gripper/contact state in the
+records); generality beyond `libero_object:0`; any WAM-vs-baseline claim; the shape of the
+gradient at n=6 with two off-mode episodes.

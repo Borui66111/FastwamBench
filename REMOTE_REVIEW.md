@@ -226,7 +226,7 @@ with:
 | element | target | have | status |
 |---|---|---|---|
 | tasks | 2–3 | 2 (`libero_object:0`, `libero_spatial:0`) | met |
-| disturbance levels | 3 | 3 magnitudes (5/10/20 mm) + 2 regimes (approach / carry) | met |
+| disturbance levels | 3 | 5 magnitudes (2/5/10/20/40 mm) + 2 regimes (approach / carry) | met |
 | inference conditions | 2 | 2 (`idm`, `first_frame`) | met |
 | paired seeds | 10–20 | 6 per cell (2 seeds × 3 trials) | **short** — per-cell tests underpowered, pooled tests significant |
 | (1) success/recovery heatmap | required | `evidence/gate14_matrix.png` (`scripts_setup/gate14_heatmap.py`) | met |
@@ -234,6 +234,7 @@ with:
 | (3) plan divergence | required | `evidence/gate13_psnr_*.png` (≈−4.4 dB) | met |
 | (4) qualitative rollout | 1 | `evidence/gate14_rollout.png` (`scripts_setup/gate14_rollout.py`, trial 2: control success 222 steps vs disturbed 430-step failure) | met |
 | (5) paired control/disturb table | required | `results/gate13_summary.json` + README tables | met |
+| (6) mechanism figure (added) | — | `evidence/gate14h_geometry.png` — object height vs magnitude split by outcome, plus min xy distance to the basket; shows failures are placement failures, not approach failures | met |
 
 ## Coordination
 
