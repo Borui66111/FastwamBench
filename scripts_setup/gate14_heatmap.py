@@ -31,6 +31,10 @@ ROWS = [
     ("object | carry 10 mm @800 | idm",        "results/gate13_g14idm800"),
     ("object | approach 10 mm | first_frame",  "results/gate13_g14ffapproach"),
     ("object | approach 10 mm @800 | first_frame", "results/gate13_g14ffapproach800"),
+    # Gate 14D: one strike each, H=10 only, disturb only. The drop arm executes 1
+    # already-planned action instead of 10.
+    ("object | carry 10 mm, 1 strike, full chunk", "results/gate13_g14keep1"),
+    ("object | carry 10 mm, 1 strike, chunk dropped", "results/gate13_g14drop1"),
     ("spatial | carry 10 mm | idm",      "results/gate13_repeat_carry_full"),
     ("spatial | approach 10 mm | idm",   "results/gate13_repeat_sub"),
 ]
