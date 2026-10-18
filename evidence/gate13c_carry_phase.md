@@ -21,6 +21,8 @@ cost is real and still shows no horizon scaling.
 Status: full run, 2 tasks x H in {1,10} x 2 seeds x 3 trials, n=6 per cell, 0.01 m strikes every 10
 steps from the detected lift. Spatial is flat at both horizons; the object task carries the result.
 
+![Gate 13C](gate13c_carry_phase.png)
+
 ---
 
 ## Why the old design could not test this
@@ -121,6 +123,31 @@ the first strike instead of compounding with H.
 
 The pilot (`results/gate13_repeat_carry2`) was spatial-only at n=3 and was flat, consistent with the
 full run's spatial cells. It is kept as the run that validated the trigger, not as evidence.
+
+## The two regimes fail in different ways
+
+Checked per episode from `state.bodies` (object rises >0.02 m above its resting height = lifted):
+
+| regime | episodes that ever lifted | episodes that succeeded | failure mode |
+|---|---|---|---|
+| approach strikes (13B, object H=1) | 5/6 | 5/6 | the one failure **never lifted** — object displaced out of reach |
+| carry strikes (13C, object H=1) | 6/6 | 2/6 | all four failures **lifted, then lost it**, ending at the 430-step cap |
+| carry strikes (13C, object H=10) | 6/6 | 1/6 | same |
+
+This matters for how the result should be read. In the approach regime a strike can only lose an
+episode by making the object *unreachable before the grasp*, which is why the cost is small (1/6) and
+why it looks like noise. In the carry regime the object is always picked up and the loss happens
+*after* the grasp, which is why the cost is large (8/12 across horizons) and reproducible. The
+manipulation succeeds and then the episode dies, rather than never starting.
+
+So "approach strikes are free" is too strong — it should be "approach strikes are recoverable as long
+as the object stays reachable, and the only failure they can cause is a pre-grasp reach failure."
+
+A note on `results/gate13_repeat_fast` (object, strikes every 5 steps): it shows 1/3 at H=1 with
+stale 4.0, which superficially contradicts 13B's 5/6 at the same stale count. Two reasons it does not:
+the difference is not significant (Fisher p=0.226, n=3 vs 6), and its single failure has `lift=None`
+too — the same pre-grasp reach failure, not a carry failure. The run remains excluded for the separate
+reason that its strike count is not matched across horizons (4.0 at H=1 vs 2.0 at H=10).
 
 ## What this does and does not establish
 

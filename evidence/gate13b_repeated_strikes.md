@@ -134,10 +134,14 @@ much later. Reconstructing per-episode lift time from `state.bodies` in the raw 
 spatial episode: the bowl sits at z = 0.8984 from t=30 through t=70 (all four strikes), first rising
 to 0.9214 at t=80, while the gripper closes from 0.376 m to 0.049 m away.
 
-So every stale action in this experiment was an *approach* action. Invalidating approach actions is
-recoverable by construction: the robot re-approaches from wherever it is. The regime where a stale
-action is actively harmful — committing to a carry trajectory after the object has been displaced out
-of the gripper — was never entered.
+So every stale action in this experiment was an *approach* action. Invalidating an approach action is
+usually recoverable: the robot re-approaches from wherever it is. **But not always, and the exception
+is diagnostic.** The single object H=1 failure in this run never lifted the object at all
+(`lift=None` in the per-step records) — the displacement left it out of reach and the episode burned
+the 430-step cap without a grasp. That is a *reach* failure, not a stale-carry failure, and it is the
+only way an approach-phase strike can lose an episode here. The regime where a stale action is
+actively harmful — committing to a carry trajectory after the object has been displaced out of the
+gripper — was never entered.
 
 This does not weaken the measurement, it bounds it. What the data shows is that 10x more stale
 approach actions cost nothing, which is a real and useful fact about this harness. It does not show

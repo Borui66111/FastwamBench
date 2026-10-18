@@ -252,7 +252,9 @@ strikes were never due. The drift budget is not binding at 0.01 m.
 lift time from `state.bodies` in the raw records: **24 of 24 struck episodes had all strikes land
 pre-grasp** (spatial lifts at steps 54–84, object at 133–161; strikes are fixed at 40/50/60/70). So
 the stale actions here were all *approach* actions, and invalidating an approach action is
-recoverable by construction — the robot simply re-approaches.
+recoverable — the robot simply re-approaches. The one exception is diagnostic: the single object H=1
+failure in this run never lifted the object at all, i.e. the displacement left it out of reach. That
+is a *reach* failure, not a stale-carry failure.
 
 So the cost of a world change is set by **whether the next replan can recover at all**, not by how
 many actions were committed to the old world. This is a bounded result: it holds for approach-phase
@@ -291,6 +293,9 @@ Spatial is flat because its carry window is only ~30 steps (at most 2-3 strikes 
 task's is ~81 steps, which is why it carries the result.
 
 Full write-up: `evidence/gate13c_carry_phase.md`. Results: `results/gate13_repeat_carry_full`.
+Figure: `evidence/gate13c_carry_phase.png`.
+
+![Gate 13C](evidence/gate13c_carry_phase.png)
 
 ---
 

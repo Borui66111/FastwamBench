@@ -537,6 +537,12 @@ def main() -> int:
             print(f"  first lift: step {min(_known)}-{max(_known)}; "
                   f"strikes at {sorted(set(s for _, i in _ivs for s in [i['t']]))}")
         print("!" * 78)
+    elif _tot:
+        # Positive confirmation: a silent audit is otherwise indistinguishable from
+        # an audit that never ran, which is how the first carry canary slipped
+        # through with every strike still in the approach phase.
+        print(f"strike phase: {_tot - _pre}/{_tot} struck episodes had every strike land "
+              f"AFTER the lift (carry phase reached)")
 
     if short:
         print("\n" + "!" * 78)

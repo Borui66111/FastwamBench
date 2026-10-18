@@ -245,7 +245,7 @@ decreasing, not a non-decreasing predicate that calls a flat curve "monotone inc
 `INTERVENTION NEVER FIRED` for any disturb cell with zero strikes. **Critical bound found afterwards:**
 every strike landed *before* the object was ever lifted (24/24 struck episodes; spatial lifts at
 steps 54-84, object at 133-161, strikes fixed at 40/50/60/70), so the staleness measured here was
-approach-phase only — invalidating approach actions is recoverable by construction, and the harmful
+approach-phase only — invalidating approach actions is usually recoverable, and the harmful
 regime (stale carry trajectory after the object is displaced out of the gripper) was never entered.
 The analyzer now also reports `STRIKES LANDED BEFORE THE GRASP`. A fourth limit: the strike hook runs
 only at chunk boundaries, so a cadence finer than `replan_steps` reduces the strike count at large H
