@@ -161,6 +161,10 @@ def run_job(job, gpu: int, args) -> tuple[str, int]:
               if args.world_repeat_every else []),
             *([f"+EVALUATION.intervention_world_repeat_count={args.world_repeat_count}"]
               if args.world_repeat_count else []),
+            # Gate 13C: time the strikes from the detected lift instead of an
+            # absolute step, so they land inside the carry phase.
+            *([f"+EVALUATION.intervention_world_trigger_after_lift={args.world_trigger_after_lift}"]
+              if args.world_trigger_after_lift is not None else []),
         ]
         if DELTA:
             cmd.append(f"+EVALUATION.intervention_world_delta={DELTA}")
@@ -210,6 +214,9 @@ def main() -> int:
                     help="repeat the world change every N steps (Gate 13B compounding mode)")
     ap.add_argument("--world-repeat-count", type=int, default=None,
                     help="max number of strikes in repeat mode")
+    ap.add_argument("--world-trigger-after-lift", type=float, default=None,
+                    help="Gate 13C: detect the lift (object z rises by this many metres) "
+                         "and time the strikes from there, so they land during the carry")
     ap.add_argument("--magnitude", default=os.environ.get("GATE13_MAG", WORLD_MAG),
                     help="disturbance magnitude in metres (goal-aware default)")
     ap.add_argument("--psnr", action="store_true", help="also render predicted future video")
@@ -243,26 +250,44 @@ def main() -> int:
             "world_step": args.world_step,
             "world_repeat_every": args.world_repeat_every,
             "world_repeat_count": args.world_repeat_count,
+            "world_trigger_after_lift": args.world_trigger_after_lift,
             "world_body": args.world_body,
             "psnr": bool(args.psnr),
             "num_steps_wait": 30,
         }, fh, indent=2, sort_keys=True)
 
-    # every H must divide (WORLD_STEP - num_steps_wait) so the disturbance lands
-    # exactly on a chunk boundary for all horizons
-    span = args.world_step - 30
-    bad = [h for h in args.horizons if span % h != 0]
-    if bad:
-        print(f"ERROR: horizons {bad} do not divide span={span}; the disturbance "
-              f"would land mid-chunk. Pick divisors of {span}.")
-        return 2
+    if args.world_trigger_after_lift is not None:
+        # Gate 13C: strikes are timed from the detected lift, so what has to sit
+        # on a chunk boundary is the repeat interval, not world_step.
+        every = int(args.world_repeat_every or 0)
+        if every <= 0:
+            print("ERROR: --world-trigger-after-lift requires --world-repeat-every")
+            return 2
+        bad = [h for h in args.horizons if every % h != 0]
+        if bad:
+            print(f"ERROR: horizons {bad} do not divide repeat interval {every}; "
+                  f"strikes would land mid-chunk and never fire.")
+            return 2
+    else:
+        # every H must divide (WORLD_STEP - num_steps_wait) so the disturbance lands
+        # exactly on a chunk boundary for all horizons
+        span = args.world_step - 30
+        bad = [h for h in args.horizons if span % h != 0]
+        if bad:
+            print(f"ERROR: horizons {bad} do not divide span={span}; the disturbance "
+                  f"would land mid-chunk. Pick divisors of {span}.")
+            return 2
 
     jobs = build_jobs(args)
     if not args.force:
         jobs = [j for j in jobs if not already_done(j)]
     print(f"gate13: {len(jobs)} job(s) to run -> {args.out_root}")
-    print(f"  world_step={args.world_step} (chunk boundary for all H: "
-          f"{[h for h in args.horizons]})")
+    if args.world_trigger_after_lift is not None:
+        print(f"  strikes timed from the detected lift (+{args.world_trigger_after_lift} m), "
+              f"every {args.world_repeat_every} steps, count {args.world_repeat_count}")
+    else:
+        print(f"  world_step={args.world_step} (chunk boundary for all H: "
+              f"{[h for h in args.horizons]})")
     if args.dry_run:
         for j in jobs:
             print(f"  {j['suite']} t{j['tid']} H{j['h']:>2} {j['arm']:>8} s{j['seed']} "

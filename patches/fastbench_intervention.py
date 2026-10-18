@@ -91,6 +91,11 @@ def resolve_intervention_cfg(cfg: Any) -> dict:
         # original position and stays reachable at every horizon.
         "world_repeat_every": ev.get("intervention_world_repeat_every", None),
         "world_repeat_count": ev.get("intervention_world_repeat_count", None),
+        # [fastbench] Gate 13C: time the strikes from the detected lift so they
+        # land during the carry. An absolute world_step cannot do this -- the
+        # carry phase is short and starts at a different step in every episode,
+        # so every Gate 13B strike landed before the object was ever lifted.
+        "world_trigger_after_lift": ev.get("intervention_world_trigger_after_lift", None),
         # Every strike must make the task strictly harder. A mirrored strike
         # would move the object back TOWARD the goal, and the canary showed
         # struck episodes finishing in 51 steps vs ~100 for control -- i.e. the
@@ -619,7 +624,30 @@ def maybe_displace_world(env: Any, icfg: dict, replan_idx: int, step_t: Optional
         if not body:
             return {"kind": "world_displacement", "applied": False,
                     "reason": "auto: could not resolve manipulated body from goal state"}
+    # [fastbench] Gate 13C: optionally time the strikes relative to the lift
+    # instead of an absolute step. The carry phase is short and begins at a
+    # different step in every episode (spatial 54-94, object 133-210), so a
+    # fixed world_step cannot land inside it -- every strike in Gate 13B landed
+    # before the object was ever lifted.
     wstep = icfg.get("world_step")
+    lift_thresh = icfg.get("world_trigger_after_lift")
+    if lift_thresh is not None and wstep is not None:
+        if step_t is None:
+            return None
+        pos = _body_xyz(env, body)
+        if pos is None:
+            return None
+        if "_body_z0" not in icfg:
+            icfg["_body_z0"] = float(pos[2])
+            icfg["_lift_step"] = None
+        lift_step = icfg.get("_lift_step")
+        if lift_step is None:
+            if float(pos[2]) - float(icfg["_body_z0"]) < float(lift_thresh):
+                return None
+            lift_step = int(step_t)
+            icfg["_lift_step"] = lift_step
+        every = max(1, int(icfg.get("world_repeat_every") or 1))
+        wstep = int(lift_step) + every
     repeat_every = icfg.get("world_repeat_every")
     strike_idx = 0
     if wstep is not None:

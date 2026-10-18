@@ -438,6 +438,78 @@ check("same config strikes when the cap is not binding",
 check("repeat strikes are JSON-serialisable",
       all(json.loads(json.dumps(r)) is not None for t, r in strikes if r is not None))
 
+# ---------------------------------------------------------------------------
+# 18. Gate 13C: strikes timed from the detected lift (carry phase)
+# ---------------------------------------------------------------------------
+_orig_snap = _F.snapshot_state
+_z = {"v": 0.90}
+
+
+def _snap_fake(env, body_names=None):
+    return {"bodies": {b: {"pos": [0.0, 0.0, _z["v"]]} for b in (body_names or [])}}
+
+
+_F.snapshot_state = _snap_fake
+
+liftcfg = cfg(world_enabled=True, replan_idx=0, world_body="akita_black_bowl_1_main",
+              world_step=40, world_repeat_every=10, world_repeat_count=4,
+              world_trigger_after_lift=0.02)
+
+# object still on the table: nothing fires, at any step
+_z["v"] = 0.90
+check("lift trigger: no strike before the object is lifted",
+      all(maybe_displace_world(e3, liftcfg, 0, step_t=t) is None
+          for t in (40, 50, 60, 70, 80)))
+check("lift trigger: lift anchor not yet latched", liftcfg.get("_lift_step") is None)
+
+# object rises above the threshold at t=100 -> anchor latched there
+_z["v"] = 0.93
+check("lift trigger: no strike on the detection step itself",
+      maybe_displace_world(e3, liftcfg, 0, step_t=100) is None)
+check("lift trigger: lift step latched from the object's own height",
+      liftcfg.get("_lift_step") == 100, str(liftcfg.get("_lift_step")))
+
+# first strike is one interval AFTER the lift, then every interval
+check("lift trigger: first strike lands at lift+every",
+      isinstance(maybe_displace_world(e3, liftcfg, 0, step_t=110), dict))
+check("lift trigger: second strike lands at lift+2*every",
+      isinstance(maybe_displace_world(e3, liftcfg, 0, step_t=120), dict))
+
+# the anchor must not drift: a later call still measures from the lift
+check("lift trigger: anchor stays at the detected lift step",
+      liftcfg.get("_lift_step") == 100, str(liftcfg.get("_lift_step")))
+
+# count cap still applies
+check("lift trigger: repeat count cap is still honoured",
+      maybe_displace_world(e3, liftcfg, 0, step_t=150) is None)
+
+# and the feature is opt-in: without it, absolute timing is unchanged
+_z["v"] = 0.93
+abs_cfg = cfg(world_enabled=True, replan_idx=0, world_body="akita_black_bowl_1_main",
+              world_step=40, world_repeat_every=10, world_repeat_count=4)
+check("lift trigger is opt-in: absolute world_step still fires at step 40",
+      isinstance(maybe_displace_world(e3, abs_cfg, 0, step_t=40), dict))
+
+_F.snapshot_state = _orig_snap
+
+# The first carry canary silently ignored the flag because the key was read from
+# icfg but never mapped out of cfg.EVALUATION. Assert the plumbing, not just the
+# behaviour, so a missing mapping can never look like "the trigger does nothing".
+_plumb = resolve_intervention_cfg({"EVALUATION": {
+    "intervention_enabled": True, "intervention_mode": "world",
+    "intervention_world_enabled": True, "intervention_world_body": "akita_black_bowl_1_main",
+    "intervention_world_step": 40, "intervention_world_repeat_every": 10,
+    "intervention_world_trigger_after_lift": 0.02,
+}})
+check("lift trigger survives resolve_intervention_cfg (CLI plumbing)",
+      _plumb.get("world_trigger_after_lift") == 0.02,
+      repr(_plumb.get("world_trigger_after_lift")))
+check("lift trigger is absent when not requested",
+      resolve_intervention_cfg({"EVALUATION": {
+          "intervention_enabled": True, "intervention_mode": "world",
+          "intervention_world_enabled": True, "intervention_world_step": 40,
+      }}).get("world_trigger_after_lift") is None)
+
 print()
 if FAILS:
     print(f"RESULT: {len(FAILS)} FAILURE(S): {FAILS}")
