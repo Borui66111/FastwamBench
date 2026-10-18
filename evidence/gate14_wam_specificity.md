@@ -171,7 +171,17 @@ python scripts_setup/gate14_compare.py \
     --json results/gate14_compare.json
 
 python scripts_setup/gate13d_mechanism.py results/gate13_g14ff
+
+# every cell of this document, rendered from records.jsonl in one view
+python scripts_setup/gate14_heatmap.py      # -> evidence/gate14_matrix.png + results/gate14_matrix.json
 ```
+
+![Gate 14 matrix](gate14_matrix.png)
+
+The heatmap is generated from the per-episode records rather than from the tables above, so it is an
+independent read of the same data. It also makes the per-horizon split of the pooled `@800` numbers
+visible (3/6 at H=1 and 1/6 at H=10 in each pathway, summing to the 4/12 quoted in section 3b) —
+useful because the pooled figure alone hides that the H=10 cells are the weaker ones.
 
 ## Power
 

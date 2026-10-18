@@ -155,6 +155,32 @@ If this comparison is not clean, use one strong VLA baseline under the exact sam
 
 Only after Gate 14 should we make WAM-specific robustness/failure claims.
 
+**Result (2026-10-19): the WAM-specificity claim fails, in the regime that mattered.**
+
+The comparison was run exactly as specified above — same checkpoint, task, seeds, intervention and
+horizons, with `EVALUATION.action_infer_mode` switched between `idm` (future-aware) and
+`first_frame` (non-future). It needed no new checkpoint: the switch is one config key.
+
+| regime | `idm` control → disturb | `first_frame` control → disturb | verdict |
+|---|---|---|---|
+| carry (strikes after lift) | 6/6 → 2/6 (H1), 1/6 (H10) | 5/6 → **2/6** (H1), 6/6 → **1/6** (H10) | identical (p=1.00) |
+| carry, 800-step budget | 4/12 | **4/12** | identical (p=1.00) |
+| approach (strike at step 40) | 12/12 → 11/12 | 11/12 → **5/12** | pathway difference, but **7/7 failures are 430-step timeouts** |
+
+So the carry-phase damage is **not** specific to future-aware inference — it is a property of
+fixed-horizon chunk execution. The one pathway difference found (approach regime) is budget-mediated
+rather than a different failure mode, and its 800-step replication is still running.
+
+Consequences for the review document:
+1. The headline claim must be restated as a property of the **execution protocol**, not of the WAM.
+2. The predicted-future fidelity result (≈−4.4 dB at lag ≥ 4, flat in horizon) is untouched — it is
+   the one measurement that is specific to the video pathway, and it does not support a
+   *task-success* claim.
+3. Anything written earlier that says "the world model commits to a stale future" should be read as
+   "the chunk is replayed while stale", which is protocol-level.
+
+Full write-up: `evidence/gate14_wam_specificity.md`, figure `evidence/gate14_wam_specificity.png`.
+
 ## First presentable benchmark target
 
 A strong first result package is enough at:
@@ -173,6 +199,20 @@ with:
 3. plan-divergence plot;
 4. one qualitative control-vs-disturbance rollout;
 5. paired control-success / disturbed-recovery table.
+
+**Coverage against that target (2026-10-19):**
+
+| element | target | have | status |
+|---|---|---|---|
+| tasks | 2–3 | 2 (`libero_object:0`, `libero_spatial:0`) | met |
+| disturbance levels | 3 | 3 magnitudes (5/10/20 mm) + 2 regimes (approach / carry) | met |
+| inference conditions | 2 | 2 (`idm`, `first_frame`) | met |
+| paired seeds | 10–20 | 6 per cell (2 seeds × 3 trials) | **short** — per-cell tests underpowered, pooled tests significant |
+| (1) success/recovery heatmap | required | `evidence/gate14_matrix.png` (`scripts_setup/gate14_heatmap.py`) | met |
+| (2) horizon vs stale execution | required | `evidence/gate13_commitment_cost.png` | met |
+| (3) plan divergence | required | `evidence/gate13_psnr_*.png` (≈−4.4 dB) | met |
+| (4) qualitative rollout | 1 | `evidence/gate14_rollout.png` (`scripts_setup/gate14_rollout.py`, trial 2: control success 222 steps vs disturbed 430-step failure) | met |
+| (5) paired control/disturb table | required | `results/gate13_summary.json` + README tables | met |
 
 ## Coordination
 

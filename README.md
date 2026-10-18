@@ -417,6 +417,21 @@ Full write-up: `evidence/gate14_wam_specificity.md`. Data: `results/gate13_g14ff
 `scripts_setup/gate14_compare.py`. This gate also added `--max-steps`, which overrides the
 per-suite step budget so that "slower" can be separated from "never".
 
+Every cell in the tables above is also rendered in one place — task × regime × magnitude × pathway ×
+(control/disturb, H=1/H=10) — by `scripts_setup/gate14_heatmap.py`:
+
+![Gate 14 matrix](evidence/gate14_matrix.png)
+
+That heatmap is generated straight from the per-episode `records.jsonl` files, so it doubles as a
+cross-check: if a number in the prose disagreed with a cell here, one of them was transcribed by
+hand. (It also shows the cells that were *never run* as grey `--`, rather than silently as zero.)
+
+One paired rollout, same task/seed/horizon, control on top and disturbed below — the disturbed episode
+is carried to the basket and never released, which is what the mechanism audit counts as
+held-above-basket (`scripts_setup/gate14_rollout.py`):
+
+![Gate 14 rollout](evidence/gate14_rollout.png)
+
 ---
 
 ## Three footguns that MUST be handled (all three were silent)
