@@ -263,7 +263,7 @@ python scripts_setup/gate13_figure.py results/gate13_main/gate13_summary.json \
 Guards for reviewers:
 - `scripts_setup/gate13_validate_goal_aware.py` — proves the disturbance does not satisfy
   the goal (no model needed).
-- `scripts_setup/test_gate9_intervention.py` — 84 unit checks incl. the absolute-step trigger
+- `scripts_setup/test_gate9_intervention.py` — 96 unit checks incl. the absolute-step trigger
   and the goal-aware guard.
 - `gate13_summary.json` carries `contaminated_disturb` per cell.
 

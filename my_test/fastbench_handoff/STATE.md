@@ -270,6 +270,23 @@ is **INVALID** (the key was never mapped out of `cfg.EVALUATION`, so strikes sta
 a plumbing test now catches this). Tests: 96 checks.
 Naming note: these two are **13B** and **13C** — Gate 14 below is reserved for the WAM-vs-baseline
 comparison.
+
+**Gate 13D (2026-10-19, COMPLETE) — the carry cost is a release failure, not a reach failure.**
+Classifies every carry-regime episode from the object's own `state.bodies` track
+(`scripts_setup/gate13d_mechanism.py`) into PLACED / HELD-ABOVE-BASKET / LOST-FAR /
+STILL-DESCENDING / NEVER-LIFTED, then repeats the strike at 0.005 m. **No struck episode in either
+magnitude ever failed to pick the object up** — the grasp always survives, so "a 1 cm displacement
+knocks the object out of the gripper" is wrong. At 0.01 m the dominant mode is HELD-ABOVE-BASKET
+(6 of 9 failures): the robot reaches the basket (xy within 5 cm) and parks 5–9 cm above the
+placement height until the budget expires (tail slope +0.0001 m/step vs 0.136 m for a success). Only
+1 of 9 failures was still descending at the 400-step cap, so it is not a time-budget artifact.
+**Cost saturates at 5 mm**: `results/gate13_carry_mag005` (n=6/cell) gives control 6/6, disturb 2/6
+at both horizons, stale 3.5 -> 40.0 — the same cost as 0.01 m, i.e. halving the displacement did not
+halve the damage. Third independent replication of the horizon null. **Retracts the 13C mechanism
+sentence "once the grasp is broken the episode is lost"** — the grasp is never broken; the stale
+carry actions cost the episode by wrecking the *placement*. Not established: *why* the policy stops
+short (no grasp/contact state in the records, so that stays an inference). Evidence:
+`evidence/gate13d_mechanism.md` + `.png/.pdf`.
 Evidence: `evidence/gate13b_repeated_strikes.md` + `.png/.pdf`, `evidence/gate13c_carry_phase.md`.
 
 **HEADLINE FINDING (2026-10-17, main sweep complete 32/32 + ladder):**
@@ -300,7 +317,7 @@ stale actions".
 **EVIDENCE:** `scripts_setup/gate13_run.py` (sweep runner), `gate13_analyze.py`,
 `gate13_figure.py`, `gate13_report.py`, `gate13_all.sh` (unattended pipeline),
 `gate13_validate_goal_aware.py`; `evidence/gate13_design_checks/` (raw captures);
-`scripts_setup/test_gate9_intervention.py` (67 checks, all pass).
+`scripts_setup/test_gate9_intervention.py` (96 checks, all pass).
 
 `replan_steps` is the commitment horizon H (`pending_actions = action_chunk[:H]`); the released
 config ships H=10. The sweep varies H over {1,2,5,10} (the divisors of `world_step-30`) with a

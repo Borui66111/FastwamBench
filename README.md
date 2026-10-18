@@ -56,8 +56,10 @@ scripts_setup/          all runnable scripts (bring-up, gates, analysis) + unit 
   gate13_validate_goal_aware.py  Gate 13: no-GPU proof the disturbance cannot satisfy the goal
   gate13_magcal.py      Gate 13: magnitude calibration summary across runs
   gate13b_figure_repeat.py      Gate 13B: repeated-strike figure (stale ratio | step cost)
+  gate13d_mechanism.py          Gate 13D: classify HOW a carry-phase strike fails (per episode)
+  gate13d_figure.py             Gate 13D: outcome composition | success vs magnitude
   sync_patches.sh       export live FastWAM/ edits into tracked patches/
-  test_gate9_intervention.py   unit tests (84 checks) for the intervention mechanism + goal-aware guard
+  test_gate9_intervention.py   unit tests (96 checks) for the intervention mechanism + goal-aware guard
 patches/                our changes to the upstream FastWAM tree (it is NOT vendored here)
 evidence/               curated text results + a compressed bundle of the raw Gate 11 records
 my_test/fastbench_handoff/   the onboarding brief + live STATE.md / CHANGELOG.md
@@ -286,8 +288,7 @@ more often than four. The cost saturates at the first strike.
 
 So the commitment cost is gated by whether the stale actions are *load-bearing*, not by how many of
 them there are. Approach actions are recoverable by re-aiming; a carry action is holding the object.
-Once the grasp is broken the episode is lost regardless of how many committed actions were
-invalidated.
+The cost saturates at the first strike rather than compounding.
 
 Spatial is flat because its carry window is only ~30 steps (at most 2-3 strikes fit); the object
 task's is ~81 steps, which is why it carries the result.
@@ -296,6 +297,41 @@ Full write-up: `evidence/gate13c_carry_phase.md`. Results: `results/gate13_repea
 Figure: `evidence/gate13c_carry_phase.png`.
 
 ![Gate 13C](evidence/gate13c_carry_phase.png)
+
+---
+
+## Gate 13D — how the carry-phase failure actually happens
+
+Gate 13C leaves two explanations open: the policy commits to a world that no longer exists
+(commitment), or a 1 cm displacement simply knocks the object out of the gripper (mechanics).
+Gate 13D separates them by classifying every episode on the object's own trajectory, and repeats the
+strike at 0.005 m to see whether the cost is a step function of magnitude.
+
+| magnitude | H | control | disturb | held above basket | lost far | still descending |
+|---|---|---|---|---|---|---|
+| 0.005 m | 1 | 6/6 | 2/6 | 2 | 2 | 0 |
+| 0.005 m | 10 | 6/6 | 2/6 | 0 | 4 | 0 |
+| 0.01 m | 1 | 6/6 | 2/6 | 3 | 1 | 0 |
+| 0.01 m | 10 | 6/6 | 1/6 | 3 | 1 | 1 |
+
+**No struck episode ever failed to pick the object up** — not one, in either magnitude. The grasp
+survives. What fails is the *release*: the most common mode at 0.01 m is the robot carrying the
+object to the basket, arriving within 5 cm in xy, and then holding it 5–9 cm above the placement
+height until the step budget expires (tail slope +0.0001 m/step over the last 60 steps, versus 0.136
+m for a successful placement). Only one of nine failures was still descending when time ran out, so
+this is not a time-budget artifact.
+
+**The cost saturates at 5 mm.** Halving the displacement did not halve the damage (2/6 at both
+horizons, against 6/6 control). Whatever the strike breaks, it is fully broken well below 1 cm.
+
+This also corrects the mechanism sentence above: the grasp is *not* broken, so "once the grasp is
+broken the episode is lost" was the wrong picture. The stale carry actions cost the episode by
+wrecking the placement, not by losing the object.
+
+Full write-up: `evidence/gate13d_mechanism.md`. Results: `results/gate13_carry_mag005`.
+Figure: `evidence/gate13d_mechanism.png`.
+
+![Gate 13D](evidence/gate13d_mechanism.png)
 
 ---
 
