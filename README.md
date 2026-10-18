@@ -217,7 +217,7 @@ steps 40/50/60/70) at **0.01 m**, below the 0.03 m threshold where Gate 13 showe
 starts to fail episodes. Each strike leaves H fresh stale actions, so if staleness were the cost
 driver the effect would now compound instead of being absorbed.
 
-Two design corrections were required and are part of the result:
+Three design corrections were required and are part of the result:
 
 1. **A strike must never move the object toward the goal.** The first version mirrored alternate
    strikes; the data showed struck episodes finishing in 51 steps vs ~100 for control — the odd
@@ -226,6 +226,11 @@ Two design corrections were required and are part of the result:
    distance silently allowed exactly one strike per episode, which turned the repeat run back into
    the Gate 13 single-strike test (stale = H, identical cost). The cap now bounds total drift
    measured from the first strike, so all four strikes land.
+3. **A silently dead arm must be detected.** A disturb cell can record zero strikes and then produce
+   step counts identical to control — a clean-looking cost of exactly 0.00 for a manipulation that
+   never happened. Every episode still completes, so nothing about success reveals it. The analyzer
+   now prints `INTERVENTION NEVER FIRED` for any disturb cell with `strike_count=0` throughout, and
+   `INCOMPLETE CELLS` when a cell has fewer episodes than `run_config.json` requested.
 
 **Result (n=6/cell, 0.01 m, 4 strikes, `evidence/gate13b_repeated_strikes.md`):**
 
@@ -238,8 +243,10 @@ Two design corrections were required and are part of the result:
 
 **10x the stale actions produces no measurable success cost** (object 5/6 vs 6/6, Fisher p=1.0;
 spatial 6/6 vs 6/6). Effort leans the expected way on both tasks (+133 vs +89, +33.5 vs −13) but with
-n=6 and sd 70–96 it cannot be separated from noise. `strike_count` in the records confirms all four
-strikes landed (mean 3.3 and 4.0 — the spatial shortfall is the drift budget, not a bug).
+n=6 and sd 29–96 it cannot be separated from noise. `strike_count` in the records shows a mean of 3.3
+(spatial H=1) and 4.0 (everything else). The shortfall is **early success, not a dropped strike**: two
+spatial H=1 episodes succeeded at step 57, before the strikes scheduled at steps 60 and 70 — so those
+strikes were never due. The drift budget is not binding at 0.01 m.
 
 So the cost of a world change is set by **whether the next replan can recover at all**, not by how
 many actions were committed to the old world. Staleness is a real, exactly-countable property of the
