@@ -100,3 +100,17 @@ $PY scripts_setup/gate13_figure.py results/gate13_main/gate13_summary.json \
 - The disturbance is a teleport, not a physical push. It is instantaneous and cannot be
   observed before the next replan — which is exactly the point of the design, but it is
   also the strongest possible version of the intervention.
+
+## Follow-up: Gate 13B (repeated strikes)
+
+Gate 13B asks whether the cost compounds when the world changes four times instead of once
+(`evidence/gate13b_repeated_strikes.md`, `evidence/gate13b_repeated_strikes.png`). Reproduce:
+
+    python scripts_setup/gate13_run.py --tasks libero_spatial:0,libero_object:0 \
+      --horizons 1,10 --seeds 1,2 --trials 3 --arms control,disturb \
+      --magnitude 0.01 --world-step 40 --world-repeat-every 10 --world-repeat-count 4 \
+      --tag repeat_sub --ngpu 2
+
+Headline: 10x the stale actions (4.0 vs 40.0 on object, 3.3 vs 32.7 on spatial) with success
+5/6 vs 6/6 (Fisher p=1.0). Staleness does not compound into failure; the cost is gated by
+whether the next replan can recover, not by how many actions were committed to the old world.

@@ -359,7 +359,7 @@ check("fallback candidate is used and is non-contaminating", post2 is False, str
 check("contaminating displacement was reverted", abs(e3.sim.data.qpos[9]) < 0.15, str(e3.sim.data.qpos[9]))
 check("success is False after the guarded displacement", check_success(e3) is False)
 
-print("== 17. Gate 14 repeated strikes (compounding world change) ==")
+print("== 17. Gate 13B repeated strikes (compounding world change) ==")
 # Rationale: one strike can only invalidate H actions once, and re-acquisition
 # absorbs that. Repeating the strike leaves H stale actions PER STRIKE, so any
 # horizon effect compounds with strike count instead of being absorbed.

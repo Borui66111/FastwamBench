@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-"""[fastbench] Gate 14 figure: staleness does not compound into a success cost."""
+"""[fastbench] Gate 13B figure: staleness does not compound into a success cost."""
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-out = "evidence/gate14_repeated_strikes"
+out = "evidence/gate13b_repeated_strikes"
 tasks = ["libero_object_t0", "libero_spatial_t0"]
 labels = ["libero_object t0", "libero_spatial t0"]
 stale = [(4.0, 40.0), (3.3, 32.7)]
@@ -15,7 +15,7 @@ steps = {0: [(178.7, 22.8, 268.0, 81.5), (164.3, 9.8, 297.3, 69.2)],
 succ = [(("6/6", "5/6")), (("6/6", "6/6"))]  # per task: (H1, H10) disturb success
 
 fig, axes = plt.subplots(1, 2, figsize=(12.5, 4.7))
-fig.suptitle("Gate 14 — repeated world strikes: 10x the stale actions, no measurable success cost",
+fig.suptitle("Gate 13B — repeated world strikes: 10x the stale actions, no measurable success cost",
              fontsize=13.5, fontweight="bold")
 
 # --- panel A: manipulation check ------------------------------------------

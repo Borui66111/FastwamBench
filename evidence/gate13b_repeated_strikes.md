@@ -1,4 +1,4 @@
-# Gate 14 — does commitment cost compound when the world changes repeatedly?
+# Gate 13B — does commitment cost compound when the world changes repeatedly?
 
 **Short answer: no.** With 10x more stale actions and identical total world drift, task success is
 unchanged and effort differences are inside noise. This is the strongest form of the Gate 13

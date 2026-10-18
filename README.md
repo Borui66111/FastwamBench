@@ -55,8 +55,9 @@ scripts_setup/          all runnable scripts (bring-up, gates, analysis) + unit 
   gate13_finish.sh      Gate 13: unattended finisher (waits for sweep -> ladder -> psnr -> report)
   gate13_validate_goal_aware.py  Gate 13: no-GPU proof the disturbance cannot satisfy the goal
   gate13_magcal.py      Gate 13: magnitude calibration summary across runs
+  gate13b_figure_repeat.py      Gate 13B: repeated-strike figure (stale ratio | step cost)
   sync_patches.sh       export live FastWAM/ edits into tracked patches/
-  test_gate9_intervention.py   unit tests (67 checks) for the intervention mechanism + goal-aware guard
+  test_gate9_intervention.py   unit tests (84 checks) for the intervention mechanism + goal-aware guard
 patches/                our changes to the upstream FastWAM tree (it is NOT vendored here)
 evidence/               curated text results + a compressed bundle of the raw Gate 11 records
 my_test/fastbench_handoff/   the onboarding brief + live STATE.md / CHANGELOG.md
@@ -184,12 +185,12 @@ reading and **did not rescue the strong claim**, but it did produce a clean resu
 With `visualize_future_video=true` the model renders its predicted future and the eval scores it
 against reality. Two facts:
 
-- *Prediction fidelity collapses with lookahead, with no intervention at all*: 37.5 dB at lag 0 →
-  25.0 dB at lag 4. The model is accurate at the moment of planning and drifts badly within a
-  single committed chunk.
-- *A mid-chunk world change costs more at a longer horizon, measured at a matched lag*:
-  −4.42 dB at H=5 vs −4.40 dB at H=10, scoring the same lags in both arms
-  (`results/gate13_psnr_lag`, n=2/cell — indicative, not a point estimate).
+- *Prediction fidelity collapses with lookahead, with no intervention at all*: **39.6 dB at lag 0 →
+  27.9 dB at lag 4 → 27.1 dB at lag 8**. The model is accurate at the moment of planning and drifts
+  badly within a single committed chunk.
+- *A mid-chunk world change costs a fixed amount, and the amount does NOT scale with H*: −4.42 dB at
+  H=5 vs −4.40 dB at H=10 (lag 4, clip-isolated, `results/gate13_psnr_clip`, n=6/cell). The lag-0
+  delta is exactly 0.00 dB in both arms, which is the internal validity check for the measurement.
 
 **Method note (a claim that was withdrawn).** The first reading of this arm reported a 4.7x
 effect at H=10 vs H=1. That comparison was invalid: `_get_future_frame_capture_steps` derives the
@@ -205,6 +206,45 @@ and is not claimed), `evidence/gate13_commitment_cost.md` + `.png` (generated),
 `evidence/gate13_psnr.png` (world-model signal), and
 `evidence/gate13_design_checks/DESIGN_FINDINGS.md` (the four design flaws that were found and
 fixed, with raw captures).
+
+---
+
+## Gate 13B — does the cost compound when the world changes repeatedly?
+
+Gate 13 changed the world once. One strike can only invalidate H actions once, and re-acquisition
+absorbs it — so a horizon effect has no room to show. Gate 13B repeats the strike four times (absolute
+steps 40/50/60/70) at **0.01 m**, below the 0.03 m threshold where Gate 13 showed a single strike
+starts to fail episodes. Each strike leaves H fresh stale actions, so if staleness were the cost
+driver the effect would now compound instead of being absorbed.
+
+Two design corrections were required and are part of the result:
+
+1. **A strike must never move the object toward the goal.** The first version mirrored alternate
+   strikes; the data showed struck episodes finishing in 51 steps vs ~100 for control — the odd
+   strike was *helping*. Every strike now displaces along the goal-away direction only.
+2. **The safety cap must be a drift budget, not an absolute goal distance.** Capping absolute
+   distance silently allowed exactly one strike per episode, which turned the repeat run back into
+   the Gate 13 single-strike test (stale = H, identical cost). The cap now bounds total drift
+   measured from the first strike, so all four strikes land.
+
+**Result (n=6/cell, 0.01 m, 4 strikes, `evidence/gate13b_repeated_strikes.md`):**
+
+| task | H | stale actions | ratio | control | disturbed | step cost | Welch p |
+|---|---|---|---|---|---|---|---|
+| libero_object t0 | 1 | 4.0 | — | 6/6, 178.7 | 5/6, 268.0 | +89.3 | 0.52 |
+| libero_object t0 | 10 | 40.0 | 10.0x | 6/6, 164.3 | 6/6, 297.3 | +133.0 | |
+| libero_spatial t0 | 1 | 3.3 | — | 6/6, 107.5 | 6/6, 94.5 | -13.0 | 0.34 |
+| libero_spatial t0 | 10 | 32.7 | 9.9x | 6/6, 103.8 | 6/6, 137.3 | +33.5 | |
+
+**10x the stale actions produces no measurable success cost** (object 5/6 vs 6/6, Fisher p=1.0;
+spatial 6/6 vs 6/6). Effort leans the expected way on both tasks (+133 vs +89, +33.5 vs −13) but with
+n=6 and sd 70–96 it cannot be separated from noise. `strike_count` in the records confirms all four
+strikes landed (mean 3.3 and 4.0 — the spatial shortfall is the drift budget, not a bug).
+
+So the cost of a world change is set by **whether the next replan can recover at all**, not by how
+many actions were committed to the old world. Staleness is a real, exactly-countable property of the
+protocol that does not by itself predict failure. Testing the opposite regime needs a task where
+re-acquisition is cheap and stale motion is expensive; LIBERO pick-and-place is the reverse.
 
 ---
 
