@@ -1,6 +1,8 @@
 # Gate 14 — is the commitment cost specific to a future-aware world model?
 
-STATUS: **COMPLETE** (2026-10-19). Same checkpoint, same task (`libero_object:0`),
+STATUS: **COMPLETE at the standard 400-step budget** (2026-10-19); a
+budget-extension arm (both pathways, `--max-steps 800`) is in flight and is
+reported in section 3b once its cells exist. Same checkpoint, same task (`libero_object:0`),
 same seeds (1,2), same 3 trials/cell, same grasp-relative strike schedule
 (0.01 m, repeat every 10 steps, 4 strikes), same replan horizons (1 and 10).
 **The only difference is the action-inference pathway**: `idm` (future-aware, the
@@ -23,6 +25,12 @@ Yes, but the two pathways do not merely differ in competence — they differ in
 (Fisher p=1.00 per cell, p=0.33 pooled). So the comparison is not WAM-good vs
 baseline-broken; the baseline is competent.
 
+**The flag demonstrably takes effect** — otherwise the identical disturbed counts
+below would be a plumbing no-op rather than a result. Same task, same seed, same
+arm produces different behaviour under the two pathways: at H1/seed 1 control the
+episode lengths are 430, 240, 419 (`first_frame`) vs 186, 164, 222 (`idm`). The
+pathway is doing work; it simply does not change what the disturbance costs.
+
 ## 2. The headline: the cost is *not* specific to future-aware inference
 
 | | control | disturb | cost |
@@ -41,7 +49,7 @@ measured in Gates 13B–13D survives removal of future-aware action inference. A
 policy that never conditions its actions on a predicted future is damaged just as
 badly by a single 1 cm disturbance.
 
-## 3. The failure signature is also unchanged
+## 3. The dominant failure mode is also unchanged
 
 `scripts_setup/gate13d_mechanism.py` on the `first_frame` run:
 
@@ -52,11 +60,25 @@ badly by a single 1 cm disturbance.
 | `idm` (13D) | 1 | PLACED×6 | HELD-ABOVE-BASKET 3, LOST-FAR 1 |
 | `idm` (13D) | 10 | PLACED×6 | HELD-ABOVE-BASKET 3, LOST-FAR 1, STILL-DESCENDING 1 |
 
-Same two modes dominate in both pathways: the object is carried to the basket and
-**never released** (7 of 9 `first_frame` failures never release it; the two that
-do release let go 33 and 34 steps after the strike). 12/12 strikes again land
-after the lift. **The behaviour that the disturbance breaks is not the
-world-model-specific part of the controller.**
+The dominant mode is the same in both pathways: the object is carried to the
+basket and **never released** (7 of 9 `first_frame` failures never release it;
+the two that do release let go 33 and 34 steps after the strike). 12/12 strikes
+again land after the lift. The H=1 `first_frame` mix is more scattered (one
+episode each of held-above, lost-far, held-elsewhere, still-descending), so this
+is a shared dominant mode, not an identical signature. **The behaviour that the
+disturbance breaks is not the world-model-specific part of the controller.**
+
+## 3b. Budget caveat (why section 5 may need to change)
+
+Every cell above was run at the suite's 400-step budget. `first_frame` is slower
+than `idm` even on success (control H=1: 240–419 steps vs 164–186), and one of
+its 12 control episodes failed *only* because it hit the cap. That makes "less
+successful" and "slower" indistinguishable in the table above, so a
+`--max-steps 800` arm was launched for the disturb cells of both pathways
+(`results/gate13_g14ff800`, `results/gate13_g14idm800`). It is **in progress**;
+no row is written here until the cells are complete. If the non-future arm
+recovers under the longer budget while the future-aware arm does not, the
+WAM-specificity conclusion in section 5 is wrong and will be retracted.
 
 ## 4. What this does and does not establish
 

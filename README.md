@@ -7,6 +7,37 @@ The core question this repo answers: *when the world changes underneath a World 
 model behave like one — i.e. does its risk/planning actually depend on the world state — or does it just
 execute an open-loop action chunk?*
 
+## Bottom line (read this first)
+
+Every gate below (A–D, 7–14) is reproducible from this repo:
+
+- **A single mid-chunk world displacement is harmless where the stale actions are not load-bearing.**
+  In the approach phase it costs nothing measurable: 12/12 vs 11/12 (Fisher p=1.0), twice replicated.
+- **The same displacement is destructive where they are load-bearing.** Moved into the carry phase it
+  takes success from 6/6 to 2/6 (H=1) and 1/6 (H=10); pooled over horizon 3/12 vs 12/12, p=0.0003.
+- **But the damage does not scale with the commitment horizon** — the number of stale actions — in
+  either regime (three independent replications, H=1 vs H=10 p=1.000 in the carry regime).
+- **The mechanism is not mechanical and not a reach failure.** The grasp is never broken: **54/54**
+  struck episodes across both pathways lift the object, and in **9 of 23** future-aware failures it is
+  never released at all. The policy carries the object to the basket and parks it 5.5–9.9 cm above the
+  placement height, or carries it away entirely.
+- **Magnitude is a weak lever.** 5 → 20 mm changes nothing resolvable (success 33% → 25% → 0%, all
+  pairwise contrasts p ≥ 0.245), whereas *when* the strike lands flips the result from null to large.
+- **And the cost is not specific to a world model** (Gate 14): the same checkpoint driven by the
+  non-future `first_frame` pathway is damaged identically — 2/6 and 1/6, Fisher p=1.0000 at both
+  horizons — and fails in the same dominant way (object carried to the basket, never released).
+
+So the defensible claim is **a property of fixed-horizon chunk execution, not a world-modeling
+commitment cost**: replaying a stale chunk is costly exactly when the stale actions are load-bearing,
+the cost is at or near ceiling from the first strike instead of compounding, and a controller that
+never conditions on a predicted future pays it just the same. The one thing that *is* specific to the video pathway is
+predicted-future fidelity: a mid-chunk strike costs a fixed ≈4.4 dB of PSNR at lag ≥ 4 and that damage
+does not grow with the replan horizon either.
+
+**Not established:** why the policy stops short of releasing (the records carry no grasp/contact
+state); whether the WAM has any world-modeling advantage at all under a different intervention; and
+whether a stronger no-video baseline would also pay the same cost.
+
 ---
 
 ## What this is
@@ -355,11 +386,13 @@ task, same seeds, same strike schedule, same horizons — the only change is
 | `idm` (future-aware) | 6/6 @ H1, 6/6 @ H10 | 2/6 @ H1, 1/6 @ H10 | +0.67, +0.83 |
 | `first_frame` (non-future) | 5/6 @ H1, 6/6 @ H10 | **2/6 @ H1, 1/6 @ H10** | +0.50, +0.83 |
 
-**The disturbed cells are numerically identical** (Fisher p=1.0000 at both horizons), and the failure
-signature is the same too: the object is carried to the basket and never released (7 of 9
+**The disturbed cells are numerically identical** (Fisher p=1.0000 at both horizons), and the
+dominant failure mode is the same: the object is carried to the basket and never released (7 of 9
 `first_frame` failures never release it; the two that do let go 33 and 34 steps after the strike),
-with 12/12 strikes again landing after the lift. The baseline is not broken — it is slightly clumsier
-under no intervention (11/12 vs 12/12) and otherwise behaves the same.
+with 12/12 strikes again landing after the lift. The H=1 mix is more scattered than in the
+future-aware arm (1 held-above, 1 lost-far, 1 held-elsewhere, 1 still descending), so this is a
+shared dominant mode rather than a byte-for-byte identical signature. The baseline is not broken —
+it is slightly clumsier under no intervention (11/12 vs 12/12) and otherwise behaves the same.
 
 **This is a negative result for WAM-specificity.** The carry-phase cost survives removal of
 future-aware action inference, so it is a property of **fixed-horizon chunk execution**, not a

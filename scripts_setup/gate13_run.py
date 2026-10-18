@@ -69,6 +69,13 @@ WORLD_MAG = "0.10"      # metres
 
 
 def free_gpus(min_free_mib: int = 5000):
+    # Honour CUDA_VISIBLE_DEVICES when the caller set it. Ignoring it silently
+    # put two 5B models on the same physical GPU (the heuristic picks by free
+    # memory, and both launches saw GPU 5 as free) -> CUDA OOM, rc=1.
+    allowed = os.environ.get("CUDA_VISIBLE_DEVICES", "").strip()
+    allow = None
+    if allowed:
+        allow = {int(x) for x in allowed.split(",") if x.strip().isdigit()}
     out = subprocess.run(
         ["nvidia-smi", "--query-gpu=index,memory.used", "--format=csv,noheader,nounits"],
         capture_output=True, text=True, check=True,
@@ -76,8 +83,16 @@ def free_gpus(min_free_mib: int = 5000):
     gpus = []
     for line in out.strip().splitlines():
         idx, used = [s.strip() for s in line.split(",")]
+        idx = int(idx)
+        if allow is not None and idx not in allow:
+            continue
         if int(used) < min_free_mib:
-            gpus.append(int(idx))
+            gpus.append(idx)
+    if allow is not None and not gpus:
+        # The requested devices exist but are busy: fail loudly instead of
+        # silently spilling onto a device the caller did not authorise.
+        print(f"ERROR: CUDA_VISIBLE_DEVICES={allowed} but none of those GPUs is free")
+        raise SystemExit(2)
     return gpus
 
 

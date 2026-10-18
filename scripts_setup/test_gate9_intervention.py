@@ -4,6 +4,7 @@ Run:  python scripts_setup/test_gate9_intervention.py
 Exits non-zero on any failure.
 """
 import json
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -537,6 +538,26 @@ try:
     check("max_steps and action_infer_mode coexist",
           "+EVALUATION.action_infer_mode=first_frame" in _long and
           "+EVALUATION.max_steps=800" in _long)
+    # GPU selection must honour CUDA_VISIBLE_DEVICES. Ignoring it silently put
+    # two 5B models on one card (the heuristic picks by free memory, and both
+    # launches saw the same GPU as free) -> CUDA OOM, rc=1, cell lost.
+    _fake = type("R", (), {"stdout": "0, 9000\n5, 15\n7, 15\n"})()
+    _orig_run = _g13.subprocess.run
+    _orig_env = os.environ.get("CUDA_VISIBLE_DEVICES")
+    _g13.subprocess.run = lambda *a, **k: _fake
+    try:
+        os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+        check("free_gpus honours CUDA_VISIBLE_DEVICES", _g13.free_gpus() == [7],
+              repr(_g13.free_gpus()))
+        os.environ.pop("CUDA_VISIBLE_DEVICES", None)
+        check("free_gpus ignores busy cards when unconstrained",
+              _g13.free_gpus() == [5, 7], repr(_g13.free_gpus()))
+    finally:
+        _g13.subprocess.run = _orig_run
+        if _orig_env is None:
+            os.environ.pop("CUDA_VISIBLE_DEVICES", None)
+        else:
+            os.environ["CUDA_VISIBLE_DEVICES"] = _orig_env
 except Exception as _e:  # pragma: no cover
     check("gate13_run importable for the Gate 14 plumbing check", False, repr(_e))
 

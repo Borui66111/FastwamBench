@@ -292,6 +292,23 @@ short (no grasp/contact state in the records, so that stays an inference). Evide
 `evidence/gate13d_mechanism.md` + `.png/.pdf`.
 Evidence: `evidence/gate13b_repeated_strikes.md` + `.png/.pdf`, `evidence/gate13c_carry_phase.md`.
 
+**Gate 14 (2026-10-19, COMPLETE) — the carry-phase cost is NOT WAM-specific.**
+Same checkpoint, task, seeds (1,2), 3 trials/cell, same 0.01 m grasp-relative strike schedule and
+horizons (1, 10); the only change is `EVALUATION.action_infer_mode=first_frame` (the non-future
+branch of the same network) instead of `idm`. Control: `first_frame` 5/6 @ H1, 6/6 @ H10 (11/12) vs
+`idm` 12/12 — clumsier but not broken (p=0.33 pooled). Disturb: `first_frame` **2/6 @ H1, 1/6 @ H10**
+— **numerically identical to `idm`'s 2/6 and 1/6** (Fisher p=1.0000 at both horizons). The failure
+signature is identical too: 7 of 9 `first_frame` failures never release the object, the two that do
+release let go 33/34 steps after the strike, and 12/12 strikes again land after the lift. So the
+cost survives removal of future-aware action inference: **it is a property of fixed-horizon chunk
+execution, not a world-modeling commitment cost**, and the "WAM" framing of Gates 13/13B/13C/13D was
+never tested until now — it fails. Does NOT show the WAM has no world-modeling advantage (the
+predicted-future fidelity result comes from the video pathway, which this ablation does not touch),
+and does not test a stronger no-video baseline. Also added `--max-steps` (per-suite budget override)
+plus 3 plumbing checks (tests now 102). Evidence: `evidence/gate14_wam_specificity.md`; data
+`results/gate13_g14ff` vs `results/gate13_repeat_carry_full`; compare with
+`scripts_setup/gate14_compare.py`.
+
 **HEADLINE FINDING (2026-10-17, main sweep complete 32/32 + ladder):**
 The *mechanism* is confirmed exactly; the *task-level cost* is large but does **not** scale with H.
 
