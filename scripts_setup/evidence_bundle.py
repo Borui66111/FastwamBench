@@ -255,7 +255,10 @@ def main():
             print(f"[skip] {gate}: no cells")
             continue
         _write_jsonl(out / f"episodes_{gate}.jsonl", built["episodes"])
-        _write_jsonl(out / f"clips_{gate}.jsonl", built["clips"])
+        # Only the PSNR gates recorded predicted clips. Writing an empty file for the
+        # others would look like a truncated bundle, so omit it and say so in the manifest.
+        if built["clips"]:
+            _write_jsonl(out / f"clips_{gate}.jsonl", built["clips"])
         _write_jsonl(out / f"actions_pre_iv_{gate}.jsonl", built["actions_pre_iv"])
         if built["run_config"] is not None:
             (out / f"run_config_{gate}.json").write_text(json.dumps(built["run_config"], indent=2, sort_keys=True) + "\n")

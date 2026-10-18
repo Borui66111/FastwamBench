@@ -1,8 +1,9 @@
 # Gate 14 — is the commitment cost specific to a future-aware world model?
 
-STATUS: **COMPLETE at the standard 400-step budget** (2026-10-19); a
-budget-extension arm (both pathways, `--max-steps 800`) is in flight and is
-reported in section 3b once its cells exist. Same checkpoint, same task (`libero_object:0`),
+STATUS: **COMPLETE for the carry regime** (2026-10-19), including the
+800-step budget replication (section 3b). The approach-regime replication under
+`first_frame` is reported in section 3c at 400 steps; its 800-step run
+(`results/gate13_g14ffapproach800`) is still in flight. Same checkpoint, same task (`libero_object:0`),
 same seeds (1,2), same 3 trials/cell, same grasp-relative strike schedule
 (0.01 m, repeat every 10 steps, 4 strikes), same replan horizons (1 and 10).
 **The only difference is the action-inference pathway**: `idm` (future-aware, the
@@ -68,17 +69,54 @@ episode each of held-above, lost-far, held-elsewhere, still-descending), so this
 is a shared dominant mode, not an identical signature. **The behaviour that the
 disturbance breaks is not the world-model-specific part of the controller.**
 
-## 3b. Budget caveat (why section 5 may need to change)
+## 3b. Budget caveat — tested, and it does not change the verdict
 
-Every cell above was run at the suite's 400-step budget. `first_frame` is slower
-than `idm` even on success (control H=1: 240–419 steps vs 164–186), and one of
-its 12 control episodes failed *only* because it hit the cap. That makes "less
-successful" and "slower" indistinguishable in the table above, so a
-`--max-steps 800` arm was launched for the disturb cells of both pathways
-(`results/gate13_g14ff800`, `results/gate13_g14idm800`). It is **in progress**;
-no row is written here until the cells are complete. If the non-future arm
-recovers under the longer budget while the future-aware arm does not, the
-WAM-specificity conclusion in section 5 is wrong and will be retracted.
+Every cell above was run at the suite's 400-step budget, and `first_frame` is
+slower than `idm` even on success (control H=1: 240–419 steps vs 164–186), so
+"less successful" and "slower" are not separable in that table. A
+`--max-steps 800` arm was therefore run on the disturb cells of **both**
+pathways (n=6/cell, `results/gate13_g14ff800`, `results/gate13_g14idm800`):
+
+| pathway | disturb H=1 @400 | @800 | disturb H=10 @400 | @800 | total @400 | @800 |
+|---|---|---|---|---|---|---|
+| `idm` | 2/6 | **3/6** | 1/6 | **1/6** | 3/12 | **4/12** |
+| `first_frame` | 2/6 | **3/6** | 1/6 | **1/6** | 3/12 | **4/12** |
+
+The longer budget rescues **exactly one episode per pathway** and leaves the
+rest stuck at the cap — in both arms every one of the 8 failures runs to 830
+steps (12 episodes/arm: 4 successes, 8 non-terminating). `idm` disturb vs
+`first_frame` disturb at 800 steps: **4/12 vs 4/12, Fisher p=1.0000**. So the
+identity is not a budget artifact — doubling the budget moves both arms by the
+same amount. It also shows the carry-regime cost is not simply "runs out of
+time" in one pathway only: slow successes exist in both (758 steps for
+`first_frame`, 618 for `idm`).
+
+## 3c. The other regime: approach-phase strikes under the non-future pathway
+
+The carry regime is where the *future-aware* model pays. Running the **approach**
+schedule (fixed strike at env step 40, pre-grasp, same 0.01 m / every 10 / ×4)
+under `first_frame` gives the opposite pattern at the 400-step budget:
+
+| pathway | approach control | approach disturb | Fisher |
+|---|---|---|---|
+| `idm` (Gate 13B, `results/gate13_repeat_sub`) | 12/12 | 11/12 | p=1.00 |
+| `first_frame` (`results/gate13_g14ffapproach`) | 11/12 | **5/12** | **p=0.027** |
+
+Every one of the 7 `first_frame` approach failures is a **430-step timeout** —
+the episode does not terminate, it runs out of budget — whereas the `idm`
+approach failures are a single 430-step timeout out of 12 and its successes take
+204–382 steps. So the pattern is not "the non-future model is more fragile in the
+approach phase"; it is that the non-future model is **slow enough that an
+approach-phase strike pushes it past the step budget**. A `--max-steps 800`
+replication of this arm (`results/gate13_g14ffapproach800`) is running to settle
+whether the cost is time or damage; the first 800-step control episode, which
+timed out at 400, succeeds at 606 steps, which is consistent with the
+time-budget reading.
+
+**This is the honest shape of the Gate 14 result:** in the regime where the
+future-aware model is damaged (carry), removing future-aware inference changes
+nothing; in the regime where it is *not* damaged (approach), removing it produces
+a cost that is budget-mediated rather than a different failure mode.
 
 ## 4. What this does and does not establish
 
@@ -102,9 +140,10 @@ WAM-specificity conclusion in section 5 is wrong and will be retracted.
   (`first_frame_cond_mask` conditions on the first predicted frame rather than
   the whole predicted clip — see `fastwam_optional_idm.py:101`). A stronger
   baseline (e.g. a policy with no video branch at all) is untested.
-- Anything about the approach regime: this run only repeats Gate 13C's carry
-  schedule. The approach null (12/12 vs 11/12) has not been re-run under
-  `first_frame`.
+- That the approach-regime cost under `first_frame` is damage rather than
+  slowness: it is 7/7 timeouts at 400 steps, and the 800-step replication is
+  still running. Until it lands, the approach row of section 3c is a
+  budget-mediated result, not a robustness claim.
 
 ## 5. Consequence for the paper claim
 
