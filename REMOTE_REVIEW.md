@@ -190,9 +190,17 @@ Consequences for the review document:
 4. Anything written earlier that says "the world model commits to a stale future" should be read as
    "the chunk is replayed while stale" — and that replay is now shown **not** to be what costs the
    episode.
+5. **The positive account** (Gates 14E/14F/14G): the policy does see the strike (5.3% of pixels
+   change), does re-plan against it (max |Δaction| 0.0998), and its correction is **capped** — the
+   mean response rises 69% from 2 mm to 5 mm, then a further 4× displacement buys −1.5%, while
+   success keeps falling 6/6 → 5/6 → 2/6 → 1/6 → 0/6 (rho = −1.000, 2 vs 40 mm p=0.0022). The
+   defensible headline is **bounded corrective authority**, not stale replay and not a world-model
+   commitment cost.
 
-Full write-ups: `evidence/gate14_wam_specificity.md`, `evidence/gate14d_drop_stale.md`; figures
-`evidence/gate14_wam_specificity.png`, `evidence/gate14_matrix.png`.
+Full write-ups: `evidence/gate14_wam_specificity.md`, `evidence/gate14d_drop_stale.md`,
+`evidence/gate14e_zero_stale.md`, `evidence/gate14g_magnitude.md`; figures
+`evidence/gate14_wam_specificity.png`, `evidence/gate14_matrix.png`,
+`evidence/gate14_magnitude.png`.
 
 ## First presentable benchmark target
 

@@ -1,5 +1,5 @@
 diff --git a/experiments/libero/eval_libero_single.py b/experiments/libero/eval_libero_single.py
-index 62c8fa8..50df659 100644
+index 62c8fa8..e7956d1 100644
 --- a/experiments/libero/eval_libero_single.py
 +++ b/experiments/libero/eval_libero_single.py
 @@ -24,6 +24,14 @@ project_root = Path(__file__).resolve().parents[2]
@@ -45,7 +45,7 @@ index 62c8fa8..50df659 100644
      num_future_frames = replan_steps // action_video_freq_ratio
      return [step_idx * action_video_freq_ratio for step_idx in range(num_future_frames + 1)]
  
-@@ -356,6 +378,88 @@ def _compute_clip_mean_psnr(
+@@ -356,6 +378,91 @@ def _compute_clip_mean_psnr(
      return float(np.mean(frame_psnr_values))
  
  
@@ -76,6 +76,9 @@ index 62c8fa8..50df659 100644
 +
 +
 +_CHUNK_DUMP_PATH = os.environ.get("FASTBENCH_DUMP_CHUNK", "")
++# Gate 14G: set by the orchestrator, which is the only place that knows the eval
++# seed. icfg["seed"] is the intervention RNG seed (always 0), not this.
++_RUN_SEED = int(os.environ.get("FASTBENCH_RUN_SEED", "0"))
 +
 +
 +def _refresh_obs(env, obs):
@@ -134,7 +137,7 @@ index 62c8fa8..50df659 100644
  def _predict_action_chunk(
      obs: dict,
      task_description: str,
-@@ -455,6 +559,13 @@ def _get_max_steps(task_suite_name: str) -> int:
+@@ -455,6 +562,13 @@ def _get_max_steps(task_suite_name: str) -> int:
          "libero_goal": 400,
          "libero_10": 700,
          "libero_90": 700,
@@ -148,7 +151,7 @@ index 62c8fa8..50df659 100644
      }
      if task_suite_name not in suite_steps:
          raise ValueError(f"Unknown task suite: {task_suite_name}")
-@@ -475,13 +586,33 @@ def run_single_episode(
+@@ -475,13 +589,33 @@ def run_single_episode(
      input_h: int,
      model_device: str,
  ) -> tuple[bool, list, list[dict[str, Any]], Optional[float]]:
@@ -183,7 +186,7 @@ index 62c8fa8..50df659 100644
      env.reset()
      obs = env.set_init_state(initial_state)
      if use_action_ensembler:
-@@ -491,10 +622,31 @@ def run_single_episode(
+@@ -491,10 +625,31 @@ def run_single_episode(
      replay_images = []
      predicted_future_video_clips: list[dict[str, Any]] = []
      episode_future_clip_psnr: list[float] = []
@@ -215,7 +218,7 @@ index 62c8fa8..50df659 100644
  
      t = 0
      done = False
-@@ -507,6 +659,34 @@ def run_single_episode(
+@@ -507,6 +662,34 @@ def run_single_episode(
              continue
  
          if len(pending_actions) == 0:
@@ -250,7 +253,7 @@ index 62c8fa8..50df659 100644
              action_chunk, imgs, predicted_future_frames = _predict_action_chunk(
                  obs=obs,
                  task_description=task_description,
-@@ -518,10 +698,32 @@ def run_single_episode(
+@@ -518,10 +701,36 @@ def run_single_episode(
                  input_h=input_h,
                  model_device=model_device,
              )
@@ -268,6 +271,10 @@ index 62c8fa8..50df659 100644
 +            if _CHUNK_DUMP_PATH:
 +                with open(_CHUNK_DUMP_PATH, "a") as _cf:
 +                    _cf.write(json.dumps({
++                        # episode_idx restarts at 0 in every job, and a run has one
++                        # job per seed -- without the seed, seed 2 overwrites seed
++                        # 1's chunks under the same key.
++                        "seed": _RUN_SEED,
 +                        "episode": int(episode_idx),
 +                        "t": int(t),
 +                        "replan_idx": int(current_replan_idx),
@@ -284,7 +291,7 @@ index 62c8fa8..50df659 100644
                      "gt_frames": [imgs.copy()],
                      "pred_frames": predicted_future_frames,
                  }
-@@ -533,14 +735,177 @@ def run_single_episode(
+@@ -533,14 +742,177 @@ def run_single_episode(
                  pending_actions = [ensembler.get_action(ts).tolist() for ts in range(t, t + replan_steps)]
              else:
                  pending_actions = action_chunk[:replan_steps].tolist()
@@ -464,7 +471,7 @@ index 62c8fa8..50df659 100644
              if current_replan_step in capture_steps:
                  current_predicted_future_clip["gt_frames"].append(get_libero_image(obs))
              if done or len(pending_actions) == 0:
-@@ -587,6 +952,19 @@ def run_single_episode(
+@@ -587,6 +959,19 @@ def run_single_episode(
                  )
                  if clip_psnr is not None:
                      episode_future_clip_psnr.append(clip_psnr)
@@ -484,7 +491,7 @@ index 62c8fa8..50df659 100644
                  predicted_future_video_clips.append(current_predicted_future_clip)
                  current_predicted_future_clip = None
          if done:
-@@ -597,6 +975,39 @@ def run_single_episode(
+@@ -597,6 +982,39 @@ def run_single_episode(
      episode_mean_psnr = (
          float(np.mean(episode_future_clip_psnr)) if len(episode_future_clip_psnr) > 0 else None
      )
@@ -524,7 +531,7 @@ index 62c8fa8..50df659 100644
      return bool(done), replay_images, predicted_future_video_clips, episode_mean_psnr
  
  
-@@ -730,10 +1141,9 @@ def _run_task_to_file(
+@@ -730,10 +1148,9 @@ def _run_task_to_file(
  
      task_suite = benchmark.get_benchmark_dict()[suite_name]()
      task = task_suite.get_task(task_id)

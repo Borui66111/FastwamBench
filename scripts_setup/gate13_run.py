@@ -219,6 +219,7 @@ def run_job(job, gpu: int, args) -> tuple[str, int]:
         "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
         # keep logs readable: tqdm progress bars otherwise write ~100 MB per job
         "TQDM_DISABLE": "1",
+        "FASTBENCH_RUN_SEED": str(job["seed"]),
     })
     t0 = time.time()
     with open(log, "w") as fh:

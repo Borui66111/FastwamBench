@@ -41,6 +41,12 @@ That takes the explanation away from the horizon gradient as well. Four strikes 
 stale-action count — the obvious candidate — is inert. The gradient is real and measured; its
 mechanism is **unexplained**, and it should not be restated as "commitment compounds with horizon".
 
+**What does explain the cost is a bounded corrective response** (Gate 14G). Sweeping the displacement
+from 2 mm to 40 mm with one strike: success falls monotonically 6/6 → 5/6 → 2/6 → 1/6 → **0/6**
+(rho = −1.000; 2 vs 40 mm p=0.0022), while the policy's mean change of plan rises 69% from 2 mm to
+5 mm and then **stops growing** — a further 4× displacement buys −1.5%. The model responds, and its
+response is capped; the error is not.
+
 What is still specific to the video pathway is predicted-future fidelity: a mid-chunk strike costs a
 fixed ≈4.4 dB of PSNR at lag ≥ 4, and that damage does not grow with the replan horizon either.
 
@@ -375,12 +381,17 @@ height until the step budget expires (tail slope +0.0001 m/step over the last 60
 m for a successful placement). Only one of nine failures was still descending when time ran out, so
 this is not a time-budget artifact.
 
-**No measurable dose-response over 5–20 mm.** Halving the displacement did not halve the damage
-(2/6 at both horizons, against 6/6 control), and a third arm at 0.02 m (`results/gate13_carry_mag02`,
-n=3/cell) is 0/3 at both horizons against 3/3. Success therefore runs 33% → 25% → 0% across 5/10/20 mm,
-but **no pair of magnitudes is distinguishable**: 0.005 vs 0.01 m p=1.000, 0.005 vs 0.02 m p=0.245,
-0.01 vs 0.02 m p=0.515. So "the cost saturates at 5 mm" is too strong — the defensible statement is
-that the cost is at or near ceiling by 5 mm and no trend is resolvable at this n. Pooled over horizon
+**No measurable dose-response over 5–20 mm — in this repeated-strike design.** Halving the displacement
+did not halve the damage (2/6 at both horizons, against 6/6 control), and a third arm at 0.02 m
+(`results/gate13_carry_mag02`, n=3/cell) is 0/3 at both horizons against 3/3. Success therefore runs
+33% → 25% → 0% across 5/10/20 mm, but **no pair of magnitudes is distinguishable**: 0.005 vs 0.01 m
+p=1.000, 0.005 vs 0.02 m p=0.245, 0.01 vs 0.02 m p=0.515.
+
+That null is a **floor effect, not an absence of magnitude dependence**. Four strikes already pin the
+cell near the floor by 5 mm, so there is no room for a gradient. The single-strike design (Gate 14G)
+starts at 6/6 and does show one: 6/6 → 5/6 → 2/6 → 1/6 → 0/6 across 2/5/10/20/40 mm (rho = -1.000,
+2 vs 40 mm p=0.0022). So: **repeated strikes saturate the damage; magnitude still matters underneath.**
+Pooled over horizon
 (legitimate because the horizon contrast is null), against control: 0.005 m **4/12, Fisher p=0.0013**;
 0.01 m **3/12, p=0.0003**; 0.02 m **0/6, p=0.0022**.
 

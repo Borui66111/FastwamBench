@@ -478,3 +478,40 @@ Honesty notes:
   reacts; the reaction is too small to change the outcome. Diagnostic:
   `FASTBENCH_DUMP_CHUNK=<path>`, one JSON line per replan.
 
+
+
+## Gate 14G — the corrective response plateaus while the damage grows (2026-10-19, COMPLETE)
+
+Resolves the reading 14D/14E/14F left open. Single strike, zero-stale arm, H=10, n=6 per magnitude,
+seeds 1-2, magnitudes 2/5/10/20/40 mm, each paired against the control episode of the same seed/trial.
+
+| magnitude | success | mean \|delta\| | max \|delta\| |
+|---|---|---|---|
+| 2 mm | 6/6 | 0.0611 | 0.0989 |
+| 5 mm | 5/6 | 0.1031 | 0.1735 |
+| 10 mm | 2/6 | 0.1125 | 0.2193 |
+| 20 mm | 1/6 | 0.1041 | 0.1410 |
+| 40 mm | 0/6 | 0.1109 | 0.1758 |
+
+Success is monotone in magnitude (rho = -1.000; 2 vs 40 mm **p=0.0022**; 5 vs 40 mm p=0.0152; 2 vs
+10 mm p=0.061). The mean corrective response rises **+68.7%** from 2 to 5 mm, then +9.2%, then
+**-1.5%** from 10 to 40 mm — a 4x further displacement buys no more correction. So the policy's
+correction is **capped**, and the cap does not scale with the error. The failure at >=5 mm is not
+"the model did not notice" (14F) nor "it replayed stale actions" (14D/14E); it is bounded authority.
+
+**This reconciles 13D's null.** 13D reported no dose-response over 5-20 mm; that design used 4 strikes
+and was already at the floor by 5 mm (2/6), so it had no room to show a gradient. Scoped correctly:
+repeated strikes saturate the damage, magnitude still matters underneath. README and the 13D section
+now say this rather than the absolute version.
+
+Caveat: one low outlier at 2 mm (~0.034) pulls that cell's mean down, so the 2->5 mm jump is partly
+between-episode variance; the plateau itself is robust across 5-40 mm.
+
+Artifacts: `evidence/gate14g_magnitude.md`, `evidence/gate14g_magnitude.png`/`.pdf`,
+`scripts_setup/gate14g_sweep.sh`, `scripts_setup/gate14g_response.py`,
+`scripts_setup/gate14g_figure.py`, `results/gate14g_response.json`.
+
+Plumbing note: the chunk dump now carries the eval seed via `FASTBENCH_RUN_SEED`, set by
+`gate13_run.py` per job. `icfg["seed"]` is the *intervention* RNG seed (always 0) — using it silently
+collapsed both seeds onto the same dump keys and cost two sweep reruns. Same class of bug as
+`cfg["seed"]` (0) and the `_s<N>` directory suffix: read provenance from the artifact that owns it.

@@ -21,6 +21,7 @@ import argparse
 import glob
 import json
 import os
+import re
 
 import numpy as np
 
@@ -31,6 +32,12 @@ def episodes(root):
     for path in sorted(glob.glob(os.path.join(root, "**", "records.jsonl"),
                                  recursive=True)):
         strike_t, zs = None, 0
+        # .../H10/control_s1/records.jsonl -- the seed is in the cell path, and
+        # the episode records do not carry it.
+        m = re.search(r"_s(\d+)$", os.path.basename(os.path.dirname(path)))
+        if not m:
+            raise SystemExit(f"cannot read seed from {path}")
+        seed = int(m.group(1))
         for line in open(path):
             if '"intervention"' not in line and '"episode_end"' not in line:
                 continue
@@ -39,6 +46,7 @@ def episodes(root):
                 strike_t = int(rec["t"])
             elif rec.get("event") == "episode_end":
                 out.append({
+                    "seed": seed,
                     "episode": int(rec["episode"]),
                     "success": bool(rec["success"]),
                     "steps": int(rec["steps"]),
@@ -55,9 +63,20 @@ def chunks(path):
         return out
     for line in open(path):
         rec = json.loads(line)
-        out[(int(rec["episode"]), int(rec["t"]))] = np.asarray(rec["chunk"],
-                                                             dtype=float)
+        out[(int(rec["seed"]), int(rec["episode"]), int(rec["t"]))] = \
+            np.asarray(rec["chunk"], dtype=float)
     return out
+
+
+def tag_of(run_dir):
+    """The tag the run recorded, not the directory name.
+
+    Directory names carry the `gate13_` prefix while dump files are named from
+    the tag, so deriving one from the other by string surgery is a needless
+    failure mode -- read the artifact.
+    """
+    with open(os.path.join(run_dir, "run_config.json")) as f:
+        return json.load(f)["tag"]
 
 
 def main():
@@ -68,8 +87,7 @@ def main():
     ap.add_argument("--json", default=None)
     args = ap.parse_args()
 
-    ctl_chunks = chunks(os.path.join(args.dumpdir,
-                                     f"chunks_{os.path.basename(args.ctl)}.jsonl"))
+    ctl_chunks = chunks(os.path.join(args.dumpdir, f"chunks_{tag_of(args.ctl)}.jsonl"))
     if not ctl_chunks:
         print(f"no control chunks for {args.ctl} -- was FASTBENCH_DUMP_CHUNK set?")
         return 1
@@ -81,7 +99,7 @@ def main():
     for run in sorted(args.runs):
         if os.path.abspath(run) == os.path.abspath(args.ctl):
             continue
-        tag = os.path.basename(run)
+        tag = tag_of(run)
         with open(os.path.join(run, "run_config.json")) as f:
             mag = float(json.load(f)["magnitude_m"])
         eps = episodes(run)
@@ -94,7 +112,7 @@ def main():
         for e in eps:
             if e["strike_t"] is None:
                 continue
-            key = (e["episode"], e["strike_t"])
+            key = (e["seed"], e["episode"], e["strike_t"])
             if key in run_chunks and key in ctl_chunks:
                 deltas.append(float(np.abs(run_chunks[key]
                                            - ctl_chunks[key]).max()))
@@ -107,6 +125,9 @@ def main():
             "zero_stale_episodes": sum(1 for e in eps if e["zero_stale"] > 0),
             "paired": len(deltas),
             "chunk_delta_mean": float(np.mean(deltas)) if deltas else None,
+            # per-episode values: the figure plots these so the reader can see
+            # the spread, not just a mean with no uncertainty.
+            "chunk_delta_per_episode": [float(v) for v in deltas],
             "chunk_delta_max": float(np.max(deltas)) if deltas else None,
         })
 
