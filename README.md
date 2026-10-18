@@ -59,7 +59,7 @@ scripts_setup/          all runnable scripts (bring-up, gates, analysis) + unit 
   gate13d_mechanism.py          Gate 13D: classify HOW a carry-phase strike fails (per episode)
   gate13d_figure.py             Gate 13D: outcome composition | success vs magnitude
   sync_patches.sh       export live FastWAM/ edits into tracked patches/
-  test_gate9_intervention.py   unit tests (96 checks) for the intervention mechanism + goal-aware guard
+  test_gate9_intervention.py   unit tests (99 checks) for the intervention mechanism + goal-aware guard
 patches/                our changes to the upstream FastWAM tree (it is NOT vendored here)
 evidence/               curated text results + a compressed bundle of the raw Gate 11 records
 my_test/fastbench_handoff/   the onboarding brief + live STATE.md / CHANGELOG.md

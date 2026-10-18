@@ -267,7 +267,7 @@ because its carry window is only ~30 steps (<=3 strikes); object's is ~81 steps 
 carries the result. Structural note: spatial carry window min/med/max = 3/30/34, object = 71/81/125.
 Pilot `results/gate13_repeat_carry2` (spatial, n=3) validated the trigger; `results/gate13_repeat_carry`
 is **INVALID** (the key was never mapped out of `cfg.EVALUATION`, so strikes stayed at 40/50/60/70 —
-a plumbing test now catches this). Tests: 96 checks.
+a plumbing test now catches this). Tests: 99 checks.
 Naming note: these two are **13B** and **13C** — Gate 14 below is reserved for the WAM-vs-baseline
 comparison.
 
@@ -317,7 +317,7 @@ stale actions".
 **EVIDENCE:** `scripts_setup/gate13_run.py` (sweep runner), `gate13_analyze.py`,
 `gate13_figure.py`, `gate13_report.py`, `gate13_all.sh` (unattended pipeline),
 `gate13_validate_goal_aware.py`; `evidence/gate13_design_checks/` (raw captures);
-`scripts_setup/test_gate9_intervention.py` (96 checks, all pass).
+`scripts_setup/test_gate9_intervention.py` (99 checks, all pass).
 
 `replan_steps` is the commitment horizon H (`pending_actions = action_chunk[:H]`); the released
 config ships H=10. The sweep varies H over {1,2,5,10} (the divisors of `world_step-30`) with a

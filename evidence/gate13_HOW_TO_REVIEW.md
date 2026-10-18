@@ -69,7 +69,7 @@ $PY scripts_setup/gate13_figure.py results/gate13_main/gate13_summary.json \
 
 ## Verify the experiment is valid (do these first)
 
-1. `$PY scripts_setup/test_gate9_intervention.py` → 96 checks pass. Covers the absolute-step
+1. `$PY scripts_setup/test_gate9_intervention.py` → 99 checks pass. Covers the absolute-step
    trigger and the goal-aware guard.
 2. `$PY scripts_setup/gate13_validate_goal_aware.py` → no model needed; proves the
    disturbance does NOT satisfy the task goal (the original design flaw).

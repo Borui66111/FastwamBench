@@ -182,7 +182,7 @@ reason that its strike count is not matched across horizons (4.0 at H=1 vs 2.0 a
 
 ```
 PY=/data1/liborui/.conda/envs/fastbench/bin/python
-$PY scripts_setup/test_gate9_intervention.py          # 96 checks
+$PY scripts_setup/test_gate9_intervention.py          # 99 checks
 $PY scripts_setup/gate13_run.py \
   --tasks libero_spatial:0,libero_object:0 --horizons 1,10 --seeds 1,2 --trials 3 \
   --arms control,disturb --magnitude 0.01 --world-step 40 \

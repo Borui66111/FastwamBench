@@ -81,7 +81,8 @@ def free_gpus(min_free_mib: int = 5000):
     return gpus
 
 
-def common_overrides(suite: str, tid: int, trials: int, seed: int, h: int) -> list[str]:
+def common_overrides(suite: str, tid: int, trials: int, seed: int, h: int,
+                     mode: str = "idm") -> list[str]:
     return [
         "task=libero_optional_idm_2cam224_1e-4",
         f"ckpt={CKPT}",
@@ -91,7 +92,7 @@ def common_overrides(suite: str, tid: int, trials: int, seed: int, h: int) -> li
         "model.skip_dit_load_from_pretrain=true",
         f"EVALUATION.dataset_stats_path={STATS}",
         "EVALUATION.sigma_shift=1.0",
-        "+EVALUATION.action_infer_mode=idm",
+        f"+EVALUATION.action_infer_mode={mode}",
         f"EVALUATION.task_suite_name={suite}",
         f"EVALUATION.task_id={tid}",
         f"EVALUATION.num_trials={trials}",
@@ -112,7 +113,7 @@ def build_jobs(args):
                     jobs.append({
                         "suite": suite, "tid": tid, "h": h, "arm": arm,
                         "seed": seed, "trials": args.trials, "out": out,
-                        "psnr": args.psnr,
+                        "psnr": args.psnr, "mode": args.action_infer_mode,
                     })
     return jobs
 
@@ -137,7 +138,8 @@ def run_job(job, gpu: int, args) -> tuple[str, int]:
     out.mkdir(parents=True, exist_ok=True)
     log = args.log_dir / f"{job['suite']}_t{job['tid']}_H{job['h']}_{job['arm']}_s{job['seed']}.log"
     cmd = [PY, "experiments/libero/eval_libero_single.py"]
-    cmd += common_overrides(job["suite"], job["tid"], job["trials"], job["seed"], job["h"])
+    cmd += common_overrides(job["suite"], job["tid"], job["trials"], job["seed"], job["h"],
+                            job.get("mode", "idm"))
     cmd += [f"EVALUATION.output_dir={out}", f"EVALUATION.recorder_path={out/'records.jsonl'}"]
     if job["psnr"]:
         cmd.append("EVALUATION.visualize_future_video=true")
@@ -220,6 +222,8 @@ def main() -> int:
     ap.add_argument("--magnitude", default=os.environ.get("GATE13_MAG", WORLD_MAG),
                     help="disturbance magnitude in metres (goal-aware default)")
     ap.add_argument("--psnr", action="store_true", help="also render predicted future video")
+    ap.add_argument("--action-infer-mode", default="idm", choices=["idm", "first_frame"],
+                    help="idm = future-aware (WAM); first_frame = non-future baseline (Gate 14)")
     ap.add_argument("--arms", default="control,disturb",
                     help="comma-separated arms to run (default both)")
     ap.add_argument("--dry-run", action="store_true")
@@ -245,6 +249,7 @@ def main() -> int:
             "horizons": args.horizons,
             "seeds": args.seeds,
             "trials": args.trials,
+            "action_infer_mode": args.action_infer_mode,
             "arms": args.arm_list,
             "magnitude_m": float(args.magnitude),
             "world_step": args.world_step,

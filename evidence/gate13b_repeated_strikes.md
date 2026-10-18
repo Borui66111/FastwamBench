@@ -246,5 +246,5 @@ python scripts_setup/gate13_run.py --tasks libero_spatial:0,libero_object:0 \
   --magnitude 0.01 --world-step 40 --world-repeat-every 10 --world-repeat-count 4 \
   --tag repeat_sub --ngpu 2
 python scripts_setup/gate13_analyze.py results/gate13_repeat_sub
-python scripts_setup/test_gate9_intervention.py     # 96 checks, includes the strike invariants
+python scripts_setup/test_gate9_intervention.py     # 99 checks, includes the strike invariants
 ```

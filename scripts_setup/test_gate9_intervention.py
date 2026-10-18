@@ -510,6 +510,23 @@ check("lift trigger is absent when not requested",
           "intervention_world_enabled": True, "intervention_world_step": 40,
       }}).get("world_trigger_after_lift") is None)
 
+# Gate 14: the action_infer_mode override must survive into the hydra command
+# line.  This is the same class of bug as the world_trigger_after_lift drop: the
+# flag reaches argparse but never reaches the subprocess.
+sys.path.insert(0, "/data1/liborui/fastwam_bench/scripts_setup")
+try:
+    import gate13_run as _g13
+    for _m in ("idm", "first_frame"):
+        _ov = _g13.common_overrides("libero_object", 0, 1, 1, 1, _m)
+        check(f"action_infer_mode={_m} reaches the command line",
+              f"+EVALUATION.action_infer_mode={_m}" in _ov,
+              repr([x for x in _ov if "infer_mode" in x]))
+    check("action_infer_mode defaults to idm",
+          "+EVALUATION.action_infer_mode=idm" in
+          _g13.common_overrides("libero_object", 0, 1, 1, 1))
+except Exception as _e:  # pragma: no cover
+    check("gate13_run importable for the Gate 14 plumbing check", False, repr(_e))
+
 print()
 if FAILS:
     print(f"RESULT: {len(FAILS)} FAILURE(S): {FAILS}")
