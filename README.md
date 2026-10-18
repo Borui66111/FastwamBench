@@ -248,10 +248,20 @@ n=6 and sd 29–96 it cannot be separated from noise. `strike_count` in the reco
 spatial H=1 episodes succeeded at step 57, before the strikes scheduled at steps 60 and 70 — so those
 strikes were never due. The drift budget is not binding at 0.01 m.
 
+**But every one of these strikes landed before the object was ever lifted.** Reconstructing per-episode
+lift time from `state.bodies` in the raw records: **24 of 24 struck episodes had all strikes land
+pre-grasp** (spatial lifts at steps 54–114, object at 121–295; strikes are fixed at 40/50/60/70). So
+the stale actions here were all *approach* actions, and invalidating an approach action is
+recoverable by construction — the robot simply re-approaches. The regime where a stale action is
+actively harmful (committing to a carry trajectory after the object has been displaced out of the
+gripper) was never entered.
+
 So the cost of a world change is set by **whether the next replan can recover at all**, not by how
 many actions were committed to the old world. Staleness is a real, exactly-countable property of the
-protocol that does not by itself predict failure. Testing the opposite regime needs a task where
-re-acquisition is cheap and stale motion is expensive; LIBERO pick-and-place is the reverse.
+protocol that does not by itself predict failure. This is a bounded result: it holds for
+approach-phase staleness. Testing the harmful regime needs a strike triggered on grasp detection
+rather than at a fixed step. `gate13_analyze.py` reports this automatically as
+`STRIKES LANDED BEFORE THE GRASP`.
 
 ---
 

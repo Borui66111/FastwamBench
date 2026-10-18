@@ -242,7 +242,16 @@ single-strike test; and the intervention could silently not fire at all (one cel
 `strike_count=0` with step counts identical to control, which an episode count cannot detect). The
 analyzer now audits all three: incomplete cells, `cost vs horizon` shape (flat / increasing /
 decreasing, not a non-decreasing predicate that calls a flat curve "monotone increasing"), and
-`INTERVENTION NEVER FIRED` for any disturb cell with zero strikes. Naming note: this is **13B**, not
+`INTERVENTION NEVER FIRED` for any disturb cell with zero strikes. **Critical bound found afterwards:**
+every strike landed *before* the object was ever lifted (24/24 struck episodes; spatial lifts at
+steps 54-114, object at 121-295, strikes fixed at 40/50/60/70), so the staleness measured here was
+approach-phase only — invalidating approach actions is recoverable by construction, and the harmful
+regime (stale carry trajectory after the object is displaced out of the gripper) was never entered.
+The analyzer now also reports `STRIKES LANDED BEFORE THE GRASP`. Testing the harmful regime needs a
+strike triggered on grasp detection, not a fixed step. A fourth limit: the strike hook runs only at
+chunk boundaries, so a cadence finer than `replan_steps` reduces the strike count at large H
+(`--world-repeat-every 5` gave H1 4.0 strikes but H10 2.0) — flagged as `STRIKE COUNT NOT MATCHED`.
+Naming note: this is **13B**, not
 Gate 14 — Gate 14 below is reserved for the WAM-vs-baseline comparison.
 Evidence: `evidence/gate13b_repeated_strikes.md` + `.png/.pdf`.
 

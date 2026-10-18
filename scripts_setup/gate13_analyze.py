@@ -477,6 +477,67 @@ def main() -> int:
             print(f"  {k}  {a}: H={lo} {ml:.2f} strikes -> H={hi} {mh:.2f} strikes")
         print("!" * 78)
 
+    # Did the strikes actually land while the robot was manipulating? A strike
+    # that lands before the object is first lifted invalidates approach actions,
+    # which are merely wasted; a strike after the lift invalidates carry actions,
+    # which are wrong. Only the latter can make staleness expensive, so a run
+    # whose strikes are all pre-lift cannot support any claim about commitment.
+    _eps, _ends, _ivs = {}, {}, []
+    for _rp in runs:
+        for _line in open(_rp):
+            _r = json.loads(_line)
+            _e = _r.get("event")
+            if _e == "step":
+                _eps.setdefault((_rp, _r.get("episode")), []).append(_r)
+            elif _e == "episode_end":
+                _ends[(_rp, _r.get("episode"))] = _r
+            elif _e == "intervention" and _r.get("kind") == "world_displacement" \
+                    and _r.get("applied"):
+                _ivs.append((_rp, _r))
+
+    _tot = _pre = 0
+    _lift_times = []
+    for _rp, _ep in sorted(_eps):
+        _recs = sorted(_eps[(_rp, _ep)], key=lambda r: r["t"])
+        _end = _ends.get((_rp, _ep)) or {}
+        _obj = _end.get("world_body")
+        _mine = [_i for _p, _i in _ivs if _p == _rp and _i.get("episode") == _ep]
+        if not _obj or _obj == "auto":
+            _obj = _mine[0].get("body") if _mine else None
+        if not _obj or not _mine:
+            continue
+
+        def _op(_r, _o=_obj):
+            _b = (_r.get("state") or {}).get("bodies") or {}
+            return (_b.get(_o) or {}).get("pos")
+
+        _z0 = (_op(_recs[0]) or [0, 0, 0])[2]
+        _lt = None
+        for _r in _recs:
+            _p = _op(_r)
+            if _p and _lt is None and _p[2] - _z0 > 0.02:
+                _lt = _r["t"]
+        _st = sorted(_i["t"] for _i in _mine)
+        if not _st:
+            continue
+        _tot += 1
+        _lift_times.append(_lt)
+        if _lt is None or all(s < _lt for s in _st):
+            _pre += 1
+
+    if _tot and _pre:
+        print("\n" + "!" * 78)
+        print(f"STRIKES LANDED BEFORE THE GRASP - in {_pre}/{_tot} struck episodes every")
+        print("strike fired before the object was first lifted. Stale actions in that")
+        print("phase are wasted approach motion, which the policy simply repeats; they")
+        print("are not wrong carry actions. Such a run cannot show a commitment cost,")
+        print("so do not present it as evidence that staleness is harmless.")
+        _known = [t for t in _lift_times if t is not None]
+        if _known:
+            print(f"  first lift: step {min(_known)}-{max(_known)}; "
+                  f"strikes at {sorted(set(s for _, i in _ivs for s in [i['t']]))}")
+        print("!" * 78)
+
     if short:
         print("\n" + "!" * 78)
         print("INCOMPLETE CELLS - a job crashed or was cut short. These cells are")

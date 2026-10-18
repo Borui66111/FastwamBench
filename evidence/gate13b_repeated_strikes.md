@@ -1,9 +1,15 @@
 # Gate 13B — does commitment cost compound when the world changes repeatedly?
 
-**Short answer: no.** With 10x more stale actions and identical total world drift, task success does
-not worsen with horizon (the one visible difference runs the other way) and effort differences are
-inside noise. This is the strongest form of the Gate 13 negative result, because the experiment was
-built specifically to expose compounding.
+**Short answer: no — but only for strikes that land during the approach.** With 10x more stale
+actions and identical total world drift, task success does not worsen with horizon (the one visible
+difference runs the other way) and effort differences are inside noise.
+
+**Scope limit, measured after the fact:** in **24 of 24** struck episodes every strike fired *before
+the object was first lifted* (first lift at step 54–295; strikes fixed at 40/50/60/70). Stale actions
+in the approach phase are merely wasted — the policy re-approaches and nothing is at risk. So this
+run does not test the regime where staleness could actually hurt: executing wrong actions *while
+carrying the object*. It is evidence that approach-phase staleness is free, not that commitment cost
+is absent. See "The strikes never landed during the carry" below.
 
 ## Why a single strike was not enough
 
@@ -105,6 +111,33 @@ Two further defects in the same run: only 1-3 of the 4 strikes landed even in th
 absolute-distance cap, mode 2), and `libero_object_t0/H1/control` has 3 episodes instead of 6.
 `gate13_analyze.py` now reports all three conditions on this run (`INTERVENTION NEVER FIRED`,
 `INCOMPLETE CELLS`, and `cost vs horizon: FLAT`).
+
+## The strikes never landed during the carry
+
+This is the most important qualification in this document, and it was found after the result was
+first written up. The strike times are absolute (steps 40/50/60/70). The object is not lifted until
+much later. Reconstructing per-episode lift time from `state.bodies` in the raw records:
+
+  task            H   episodes   strikes before first lift   lift step range
+  libero_object   1     6                6/6                   121 - 295
+  libero_object   10    6                6/6                   121 - 295
+  libero_spatial  1     6                6/6                    54 - 114
+  libero_spatial  10    6                6/6                    54 - 114
+
+**24 of 24 struck episodes had every strike land before the object was ever lifted.** A representative
+spatial episode: the bowl sits at z = 0.8984 from t=30 through t=70 (all four strikes), first rising
+to 0.9214 at t=80, while the gripper closes from 0.376 m to 0.049 m away.
+
+So every stale action in this experiment was an *approach* action. Invalidating approach actions is
+recoverable by construction: the robot re-approaches from wherever it is. The regime where a stale
+action is actively harmful — committing to a carry trajectory after the object has been displaced out
+of the gripper — was never entered.
+
+This does not weaken the measurement, it bounds it. What the data shows is that 10x more stale
+approach actions cost nothing, which is a real and useful fact about this harness. It does not show
+that commitment cost never compounds; that question needs a strike that fires on grasp detection
+rather than at a fixed step, which is a small code change (trigger on object lift) rather than a flag.
+`gate13_analyze.py` now reports this automatically as `STRIKES LANDED BEFORE THE GRASP`.
 
 ## A fourth design limit: strikes cannot land inside a chunk
 
