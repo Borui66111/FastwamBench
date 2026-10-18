@@ -236,10 +236,15 @@ absorbs it. Gate 13B repeats the strike 4x (steps 40/50/60/70) at 0.01 m, below 
 where a single strike starts to fail episodes. Result: **10x the stale actions with no success cost.**
 object H1 4.0 stale / 5-6 success, H10 40.0 stale / 6-6 (Fisher p=1.0); spatial 3.3 vs 32.7 stale,
 6-6 both. Effort leans the expected way (+133 vs +89 steps, Welch p=0.52) but n=6 cannot resolve it.
-Two design bugs were found and fixed en route: mirrored strikes were *helping* the policy (51 vs ~100
-steps), and an absolute-distance cap silently allowed only one strike, degenerating the run into the
-single-strike test. Naming note: this is **13B**, not Gate 14 — Gate 14 below is reserved for the
-WAM-vs-baseline comparison. Evidence: `evidence/gate13b_repeated_strikes.md` + `.png/.pdf`.
+Three failure modes were found and fixed en route: mirrored strikes were *helping* the policy (51 vs
+~100 steps); an absolute-distance cap silently allowed only one strike, degenerating the run into the
+single-strike test; and the intervention could silently not fire at all (one cell recorded
+`strike_count=0` with step counts identical to control, which an episode count cannot detect). The
+analyzer now audits all three: incomplete cells, `cost vs horizon` shape (flat / increasing /
+decreasing, not a non-decreasing predicate that calls a flat curve "monotone increasing"), and
+`INTERVENTION NEVER FIRED` for any disturb cell with zero strikes. Naming note: this is **13B**, not
+Gate 14 — Gate 14 below is reserved for the WAM-vs-baseline comparison.
+Evidence: `evidence/gate13b_repeated_strikes.md` + `.png/.pdf`.
 
 **HEADLINE FINDING (2026-10-17, main sweep complete 32/32 + ladder):**
 The *mechanism* is confirmed exactly; the *task-level cost* is large but does **not** scale with H.

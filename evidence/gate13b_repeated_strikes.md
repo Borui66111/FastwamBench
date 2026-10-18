@@ -52,7 +52,7 @@ so the H=10 arm landed every strike, and the H=1 arm landed all four in most but
 | spatial | 10 | 6/6, 103.8 steps | 6/6, 137.3 | +33.5 |
 
 - **Success:** object 5/6 (H1) vs 6/6 (H10), Fisher exact p=1.0. Spatial 6/6 vs 6/6. No horizon effect; if anything H=10 is nominally better.
-- **Effort:** H10 minus H1 steps, Welch t-test — object t=0.67, df=9.7, p=0.52; spatial t=1.04, df=5.9, p=0.34. The point estimates lean the expected way (+133 vs +89; +33.5 vs -13) but with n=6 and sd 70-96 the data cannot separate them from noise.
+- **Effort:** H10 minus H1 steps, Welch t-test — object t=-0.67, df=9.7, p=0.52 (268.0 vs 297.3 steps); spatial t=-1.04, df=5.9, p=0.34 (94.5 vs 137.3). The point estimates lean the expected way (+133 vs +89; +33.5 vs -13) but with n=6 and sd 29-96 the data cannot separate them from noise.
 
 The strikes do cost something: on the object task they add 89-133 steps of re-approach. They do not
 cost success, and the size of that cost does not depend on how long the commitment was.
@@ -69,7 +69,7 @@ All were caught by looking at the data rather than trusting the harness.
    but the object starts ~0.1-0.2 m from the goal, so after one strike the cap tripped and later
    strikes were skipped: measured stale was 1.0 instead of 4. Fixed: the cap is now a drift budget
    measured from the object's distance at the first strike. A test pins the new semantics.
-3. **The intervention can silently not fire at all.** In `results/gate13_repeat05_canary` the
+3. **A silently dead arm was undetectable.** In `results/gate13_repeat05_canary` the
    `libero_object_t0/H1/disturb` arm recorded `strike_count=0` on every episode, and its step counts
    (186, 164, 222) are byte-identical to the control arm's. That cell is not a disturbed arm — it is
    a second copy of control, and comparing the two would report a clean cost of exactly zero for a
@@ -77,10 +77,34 @@ All were caught by looking at the data rather than trusting the harness.
    detect this. `gate13_analyze.py` now reads `strike_count` and prints an `INTERVENTION NEVER
    FIRED` block for any disturb cell where it is 0 in every episode.
 
-`results/gate13_repeat05_canary` is invalid on two counts (failure modes 1 and 3) and is not cited
-anywhere; it is retained only as the capture that exposed them. The earlier 0.05 m repeated-strike
-run (`results/gate13_repeat05`) is superseded: it ran under failure mode 2, so its effective design
-was a single strike.
+   In both runs that exhibit this, the underlying cause is failure mode 2 at full severity: the
+   absolute cap was already exceeded on the object geometry, so even the first strike was skipped
+   (spatial, with more room, got 1-3 of 4). It is listed separately because the *detection* gap is
+   independent of the cause — an unresolvable manipulation target would produce the same silent
+   zero-strike arm, and nothing in the harness would have said so.
+
+`results/gate13_repeat05_canary` is invalid on two counts (failure modes 1 and 2) and is not cited
+anywhere; it is retained only as the capture that exposed them.
+
+The earlier 0.05 m run (`results/gate13_repeat05`) is also superseded, but its two tasks fail in
+*different* ways — verified per episode from `records.jsonl`, not from the summary:
+
+| cell | strikes per episode | stale (mean) | outcome |
+|---|---|---|---|
+| object H1 | 0,0,0,0,0,0 | 0.0 | 6/6 success — 0 strikes, cap fully binding |
+| object H10 | 0,0,0,0,0,0 | 0.0 | 6/6 success — 0 strikes, cap fully binding |
+| spatial H1 | 1,3,2,1,3,2 | 2.0 | 0/6, every episode 430 steps, 6 timeouts |
+| spatial H10 | 1,3,2,1,3,2 | 20.0 | 0/6, every episode 430 steps, 6 timeouts |
+
+At 0.05 m the displacement is above the recovery threshold: the spatial task is destroyed at *both*
+horizons, so the cost is +1.00 at H1 and +1.00 at H10 — flat, but flat at the ceiling, where no
+compounding could ever be visible. The object task never fired at all. Neither task is a
+single-strike replication; an earlier version of this document claimed that, and it was wrong.
+
+Two further defects in the same run: only 1-3 of the 4 strikes landed even in the spatial cells (the
+absolute-distance cap, mode 2), and `libero_object_t0/H1/control` has 3 episodes instead of 6.
+`gate13_analyze.py` now reports all three conditions on this run (`INTERVENTION NEVER FIRED`,
+`INCOMPLETE CELLS`, and `cost vs horizon: FLAT`).
 
 ## Interpretation
 
@@ -116,12 +140,33 @@ either flat or it moves the wrong way for a compounding mechanism.
 Not one of them shows the monotone rise that compounding commitment cost would require. The visible
 run-to-run spread is binomial noise at these n (0.03 m object: Fisher p=0.52 for H1 vs H10).
 
-`results/gate13_repeat05` is deliberately **not** counted among them, even though its success numbers
-point the same way: under flaw 2 its stale count was ~1.0 at both H1 and H10, so it cannot support a
-claim about staleness varying by design — it is a single-strike replication, which Gate 13 already
-covers. It is also incomplete: the `libero_object_t0/H1/control_s1` cell is absent (H1 control is
-9/9 rather than 12/12). Neither point changes its superseded status, but it must not be cited as
-independent evidence.
+`results/gate13_repeat05` is deliberately **not** counted among them. It is not excluded because its
+numbers disagree — the spatial cells alone show stale 2.0 -> 20.0 with a flat cost of +1.00 at both
+horizons, which is consistent with everything above. It is excluded because that flat cost is at the
+**ceiling** (0/6 success at both H, every episode hitting the 430-step limit), so the run cannot
+distinguish "no compounding" from "total failure everywhere", and because its object task never fired
+the intervention at all (strikes 0, 6/6 success) and one control cell is incomplete (3/6). Three
+independent defects; it is retained only as the capture that exposed failure modes 2 and 3.
+
+One consequence worth stating: the 0.05 m spatial result is a *ceiling confirmation* of the negative
+result rather than evidence against it. Going from four 0.01 m strikes (total drift 0.04 m) to 1-3
+strikes of 0.05 m (total drift 0.05-0.15 m) moves the spatial task from 6/6 at both horizons to 0/6
+at both horizons — the cost goes from 0.00 to 1.00 without ever becoming horizon-dependent.
+
+Across the whole ladder the pattern is the same, and the cost tracks total drift rather than horizon:
+
+| per-strike magnitude | strikes | spatial cost | object cost |
+|---|---|---|---|
+| 0.02 m | 1 | 0.00 (flat) | 0.00 (flat) |
+| 0.03 m | 1 | 0.00 (flat) | 0.80 / 0.40 (decreasing) |
+| 0.05 m | 1 | 0.20 (flat) | 0.10-0.60 (non-monotone) |
+| 0.05 m | 1-3 | 1.00 (flat, at ceiling) | not fired |
+| 0.01 m | 4 | 0.00 (flat) | 0.17 / 0.00 (decreasing) |
+
+A single 0.05 m strike costs 0.2 on spatial; repeated 0.05 m strikes destroy it outright. So
+accumulated drift matters, and it matters in the same way at every horizon — which is precisely the
+claim: damage scales with how far the world moved, not with how long the policy had committed to the
+old one.
 
 ## Reproduce
 
