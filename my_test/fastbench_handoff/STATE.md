@@ -244,16 +244,33 @@ analyzer now audits all three: incomplete cells, `cost vs horizon` shape (flat /
 decreasing, not a non-decreasing predicate that calls a flat curve "monotone increasing"), and
 `INTERVENTION NEVER FIRED` for any disturb cell with zero strikes. **Critical bound found afterwards:**
 every strike landed *before* the object was ever lifted (24/24 struck episodes; spatial lifts at
-steps 54-114, object at 121-295, strikes fixed at 40/50/60/70), so the staleness measured here was
+steps 54-84, object at 133-161, strikes fixed at 40/50/60/70), so the staleness measured here was
 approach-phase only — invalidating approach actions is recoverable by construction, and the harmful
 regime (stale carry trajectory after the object is displaced out of the gripper) was never entered.
-The analyzer now also reports `STRIKES LANDED BEFORE THE GRASP`. Testing the harmful regime needs a
-strike triggered on grasp detection, not a fixed step. A fourth limit: the strike hook runs only at
-chunk boundaries, so a cadence finer than `replan_steps` reduces the strike count at large H
+The analyzer now also reports `STRIKES LANDED BEFORE THE GRASP`. A fourth limit: the strike hook runs
+only at chunk boundaries, so a cadence finer than `replan_steps` reduces the strike count at large H
 (`--world-repeat-every 5` gave H1 4.0 strikes but H10 2.0) — flagged as `STRIKE COUNT NOT MATCHED`.
-Naming note: this is **13B**, not
-Gate 14 — Gate 14 below is reserved for the WAM-vs-baseline comparison.
-Evidence: `evidence/gate13b_repeated_strikes.md` + `.png/.pdf`.
+
+**Gate 13C (2026-10-18, COMPLETE) — carry-phase strikes; cost is real, horizon still flat.**
+Adds `intervention_world_trigger_after_lift` (CLI `--world-trigger-after-lift 0.02`): latch the
+object's resting height, latch `_lift_step` when it rises past the threshold, then strike at
+`lift+every`, `+2*every`, ... instead of from an absolute step. `icfg` is rebuilt inside
+`run_single_episode`, so the anchor cannot leak between trials. The runner validates that the repeat
+interval (not `world_step`) divides H, since the interval is what must land on a chunk boundary.
+Full run `results/gate13_repeat_carry_full` (n=6/cell, 0.01 m, 2 tasks x H{1,10} x 2 seeds x 3
+trials): **libero_object t0** control 6/6 vs disturb **2/6** at H=1 (Fisher p=0.061) and **1/6** at
+H=10 (p=0.015), stale 4.0 -> 40.0; **spatial** flat 6/6 both. Horizon contrast on object is
+**2/6 vs 1/6, Fisher p=1.000** — so moving strikes into the carry turns the Gate 13B null into a real
+cost, but the cost saturates at the first strike instead of compounding with H. Conclusion: commitment
+cost is gated by whether stale actions are *load-bearing*, not by how many there are. Spatial is flat
+because its carry window is only ~30 steps (<=3 strikes); object's is ~81 steps (<=8), which is why it
+carries the result. Structural note: spatial carry window min/med/max = 3/30/34, object = 71/81/125.
+Pilot `results/gate13_repeat_carry2` (spatial, n=3) validated the trigger; `results/gate13_repeat_carry`
+is **INVALID** (the key was never mapped out of `cfg.EVALUATION`, so strikes stayed at 40/50/60/70 —
+a plumbing test now catches this). Tests: 96 checks.
+Naming note: these two are **13B** and **13C** — Gate 14 below is reserved for the WAM-vs-baseline
+comparison.
+Evidence: `evidence/gate13b_repeated_strikes.md` + `.png/.pdf`, `evidence/gate13c_carry_phase.md`.
 
 **HEADLINE FINDING (2026-10-17, main sweep complete 32/32 + ladder):**
 The *mechanism* is confirmed exactly; the *task-level cost* is large but does **not** scale with H.

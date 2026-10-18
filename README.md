@@ -250,18 +250,47 @@ strikes were never due. The drift budget is not binding at 0.01 m.
 
 **But every one of these strikes landed before the object was ever lifted.** Reconstructing per-episode
 lift time from `state.bodies` in the raw records: **24 of 24 struck episodes had all strikes land
-pre-grasp** (spatial lifts at steps 54–114, object at 121–295; strikes are fixed at 40/50/60/70). So
+pre-grasp** (spatial lifts at steps 54–84, object at 133–161; strikes are fixed at 40/50/60/70). So
 the stale actions here were all *approach* actions, and invalidating an approach action is
-recoverable by construction — the robot simply re-approaches. The regime where a stale action is
-actively harmful (committing to a carry trajectory after the object has been displaced out of the
-gripper) was never entered.
+recoverable by construction — the robot simply re-approaches.
 
 So the cost of a world change is set by **whether the next replan can recover at all**, not by how
-many actions were committed to the old world. Staleness is a real, exactly-countable property of the
-protocol that does not by itself predict failure. This is a bounded result: it holds for
-approach-phase staleness. Testing the harmful regime needs a strike triggered on grasp detection
-rather than at a fixed step. `gate13_analyze.py` reports this automatically as
-`STRIKES LANDED BEFORE THE GRASP`.
+many actions were committed to the old world. This is a bounded result: it holds for approach-phase
+staleness. **Gate 13C below tests the harmful regime** by triggering the strikes on grasp detection,
+and finds the cost becomes real there while the horizon term stays flat.
+`gate13_analyze.py` reports the phase automatically as `STRIKES LANDED BEFORE THE GRASP`.
+
+---
+
+## Gate 13C — the same strikes, moved into the carry
+
+Gate 13B's strikes all landed before the robot picked anything up, so a stale action was only ever a
+wasted *approach* action. This gate times the strikes from the detected lift
+(`--world-trigger-after-lift 0.02`, strikes at lift+10, +20, ...), so they land while the object is
+in the gripper and the committed actions are load-bearing.
+
+n=6 per cell, magnitude 0.01 m, 2 tasks x H in {1,10} x 2 seeds x 3 trials:
+
+| task | H | control | disturb | cost | stale | Fisher vs control |
+|---|---|---|---|---|---|---|
+| libero_object t0 | 1 | 6/6 | 2/6 | +0.67 | 4.0 | p=0.061 |
+| libero_object t0 | 10 | 6/6 | 1/6 | +0.83 | 40.0 | p=0.015 |
+| libero_spatial t0 | 1 | 6/6 | 6/6 | +0.00 | 2.0 | p=1.0 |
+| libero_spatial t0 | 10 | 6/6 | 6/6 | +0.00 | 13.2 | p=1.0 |
+
+**Moving the strikes into the carry turns a null into a real cost — but the horizon still does not
+matter.** Object disturb H=1 vs H=10 is 2/6 vs 1/6, **Fisher p=1.000**: forty stale actions fail no
+more often than four. The cost saturates at the first strike.
+
+So the commitment cost is gated by whether the stale actions are *load-bearing*, not by how many of
+them there are. Approach actions are recoverable by re-aiming; a carry action is holding the object.
+Once the grasp is broken the episode is lost regardless of how many committed actions were
+invalidated.
+
+Spatial is flat because its carry window is only ~30 steps (at most 2-3 strikes fit); the object
+task's is ~81 steps, which is why it carries the result.
+
+Full write-up: `evidence/gate13c_carry_phase.md`. Results: `results/gate13_repeat_carry_full`.
 
 ---
 

@@ -114,6 +114,12 @@ absolute-distance cap, mode 2), and `libero_object_t0/H1/control` has 3 episodes
 
 ## The strikes never landed during the carry
 
+> **Follow-up:** this limitation was tested in Gate 13C
+> (`evidence/gate13c_carry_phase.md`) by timing the strikes from the detected lift. Moving them into
+> the carry makes the cost real on the object task — 6/6 -> 2/6 at H=1 and 1/6 at H=10 — while the
+> horizon term stays flat (p=1.000). So the null below is about *approach-phase* staleness, and
+> Gate 13C supplies the missing regime.
+
 This is the most important qualification in this document, and it was found after the result was
 first written up. The strike times are absolute (steps 40/50/60/70). The object is not lifted until
 much later. Reconstructing per-episode lift time from `state.bodies` in the raw records:
