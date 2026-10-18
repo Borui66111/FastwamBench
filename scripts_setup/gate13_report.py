@@ -45,6 +45,30 @@ else:
 w("## Headline (pooled across tasks)\n")
 _pooled = summary.get("_pooled") or {}
 
+def _cost_trend(costs, eps=1e-9):
+    """Describe the cost-vs-horizon shape honestly.
+
+    The old code printed "monotone increasing cost with horizon: True" whenever
+    the costs were NON-DECREASING, so a perfectly flat curve (all costs equal)
+    was reported as an increase. A remote reviewer reads that as a horizon
+    trend. Returns (verdict, non_decreasing, strictly_increasing).
+    """
+    up = all(costs[i] < costs[i + 1] - eps for i in range(len(costs) - 1))
+    down = all(costs[i] > costs[i + 1] + eps for i in range(len(costs) - 1))
+    flat = (max(costs) - min(costs)) <= eps
+    if flat:
+        verdict = "FLAT (identical at every H - no horizon trend)"
+    elif up:
+        verdict = "strictly increasing with H"
+    elif down:
+        verdict = "strictly decreasing with H"
+    elif all(costs[i] <= costs[i + 1] + eps for i in range(len(costs) - 1)):
+        verdict = "weakly increasing with H (some H tie)"
+    else:
+        verdict = "non-monotone (no consistent trend)"
+    return verdict, up
+
+
 def _table(rows_by_h, label):
     w("| H | control | disturbed | cost | stale executed | mean steps (ctl→dis) | timeouts (ctl→dis) | contaminated | n |")
     w("|---|---|---|---|---|---|---|---|---|")
@@ -114,7 +138,8 @@ for task, by_h in sorted(_trend.items()):
     if all(v is not None for v in _ex):
         w("  - extra steps to succeed, disturbed vs control (successes only, so not "
           "inflated by timeouts) = " + ", ".join(f"H{h}={v:+.0f}" for h, v in zip(hs, _ex)))
-    w(f"  - monotone increasing cost with horizon: **{mono}**")
+    _verdict, _up = _cost_trend(costs)
+    w(f"  - cost vs horizon: **{_verdict}** (strictly increasing: {_up})")
 w("\n## Interpretation\n")
 w("Three things must be kept apart. They behave differently, and only the first is clean.\n")
 w("1. **The commitment is real, and it scales exactly with H (mechanism, unambiguous).**")

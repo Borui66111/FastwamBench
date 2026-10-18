@@ -31,6 +31,30 @@ if len(_argv) > 1 and _argv[0] in ("--dir", "--root"):
 OUT_ROOT = Path(_argv[0]) if _argv else ROOT / "results" / "gate13"
 
 
+def _cost_trend(costs, eps=1e-9):
+    """Describe the cost-vs-horizon shape honestly.
+
+    The old code printed "monotone increasing cost with horizon: True" whenever
+    the costs were NON-DECREASING, so a perfectly flat curve (all costs equal)
+    was reported as an increase. A remote reviewer reads that as a horizon
+    trend. Returns (verdict, non_decreasing, strictly_increasing).
+    """
+    up = all(costs[i] < costs[i + 1] - eps for i in range(len(costs) - 1))
+    down = all(costs[i] > costs[i + 1] + eps for i in range(len(costs) - 1))
+    flat = (max(costs) - min(costs)) <= eps
+    if flat:
+        verdict = "FLAT (identical at every H - no horizon trend)"
+    elif up:
+        verdict = "strictly increasing with H"
+    elif down:
+        verdict = "strictly decreasing with H"
+    elif all(costs[i] <= costs[i + 1] + eps for i in range(len(costs) - 1)):
+        verdict = "weakly increasing with H (some H tie)"
+    else:
+        verdict = "non-monotone (no consistent trend)"
+    return verdict, up
+
+
 def dist(a, b):
     return math.sqrt(sum((x - y) ** 2 for x, y in zip(a, b)))
 
@@ -288,8 +312,9 @@ def main() -> int:
             stale = [summary[f"{suite}_t{tid}"][h]["stale_disturb"] for h in hh]
             print(f"\n  cost by H: " + ", ".join(f"H{h}={c:+.2f}" for h, c in zip(hh, costs)))
             print(f"  stale by H: " + ", ".join(f"H{h}={s:.0f}" for h, s in zip(hh, stale)))
-            mono = all(costs[i] <= costs[i + 1] + 1e-9 for i in range(len(costs) - 1))
-            print(f"  monotone increasing cost with horizon: {mono}")
+            verdict, strictly_up = _cost_trend(costs)
+            print(f"  cost vs horizon: {verdict}")
+            print(f"  strictly increasing cost with horizon: {strictly_up}")
 
     # pooled across tasks: this is the headline curve (one line, not one per task)
     pooled = {}
