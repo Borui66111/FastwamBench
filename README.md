@@ -323,6 +323,9 @@ this is not a time-budget artifact.
 
 **The cost saturates at 5 mm.** Halving the displacement did not halve the damage (2/6 at both
 horizons, against 6/6 control). Whatever the strike breaks, it is fully broken well below 1 cm.
+Pooled over horizon (legitimate because the horizon contrast is null): 0.005 m is **4/12 vs 12/12,
+Fisher p=0.0013**; 0.01 m is **3/12 vs 12/12, p=0.0003**; and the two magnitudes do not differ from
+each other (p=1.000).
 
 This also corrects the mechanism sentence above: the grasp is *not* broken, so "once the grasp is
 broken the episode is lost" was the wrong picture. The stale carry actions cost the episode by

@@ -93,6 +93,18 @@ The cost at 5 mm is the same as at 10 mm. Halving the displacement did not halve
 the damage. Over this range the cost is **saturated**: any displacement large
 enough to break the policy's tracking of the object during carry is enough.
 
+Pooled over horizon — legitimate here precisely because the horizon contrast is
+null, so pooling does not hide a trend — the effect is unambiguous:
+
+| magnitude | control | disturb | Fisher vs control |
+|---|---|---|---|
+| 0.005 m | 12/12 | 4/12 | p=0.0013 |
+| 0.01 m | 12/12 | 3/12 | p=0.0003 |
+
+and the two magnitudes are not distinguishable from each other (4/12 vs 3/12,
+Fisher p=1.000). The per-cell tests (n=6) are the underpowered view of the same
+effect; the pooled test is the honest summary of it.
+
 This is the opposite of the step-function prediction in a useful way. There is a
 threshold below 5 mm, but above it the magnitude is irrelevant — so the effect is
 not "we pushed the object further than the grasp could tolerate". The grasp
