@@ -106,6 +106,33 @@ absolute-distance cap, mode 2), and `libero_object_t0/H1/control` has 3 episodes
 `gate13_analyze.py` now reports all three conditions on this run (`INTERVENTION NEVER FIRED`,
 `INCOMPLETE CELLS`, and `cost vs horizon: FLAT`).
 
+## A fourth design limit: strikes cannot land inside a chunk
+
+The hook that applies a strike runs only at chunk boundaries — the comment at its call site says
+"after the chunk exists but before any of its actions run". So the strike cadence is quantised by
+`replan_steps`, and a cadence finer than the replan period does not do what it looks like it does.
+
+`results/gate13_repeat_fast` (object t0, `--world-repeat-every 5`, 0.01 m, n=3/cell) was run to test
+exactly this: strikes at 40/45/50/55 so that the H=10 chunk spanning 40-49 would be invalidated
+twice mid-execution. That is not what happened:
+
+| H | strikes | stale actions | success | steps |
+|---|---|---|---|---|
+| 1 | 4.00 | 4.0 | 1/3 | 373.7 |
+| 10 | 2.00 | 20.0 | 2/3 | 255.0 |
+
+H=10 received **fewer** strikes, because only t=40 and t=50 are chunk boundaries for it — t=45 and
+t=55 are mid-chunk and are never visited by the hook. The comparison is therefore confounded by
+strike count, and it is discarded. `gate13_analyze.py` now prints `STRIKE COUNT NOT MATCHED ACROSS
+HORIZONS` and records `_completeness.strike_count_unmatched_across_H` whenever the mean strike count
+drops with H, so this failure cannot be silently re-introduced.
+
+Consequence for the design: the only way to increase invalidation *within* a chunk with this hook is
+to increase the horizon, not the cadence. A genuinely mid-chunk strike would require moving the hook
+out of the replan branch, which is a harness change this gate does not make. The identifiability
+limit is therefore stated rather than engineered around: this gate can vary how many committed
+actions a strike invalidates, but not how many times a single chunk is interrupted.
+
 ## Interpretation
 
 Commitment cost does not compound. Once the strikes stop, the policy re-acquires the object; how

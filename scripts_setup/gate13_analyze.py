@@ -439,6 +439,44 @@ def main() -> int:
         print("Do not compare these against control; re-run with the strike enabled.")
         print("!" * 78)
 
+    # The design assumes the strike count is matched across horizons, so the only
+    # thing varying is how many actions each strike invalidates. The hook fires
+    # only at chunk boundaries, so a cadence finer than the replan period lands
+    # FEWER strikes at larger H: --world-repeat-every 5 with H=10 hits only
+    # t=40,50 (2 strikes) while H=1 hits 40,45,50,55 (4). That comparison is
+    # confounded by strike count, not horizon. Seen in results/gate13_repeat_fast.
+    unmatched = []
+    for key, per_h in data.items():
+        hs = sorted(per_h, key=lambda x: int(x))
+        if len(hs) < 2:
+            continue
+        for arm in per_h[hs[0]]:
+            if not arm.startswith("disturb"):
+                continue
+            means = {}
+            for h in hs:
+                sc = [e.get("strike_count") for e in (per_h[h].get(arm) or [])]
+                sc = [v for v in sc if v is not None]
+                if sc:
+                    means[h] = sum(sc) / len(sc)
+            lo, hi = hs[0], hs[-1]
+            if lo in means and hi in means and means[hi] < means[lo] - 0.5:
+                unmatched.append((key, arm, lo, means[lo], hi, means[hi]))
+    summary["_completeness"]["strike_count_unmatched_across_H"] = [
+        {"cell": k, "arm": a, "H_low": lo, "strikes_low": round(ml, 2),
+         "H_high": hi, "strikes_high": round(mh, 2)}
+        for k, a, lo, ml, hi, mh in unmatched
+    ]
+    if unmatched:
+        print("\n" + "!" * 78)
+        print("STRIKE COUNT NOT MATCHED ACROSS HORIZONS - the intervention fires only")
+        print("at chunk boundaries, so a cadence finer than the replan period lands")
+        print("fewer strikes at larger H. The comparison is confounded by strike")
+        print("count, not horizon; do not read it as a horizon effect.")
+        for k, a, lo, ml, hi, mh in unmatched:
+            print(f"  {k}  {a}: H={lo} {ml:.2f} strikes -> H={hi} {mh:.2f} strikes")
+        print("!" * 78)
+
     if short:
         print("\n" + "!" * 78)
         print("INCOMPLETE CELLS - a job crashed or was cut short. These cells are")
