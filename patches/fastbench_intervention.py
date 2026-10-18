@@ -91,6 +91,17 @@ def resolve_intervention_cfg(cfg: Any) -> dict:
         # original position and stays reachable at every horizon.
         "world_repeat_every": ev.get("intervention_world_repeat_every", None),
         "world_repeat_count": ev.get("intervention_world_repeat_count", None),
+        # Every strike must make the task strictly harder. A mirrored strike
+        # would move the object back TOWARD the goal, and the canary showed
+        # struck episodes finishing in 51 steps vs ~100 for control -- i.e. the
+        # "disturbance" was helping. So strikes only ever push away, and stop
+        # once the object is already far enough that reachability, not
+        # staleness, would be the limiting factor.
+        "world_repeat_max_dist": float(
+            ev.get("intervention_world_repeat_max_dist")
+            if ev.get("intervention_world_repeat_max_dist") is not None
+            else 0.25
+        ),
         "stale_metric_step": ev.get("intervention_stale_metric_step", None),
         "stale_metric": ev.get("intervention_stale_metric", True),
         "record_state": bool(ev.get("recorder_state", False)),
@@ -476,6 +487,22 @@ def goal_away_delta(env: Any, body: str, magnitude: float) -> Optional[list]:
     return None
 
 
+def _goal_distance(env: Any, body: str) -> Optional[float]:
+    """Planar distance from `body` to its goal target, or None if unresolvable."""
+    p = _body_xyz(env, body)
+    if p is None:
+        return None
+    for obj, tgt in resolve_goal_targets(env):
+        if resolve_body_name(env, obj) != body:
+            continue
+        tb = resolve_body_name(env, tgt)
+        tp = _body_xyz(env, tb) if tb else None
+        if tp is None:
+            continue
+        return float(np.linalg.norm(np.asarray(p[:2]) - np.asarray(tp[:2])))
+    return None
+
+
 def check_success(env: Any) -> Optional[bool]:
     """The env's own goal predicate evaluated on the CURRENT sim state."""
     for obj in (env, getattr(env, "env", None)):
@@ -619,10 +646,14 @@ def maybe_displace_world(env: Any, icfg: dict, replan_idx: int, step_t: Optional
     primary = icfg.get("world_delta")
     if not primary:
         primary = goal_away_delta(env, body, magnitude) if auto else [0.0, 0.0, 0.0]
-    if repeat_every and strike_idx % 2 == 1 and primary:
-        # odd strike: mirror the displacement so the object oscillates rather
-        # than drifting out of the workspace as the strikes accumulate.
-        primary = [-float(primary[0]), -float(primary[1]), float(primary[2])]
+    if repeat_every and primary:
+        # Never move the object closer to the goal: a strike that helps would
+        # contaminate the comparison (observed in the 0.05 m canary). Stop
+        # striking once drift alone would make the task unreachable.
+        cap = float(icfg.get("world_repeat_max_dist") or 0.25)
+        d_now = _goal_distance(env, body)
+        if d_now is not None and d_now >= cap:
+            return None
     snap_before = snapshot_state(env, body_names=[body])
     pre_success = check_success(env)
     res, delta_used, post_success, rejected = apply_world_displacement(

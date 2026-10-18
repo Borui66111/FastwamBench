@@ -386,8 +386,44 @@ check("strike index increments", idx == [0, 1, 2], str(idx))
 d0 = [r.get("delta") for t, r in strikes if r is not None][0]
 d1 = [r.get("delta") for t, r in strikes if r is not None][1]
 check("even strike uses the goal-away direction", d0[0] > 0, str(d0))
-check("odd strike mirrors direction (object oscillates, stays reachable)",
-      d1[0] < 0 and abs(d1[0] - (-d0[0])) < 1e-9, f"{d0} vs {d1}")
+# A mirrored strike moves the object back toward the goal and was observed
+# making struck episodes FASTER than control (51 steps vs ~100). Every strike
+# must therefore push away from the goal, so no strike can help.
+check("odd strike also pushes away from the goal (never toward)",
+      d1[0] > 0, f"{d0} vs {d1}")
+check("all strikes share the same goal-away direction",
+      all(r.get("delta")[0] > 0 for t, r in strikes if r is not None),
+      str([r.get("delta") for t, r in strikes if r is not None]))
+# Drift cap: once the object is already `world_repeat_max_dist` from its goal,
+# further strikes stop, so reachability (not staleness) never becomes the
+# limiting factor and the horizon comparison stays interpretable.
+ccfg = cfg(world_enabled=True, replan_idx=0, world_body="akita_black_bowl_2_main",
+           world_delta=[0.1, 0, 0], world_step=60, world_repeat_every=10,
+           world_repeat_count=9)
+check("repeat_max_dist defaults to 0.25 m",
+      abs(resolve_intervention_cfg({"EVALUATION": {"intervention_enabled": True,
+                                                   "intervention_world_repeat_every": 10}}
+                                   ).get("world_repeat_max_dist") - 0.25) < 1e-9,
+      "default should be 0.25 m")
+check("repeat_max_dist is configurable",
+      abs(resolve_intervention_cfg({"EVALUATION": {"intervention_world_repeat_max_dist": 0.4}}
+                                   ).get("world_repeat_max_dist") - 0.4) < 1e-9)
+# The cap needs a resolvable goal target, so use the fixture from section 16
+# where `parsed_problem` names bowl_1 and its target. A tiny cap must suppress
+# the strike; the same config with the default cap must still fire.
+e3.sim.data.qpos[9:11] = [0.35, 0.35]
+capcfg = cfg(world_enabled=True, replan_idx=0, world_body="akita_black_bowl_1_main",
+             world_step=60, world_repeat_every=10, world_repeat_count=9,
+             world_repeat_max_dist=1e-6)
+check("object beyond the drift cap is not struck again",
+      maybe_displace_world(e3, capcfg, 0, step_t=60) is None,
+      "cap branch should suppress the strike")
+capok = cfg(world_enabled=True, replan_idx=0, world_body="akita_black_bowl_1_main",
+            world_step=60, world_repeat_every=10, world_repeat_count=9,
+            world_repeat_max_dist=0.25)
+check("same config strikes when the cap is not binding",
+      isinstance(maybe_displace_world(e3, capok, 0, step_t=60), dict))
+
 check("repeat strikes are JSON-serialisable",
       all(json.loads(json.dumps(r)) is not None for t, r in strikes if r is not None))
 
