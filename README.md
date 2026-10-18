@@ -546,6 +546,13 @@ What this result does **not** support yet: reliable recovery, an intervention-ca
 WAM-vs-VLA claim. The current task is 0% success in both arms, so it cannot yield a recovery signal — see
 `REMOTE_REVIEW.md` for the Gate 12-14 plan that fixes this.
 
+> **Status note (2026-10-19).** This H3 conclusion is about *when* the plan changes, and it stands: the
+> stale window is a property of the execution protocol. It is **not** the repo's conclusion about what
+> *costs success* — that was tested later and did not hold up. Gates 14D/14E show the success cost is
+> not carried by stale execution (10, 1 and 0 stale actions all give 2/6), and Gate 14G attributes it
+> to a **capped corrective response** instead. Read the H3 section for the divergence measurement, not
+> for the cost claim.
+
 ---
 
 ## Provenance
