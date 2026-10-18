@@ -126,7 +126,11 @@ full run's spatial cells. It is kept as the run that validated the trigger, not 
 
 ## The two regimes fail in different ways
 
-Checked per episode from `state.bodies` (object rises >0.02 m above its resting height = lifted):
+Checked per episode from `state.bodies` (object rises >0.02 m above its resting height = lifted).
+Because a strike also displaces the object, this threshold could in principle fire on the
+displacement rather than a grasp; it does not — in every carry episode the rise (steps 77-90) strictly
+precedes the first strike (step 90+), and the object stays raised (z 0.038 -> 0.18-0.21 m for object,
+0.898 -> 0.911 m for spatial). A displacement spike would drop back.
 
 | regime | episodes that ever lifted | episodes that succeeded | failure mode |
 |---|---|---|---|
@@ -137,8 +141,15 @@ Checked per episode from `state.bodies` (object rises >0.02 m above its resting 
 This matters for how the result should be read. In the approach regime a strike can only lose an
 episode by making the object *unreachable before the grasp*, which is why the cost is small (1/6) and
 why it looks like noise. In the carry regime the object is always picked up and the loss happens
-*after* the grasp, which is why the cost is large (8/12 across horizons) and reproducible. The
-manipulation succeeds and then the episode dies, rather than never starting.
+*after* the grasp, which is why the cost is large — **9 of the 12 object episodes fail across both
+horizons** (2/6 at H=1, 1/6 at H=10) — and reproducible. The manipulation succeeds and then the
+episode dies, rather than never starting.
+
+A second structural point about the spatial cells: in the carry regime they receive **fewer** strikes
+at higher horizon (1-3 post-lift strikes at H=1, 1-2 at H=10) because the carry window is only ~30
+steps and H=10 chunks are long. So spatial cannot exhibit a horizon effect by construction, and its
+6/6 at both horizons is not evidence either way. The object task, whose carry window is ~81 steps,
+is the only cell that can carry the result.
 
 So "approach strikes are free" is too strong — it should be "approach strikes are recoverable as long
 as the object stays reachable, and the only failure they can cause is a pre-grasp reach failure."
