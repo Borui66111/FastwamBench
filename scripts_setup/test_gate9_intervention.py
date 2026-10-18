@@ -411,13 +411,24 @@ check("repeat_max_dist is configurable",
 # The cap needs a resolvable goal target, so use the fixture from section 16
 # where `parsed_problem` names bowl_1 and its target. A tiny cap must suppress
 # the strike; the same config with the default cap must still fire.
-e3.sim.data.qpos[9:11] = [0.35, 0.35]
+# The cap is a DRIFT BUDGET measured from the first strike, not an absolute
+# goal distance. This fixture cannot resolve a goal target (so `_goal_distance`
+# returns None and the real cap would never fire), so drive the drift directly.
+import experiments.libero.fastbench_intervention as _F
+_dist = [0.10]
+_orig_gd = _F._goal_distance
+_F._goal_distance = lambda env, body: _dist[0]
 capcfg = cfg(world_enabled=True, replan_idx=0, world_body="akita_black_bowl_1_main",
              world_step=60, world_repeat_every=10, world_repeat_count=9,
-             world_repeat_max_dist=1e-6)
+             world_repeat_max_dist=0.05)
+_first = maybe_displace_world(e3, capcfg, 0, step_t=60)
+check("first strike sets the drift anchor and fires",
+      _first is not None, "first strike must fire to establish the anchor")
+_dist[0] = 0.40
 check("object beyond the drift cap is not struck again",
-      maybe_displace_world(e3, capcfg, 0, step_t=60) is None,
+      maybe_displace_world(e3, capcfg, 1, step_t=70) is None,
       "cap branch should suppress the strike")
+_F._goal_distance = _orig_gd
 capok = cfg(world_enabled=True, replan_idx=0, world_body="akita_black_bowl_1_main",
             world_step=60, world_repeat_every=10, world_repeat_count=9,
             world_repeat_max_dist=0.25)

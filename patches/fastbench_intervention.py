@@ -646,13 +646,23 @@ def maybe_displace_world(env: Any, icfg: dict, replan_idx: int, step_t: Optional
     primary = icfg.get("world_delta")
     if not primary:
         primary = goal_away_delta(env, body, magnitude) if auto else [0.0, 0.0, 0.0]
-    if repeat_every and primary:
-        # Never move the object closer to the goal: a strike that helps would
-        # contaminate the comparison (observed in the 0.05 m canary). Stop
-        # striking once drift alone would make the task unreachable.
-        cap = float(icfg.get("world_repeat_max_dist") or 0.25)
+    if repeat_every:
+        # Cap applies to the repeat schedule regardless of how `primary` was
+        # resolved: when the goal target is unresolvable `primary` is falsy and
+        # gating on it silently disabled the cap (caught by the unit fixture).
+        # contaminate the comparison (observed in the 0.05 m canary). Bound the
+        # total drift instead of the absolute goal distance: an absolute cap
+        # (0.25 m) fired after ~1 strike on these tasks, so the repeat design
+        # silently collapsed into the single-strike design (stale = H, not 4H).
+        # Drift is measured from where the object sat at the FIRST strike, so
+        # every horizon gets the same number of strikes and the same drift.
+        max_drift = float(icfg.get("world_repeat_max_dist") or 0.25)
         d_now = _goal_distance(env, body)
-        if d_now is not None and d_now >= cap:
+        anchor = icfg.get("_repeat_anchor_dist")
+        if d_now is not None and anchor is None:
+            icfg["_repeat_anchor_dist"] = d_now
+            anchor = d_now
+        if d_now is not None and anchor is not None and (d_now - anchor) >= max_drift:
             return None
     snap_before = snapshot_state(env, body_names=[body])
     pre_success = check_success(env)
