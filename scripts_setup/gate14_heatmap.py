@@ -30,6 +30,7 @@ ROWS = [
     ("object | carry 10 mm @800 | first_frame", "results/gate13_g14ff800"),
     ("object | carry 10 mm @800 | idm",        "results/gate13_g14idm800"),
     ("object | approach 10 mm | first_frame",  "results/gate13_g14ffapproach"),
+    ("object | approach 10 mm @800 | first_frame", "results/gate13_g14ffapproach800"),
     ("spatial | carry 10 mm | idm",      "results/gate13_repeat_carry_full"),
     ("spatial | approach 10 mm | idm",   "results/gate13_repeat_sub"),
 ]

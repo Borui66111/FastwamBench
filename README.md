@@ -420,6 +420,17 @@ What it does *not* say: that the WAM has no world-modeling advantage. It says th
 intervention does not measure one. The predicted-future fidelity result (≈−4.4 dB at lag ≥ 4) comes
 from the video pathway and is not exercised by this ablation.
 
+**The approach regime points the other way.** Running the same intervention on the approach schedule
+(strike at step 40, before the grasp) reverses the sign: `idm` 12/12 → 11/12 (p=1.00 at the 400-step
+budget), while `first_frame` goes 11/12 → **5/12** (p=0.027) at that budget and 12/12 → **5/12**
+(**p=0.0046**) when it is doubled. I first read this as a step-budget artifact
+— at the default 400-step budget all 7 failures were timeouts — and that reading was wrong: doubling
+the budget rescued the one control episode that had timed out and rescued none of the 7 disturb
+failures, all of which still run to 830 steps and fail. The failures also look different: 3 never lift
+the object (the grasp is lost, not the placement) and 4 carry it far from the basket, against a carry
+regime where 42/42 struck episodes lift. So future-aware action inference is **neutral in the
+contact-rich phase and protective in the approach phase** — either way, not a robustness cost.
+
 Full write-up: `evidence/gate14_wam_specificity.md`. Data: `results/gate13_g14ff` (baseline) vs
 `results/gate13_repeat_carry_full` (future-aware). Compare with
 `scripts_setup/gate14_compare.py`. This gate also added `--max-steps`, which overrides the

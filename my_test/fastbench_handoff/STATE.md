@@ -318,6 +318,16 @@ plus 3 plumbing checks (tests now 102). Evidence: `evidence/gate14_wam_specifici
   (`evidence/gate14_matrix.png`) and a curated rollout (`evidence/gate14_rollout.png`, trial 2:
   control success at 222 steps vs disturbed failure at 430 steps, held above the basket).
 
+  *Correction 2 (same day, approach regime at 800 steps):* the approach arm was reported as
+  budget-mediated (7/7 failures were 430-step timeouts, "slow, not damaged"). **That reading is
+  wrong.** With `--max-steps 800` the control cell becomes **12/12** (the one control timeout
+  succeeds at 606) and the disturb cell stays at **5/12** — **p=0.0046**, every failure running the
+  full 830 steps. So the pathway difference in the approach regime is real, and its form differs from
+  the carry regime: 3 of 7 failures never lift the object (missed grasp) and 4 carry it far from the
+  basket, against 42/42 lifts under carry-phase strikes. Net: future-aware action inference is
+  **neutral in the carry phase and protective in the approach phase** — in neither regime is it the
+  fragile one. Data: `results/gate13_g14ffapproach800`.
+
 **NEXT (scoped, not run): seed extension for the equivalence question.** Excluding a 20-point
 difference between pathways at 80% power needs ≈93 episodes/arm/horizon (~6 GPU-h/arm). Plan: seeds
 3–8 on `libero_object:0`, carry regime, both pathways, H=1 and H=10, 3 trials/seed → 18/cell, then

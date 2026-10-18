@@ -165,11 +165,12 @@ horizons, with `EVALUATION.action_infer_mode` switched between `idm` (future-awa
 |---|---|---|---|
 | carry (strikes after lift) | 6/6 → 2/6 (H1), 1/6 (H10) | 5/6 → **2/6** (H1), 6/6 → **1/6** (H10) | same counts (p=1.00); CI ±0.44, so "not equal", "no detectable difference" |
 | carry, 800-step budget | 4/12 | **4/12** | same counts (p=1.00), CI ±0.34 |
-| approach (strike at step 40) | 12/12 → 11/12 | 11/12 → **5/12** | pathway difference, but **7/7 failures are 430-step timeouts** |
+| approach (strike at step 40) | 12/12 → 11/12 | 11/12 → **5/12** (400 steps), **12/12 → 5/12** (800 steps, p=0.0046) | pathway difference is **real, not budget-mediated**; failures are missed grasps (3) and lost objects (4) |
 
 So the carry-phase damage is **not** specific to future-aware inference — it is a property of
-fixed-horizon chunk execution. The one pathway difference found (approach regime) is budget-mediated
-rather than a different failure mode, and its 800-step replication is still running.
+fixed-horizon chunk execution. The one pathway difference found (approach regime) is real: doubling the
+step budget leaves the disturb cell at 5/12 while the control cell becomes 12/12 (p=0.0046), and the
+failures change form (3 missed grasps, 4 objects lost) rather than merely taking longer.
 
 Consequences for the review document:
 1. The headline claim must be restated as a property of the **execution protocol**, not of the WAM.

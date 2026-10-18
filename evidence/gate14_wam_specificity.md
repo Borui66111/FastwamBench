@@ -1,9 +1,9 @@
 # Gate 14 — is the commitment cost specific to a future-aware world model?
 
-STATUS: **COMPLETE for the carry regime** (2026-10-19), including the
-800-step budget replication (section 3b). The approach-regime replication under
-`first_frame` is reported in section 3c at 400 steps; its 800-step run
-(`results/gate13_g14ffapproach800`) is still in flight. Same checkpoint, same task (`libero_object:0`),
+STATUS: **COMPLETE** (2026-10-19), including both budget replications
+(sections 3b and 3c). Section 3c was rewritten after its 800-step run landed and
+contradicted the 400-step reading; the correction is stated in place rather than
+quietly edited. Same checkpoint, same task (`libero_object:0`),
 same seeds (1,2), same 3 trials/cell, same grasp-relative strike schedule
 (0.01 m, repeat every 10 steps, 4 strikes), same replan horizons (1 and 10).
 **The only difference is the action-inference pathway**: `idm` (future-aware, the
@@ -104,28 +104,44 @@ time" in one pathway only: slow successes exist in both (758 steps for
 
 The carry regime is where the *future-aware* model pays. Running the **approach**
 schedule (fixed strike at env step 40, pre-grasp, same 0.01 m / every 10 / ×4)
-under `first_frame` gives the opposite pattern at the 400-step budget:
+under `first_frame` gives the opposite pattern:
 
 | pathway | approach control | approach disturb | Fisher |
 |---|---|---|---|
 | `idm` (Gate 13B, `results/gate13_repeat_sub`) | 12/12 | 11/12 | p=1.00 |
-| `first_frame` (`results/gate13_g14ffapproach`) | 11/12 | **5/12** | **p=0.027** |
+| `first_frame`, 400 steps (`results/gate13_g14ffapproach`) | 11/12 | **5/12** | **p=0.027** |
+| `first_frame`, 800 steps (`results/gate13_g14ffapproach800`) | **12/12** | **5/12** | **p=0.0046** |
 
-Every one of the 7 `first_frame` approach failures is a **430-step timeout** —
-the episode does not terminate, it runs out of budget — whereas the `idm`
-approach failures are a single 430-step timeout out of 12 and its successes take
-204–382 steps. So the pattern is not "the non-future model is more fragile in the
-approach phase"; it is that the non-future model is **slow enough that an
-approach-phase strike pushes it past the step budget**. A `--max-steps 800`
-replication of this arm (`results/gate13_g14ffapproach800`) is running to settle
-whether the cost is time or damage; the first 800-step control episode, which
-timed out at 400, succeeds at 606 steps, which is consistent with the
-time-budget reading.
+**Correction (this section was wrong when first written).** At 400 steps all 7
+`first_frame` approach failures were 430-step timeouts, and I read the pattern as
+budget-mediated slowness — "the non-future model is slow enough that a strike
+pushes it past the budget". The 800-step replication refutes that: doubling the
+budget rescued the single control episode that had timed out (606 steps) and
+**rescued none of the 7 disturb failures**, every one of which now runs to 830
+steps and still fails. The control cell also became clean (12/12), so the
+contrast sharpened rather than dissolving: **p=0.0046 at 800 steps**.
 
-**This is the honest shape of the Gate 14 result:** in the regime where the
-future-aware model is damaged (carry), removing future-aware inference changes
-nothing; in the regime where it is *not* damaged (approach), removing it produces
-a cost that is budget-mediated rather than a different failure mode.
+What the 7 failures look like at 830 steps (from `gate13d_mechanism.py`): 3 never
+lifted the object at all and 4 carried it far from the basket. That is a
+*different* signature from the carry regime, where 42/42 struck episodes lifted
+and the failure was in the release (section 3a). A pre-grasp 1 cm displacement
+under the non-future pathway can apparently cost the grasp itself. Caveat: "never
+lifted" is what the lift detector reports (the object never rose above the
+threshold), and for a pre-grasp strike the most plausible cause is a grasp that
+closed on the wrong place — but this arm does not instrument the gripper contact,
+so the cause of the missed grasp is inferred, not measured.
+
+So the honest shape of Gate 14 is not "the cost is budget-mediated". It is:
+
+- in the regime where the future-aware model is damaged (**carry**), removing
+  future-aware inference changes nothing (2/6 and 1/6 either way, p=1.00);
+- in the regime where it is *not* damaged (**approach**), removing it produces a
+  real cost (12/12 → 5/12, p=0.0046) that a doubled budget does not relieve, and
+  the failures take a different form (missed grasp, object carried away) from the
+  carry-regime release failures.
+
+Neither regime supports "the future-aware world model is the more robust
+controller": it is equal in one and worse in the other.
 
 ## 4. What this does and does not establish
 
@@ -149,10 +165,12 @@ a cost that is budget-mediated rather than a different failure mode.
   (`first_frame_cond_mask` conditions on the first predicted frame rather than
   the whole predicted clip — see `fastwam_optional_idm.py:101`). A stronger
   baseline (e.g. a policy with no video branch at all) is untested.
-- That the approach-regime cost under `first_frame` is damage rather than
-  slowness: it is 7/7 timeouts at 400 steps, and the 800-step replication is
-  still running. Until it lands, the approach row of section 3c is a
-  budget-mediated result, not a robustness claim.
+- ~~That the approach-regime cost under `first_frame` is damage rather than
+  slowness~~ — **resolved, and against the earlier reading**: at 800 steps the
+  disturb cell is unchanged at 5/12 while the control cell becomes 12/12
+  (p=0.0046). The cost is not a step-budget artifact. What remains inferred is
+  *why* the 3 never-lifted episodes missed the grasp; the arm does not
+  instrument gripper contact.
 
 ## 5. Consequence for the paper claim
 
@@ -162,10 +180,19 @@ The honest headline is now:
 > the carry phase — and it breaks it identically for a future-aware and a
 > non-future controller, by leaving the object held above the basket or carried
 > away from it. **The cost is a property of fixed-horizon chunk execution, not a
-> world-modeling commitment cost.**
+> world-modeling commitment cost.** The reverse holds in the approach phase, where
+> the non-future controller is the fragile one (12/12 → 5/12, p=0.0046, unchanged
+> by a doubled budget) and fails differently: it misses the grasp or carries the
+> object away.
 
 That is a weaker claim than "world-model commitment costs 0.8 success", and it is
-the one the data support.
+the one the data support. Note what the two rows together do to the framing the
+project started from: future-aware action inference is not a robustness
+advantage anywhere in this suite — it is neutral in the contact-rich phase and
+protective in the approach phase — so "WAM commitment is a cost" cannot be
+carried by task success at all. What the video pathway does measurably is predict
+a future that goes stale (−4.4 dB at lag ≥ 4), and that damage does not scale
+with the horizon either.
 
 ## Reproduce
 
