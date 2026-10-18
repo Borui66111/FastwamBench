@@ -32,7 +32,10 @@ Every gate below (A–D, 7–14) is reproducible from this repo:
 So the defensible claim is **a property of fixed-horizon chunk execution, not a world-modeling
 commitment cost**: replaying a stale chunk is costly exactly when the stale actions are load-bearing,
 the cost is at or near ceiling from the first strike instead of compounding, and a controller that
-never conditions on a predicted future pays it just the same. The one thing that *is* specific to the video pathway is
+never conditions on a predicted future pays it just the same. One attribution in that sentence is still
+*inferred* rather than *manipulated* — that the cost comes from executing the stale remainder. Gate 14D
+removes stale execution while keeping the world change; `evidence/gate14d_drop_stale.md` pre-registers
+the predictions. The one thing that *is* specific to the video pathway is
 predicted-future fidelity: a mid-chunk strike costs a fixed ≈4.4 dB of PSNR at lag ≥ 4 and that damage
 does not grow with the replan horizon either.
 

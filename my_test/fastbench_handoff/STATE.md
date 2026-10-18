@@ -399,3 +399,21 @@ trials = 32 jobs / 160 episodes, unattended (~2.5 h), then the PSNR arm and the 
 `gate13_main/gate13_summary.json`, verify control≈1.0 / cost monotone in H / `contaminated==0`,
 then commit.
 
+## Gate 14D — drop-stale positive control (2026-10-19, plumbed, canary pending)
+
+Every gate so far *infers* that the success cost comes from executing the stale remainder of the
+chunk. Gate 14D manipulates it: `--drop-stale-after-strike` discards the rest of the executing chunk
+the moment a strike lands, so the same world change happens but no already-planned action runs.
+Config key `EVALUATION.intervention_world_drop_stale`; provenance `dropped_stale_count` per episode
+and `dropped_stale` per strike.
+
+Pre-registered predictions (written before the run): `evidence/gate14d_drop_stale.md`.
+- P1: carry, 0.01 m, both horizons → disturb returns to ≥5/6 (vs 2/6 and 1/6 with stale execution).
+- P2: `dropped_stale_count > 0` and zero stale steps in every struck episode, else the run is void.
+- If P1 fails, every "stale execution" sentence in README/STATE/evidence has to be rewritten — the
+  world change alone would be doing the damage.
+
+Tests: 108 `[PASS]` (4 new plumbing checks). Patches regenerated and `--check` clean.
+**BLOCKED ON GPU:** `g14ffapproach800` still holds cards 5 and 7 (11/24 episodes at the time of
+writing), so the canary has not run yet. Do not cite this gate as evidence until it does.
+
