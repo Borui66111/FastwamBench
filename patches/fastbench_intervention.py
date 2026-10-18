@@ -96,6 +96,10 @@ def resolve_intervention_cfg(cfg: Any) -> dict:
         # carry phase is short and starts at a different step in every episode,
         # so every Gate 13B strike landed before the object was ever lifted.
         "world_trigger_after_lift": ev.get("intervention_world_trigger_after_lift", None),
+        # Gate 14D positive control: drop the remainder of the executing chunk the
+        # moment a strike lands, so NO stale action is ever executed. Same strike,
+        # same world change; only the stale-execution pathway is removed.
+        "world_drop_stale": bool(ev.get("intervention_world_drop_stale", False)),
         # Every strike must make the task strictly harder. A mirrored strike
         # would move the object back TOWARD the goal, and the canary showed
         # struck episodes finishing in 51 steps vs ~100 for control -- i.e. the
