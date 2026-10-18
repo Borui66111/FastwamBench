@@ -306,10 +306,11 @@ w("```\n")
 w("Guards for reviewers:")
 w("- `scripts_setup/gate13_validate_goal_aware.py` — proves the disturbance does not satisfy")
 w("  the goal (no model needed).")
-w("- `scripts_setup/test_gate9_intervention.py` — 67 unit checks incl. the absolute-step trigger")
+w("- `scripts_setup/test_gate9_intervention.py` — 84 unit checks incl. the absolute-step trigger")
 w("  and the goal-aware guard.")
 w("- `gate13_summary.json` carries `contaminated_disturb` per cell.\n")
-w(f"*Generated from `{summary_path}`.*")
+_rel = summary_path.relative_to(ROOT) if summary_path.is_absolute() else summary_path
+w(f"*Generated from `{_rel}`.*")
 
 out_md.parent.mkdir(parents=True, exist_ok=True)
 out_md.write_text("\n".join(L) + "\n")

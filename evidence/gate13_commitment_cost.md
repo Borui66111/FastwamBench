@@ -61,7 +61,7 @@ exhausts the 400-step budget, is reported too.
   - timeouts by H (control→disturb) = H1=0→7, H2=0→8, H5=0→3, H10=0→5
   - stale-window max divergence (m) by H = H1=-0.003, H2=0.002, H5=0.018, H10=0.019   ** window length is H; NOT comparable across H **
   - extra steps to succeed, disturbed vs control (successes only, so not inflated by timeouts) = H1=+46, H2=+21, H5=+41, H10=+58
-  - monotone increasing cost with horizon: **False**
+  - cost vs horizon: **non-monotone (no consistent trend)** (strictly increasing: False)
 - **libero_object_t0**: cost by H = H1=+0.40, H2=+0.60, H5=+0.10, H10=+0.30
   - stale executed by H = H1=1, H2=2, H5=5, H10=10
   - mean disturbed steps by H = H1=346, H2=364, H5=258, H10=331
@@ -70,7 +70,7 @@ exhausts the 400-step budget, is reported too.
   - fixed-lag divergence at k=1 (m) by H = H1=-0.0075, H2=-0.0075, H5=-0.0074, H10=-0.0074   <- fair comparison across H
   - fixed-lag divergence at k=3 (m) by H = H1=-0.0226, H2=-0.0224, H5=-0.0217, H10=-0.0216   <- fair comparison across H
   - fixed-lag divergence at k=5 (m) by H = H1=-0.0370, H2=-0.0367, H5=-0.0352, H10=-0.0347   <- fair comparison across H
-  - monotone increasing cost with horizon: **False**
+  - cost vs horizon: **non-monotone (no consistent trend)** (strictly increasing: False)
 - **libero_spatial_t0**: cost by H = H1=+0.20, H2=+0.20, H5=+0.20, H10=+0.20
   - stale executed by H = H1=1, H2=2, H5=5, H10=10
   - mean disturbed steps by H = H1=176, H2=175, H5=173, H10=173
@@ -79,7 +79,7 @@ exhausts the 400-step budget, is reported too.
   - fixed-lag divergence at k=1 (m) by H = H1=+0.0016, H2=+0.0020, H5=+0.0017, H10=+0.0017   <- fair comparison across H
   - fixed-lag divergence at k=3 (m) by H = H1=+0.0109, H2=+0.0117, H5=+0.0126, H10=+0.0124   <- fair comparison across H
   - fixed-lag divergence at k=5 (m) by H = H1=+0.0209, H2=+0.0220, H5=+0.0246, H10=+0.0255   <- fair comparison across H
-  - monotone increasing cost with horizon: **True**
+  - cost vs horizon: **FLAT (identical at every H - no horizon trend)** (strictly increasing: False)
 
 ## Interpretation
 
@@ -263,7 +263,7 @@ python scripts_setup/gate13_figure.py results/gate13_main/gate13_summary.json \
 Guards for reviewers:
 - `scripts_setup/gate13_validate_goal_aware.py` — proves the disturbance does not satisfy
   the goal (no model needed).
-- `scripts_setup/test_gate9_intervention.py` — 67 unit checks incl. the absolute-step trigger
+- `scripts_setup/test_gate9_intervention.py` — 84 unit checks incl. the absolute-step trigger
   and the goal-aware guard.
 - `gate13_summary.json` carries `contaminated_disturb` per cell.
 
