@@ -100,6 +100,11 @@ def resolve_intervention_cfg(cfg: Any) -> dict:
         # moment a strike lands, so NO stale action is ever executed. Same strike,
         # same world change; only the stale-execution pathway is removed.
         "world_drop_stale": bool(ev.get("intervention_world_drop_stale", False)),
+        # Gate 14E: apply the strike BEFORE the policy query and refresh the
+        # observation, so the chunk is planned against the mutated world and the
+        # episode carries zero stale actions. This is the arm that isolates
+        # "displacement alone" from "displacement + stale execution".
+        "world_zero_stale": bool(ev.get("intervention_world_zero_stale", False)),
         # Every strike must make the task strictly harder. A mirrored strike
         # would move the object back TOWARD the goal, and the canary showed
         # struck episodes finishing in 51 steps vs ~100 for control -- i.e. the

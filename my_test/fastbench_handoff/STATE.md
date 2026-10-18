@@ -439,8 +439,39 @@ failures each run to the 430-step cap. Fisher p=1.0000. The manipulation provabl
   count with strike count.
 
 **Still unmeasured:** the drop arm executes one committed action, so this cannot separate "displacement
-alone" from "displacement + one in-flight action". A zero-stale arm needs the observation refreshed and
-the chunk re-queried at the strike, which the harness does not do today.
+alone" from "displacement + one in-flight action". The zero-stale arm is now built and run (Gate 14E,
+below); it shows the in-flight action is not sufficient either.
 
-Tests: 108 `[PASS]` (4 new plumbing checks). Patches regenerated and `--check` clean.
+Tests: 114 `[PASS]` (6 new zero-stale plumbing checks). Patches regenerated and `--check` clean.
+
+## Gate 14E — stale execution is not the channel (2026-10-19, COMPLETE, NEGATIVE)
+
+14D left one committed action in flight, so it could not separate "the displacement damages the
+episode" from "the one in-flight action damages it". 14E removes the last one: the strike is applied
+**before** the policy query and the observation is re-read with
+`_get_observations(force_update=True)`, so the chunk is planned against the mutated world and **zero**
+stale actions execute.
+
+Result at H=10, 0.01 m, one strike at t=100, n=6 per arm:
+
+| arm | stale actions | success | mean steps |
+|---|---|---|---|
+| keep chunk | 10 | 2/6 | 348.5 |
+| one action then drop | 1 | 2/6 | 349.0 |
+| zero stale | 0 | 2/6 | 348.5 |
+
+**Identical episode for episode**, down to the step counts (202/169/430×4 in every arm). The refresh
+is measured, not assumed: `obs_pixel_maxdiff=116`, `obs_pixel_changed_frac=0.0528`.
+
+So the "stale execution / fixed-horizon chunk" framing is **retired**. The displacement costs the
+episode; executing actions planned before it does not.
+
+Honesty notes:
+- The harness **refuses to record a strike it cannot refresh** (raises). This caught
+  `OffScreenRenderEnv` not re-exporting `_get_observations` — the owner is `env.env`.
+- `gate13_analyze.py`'s contamination rule (`stale_n <= 0` ⇒ "manipulation never ran") is now
+  mode-aware: for a zero-stale episode it instead requires `obs_refreshed is True`. Without that,
+  every 14E episode was flagged `bad`, which would have made a reviewer distrust a correct cell.
+- **Not measured:** that the policy produces an unchanged trajectory. Identical step counts are
+  consistent with it, but the chunk-diff test has not been run.
 

@@ -113,9 +113,21 @@ def episode_metrics(recs, body, h=None):
         # a run is CONTAMINATED if the disturbance itself satisfied the task
         # (episode ends at the intervention step) or if no stale action ever
         # executed, i.e. the manipulation under test never actually ran.
+        #
+        # Gate 14E exception: an arm that strikes BEFORE the query has zero stale
+        # actions by construction, so stale_n <= 0 is the manipulation, not a
+        # failure of it. Those episodes are instead checked for the provenance
+        # that makes the label honest: the strike fired AND the observation was
+        # actually refreshed (otherwise the plan was made on pre-strike pixels
+        # and the arm would be mislabelled).
         stale_n = e.get("stale_action_steps", 0)
         post_iv = ivrec.get("post_iv_success")
-        contaminated = bool(post_iv) or (iv_step >= 0 and stale_n <= 0)
+        zs_n = e.get("zero_stale_strikes", 0) or 0
+        if zs_n > 0:
+            contaminated = bool(post_iv) or iv_step < 0 or \
+                ivrec.get("obs_refreshed") is not True
+        else:
+            contaminated = bool(post_iv) or (iv_step >= 0 and stale_n <= 0)
         # distance series
         pre_dist = None
         lat = -1

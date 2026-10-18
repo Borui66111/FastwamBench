@@ -1,5 +1,5 @@
 diff --git a/experiments/libero/eval_libero_single.py b/experiments/libero/eval_libero_single.py
-index 62c8fa8..a366bec 100644
+index 62c8fa8..9c6ba20 100644
 --- a/experiments/libero/eval_libero_single.py
 +++ b/experiments/libero/eval_libero_single.py
 @@ -24,6 +24,14 @@ project_root = Path(__file__).resolve().parents[2]
@@ -45,7 +45,7 @@ index 62c8fa8..a366bec 100644
      num_future_frames = replan_steps // action_video_freq_ratio
      return [step_idx * action_video_freq_ratio for step_idx in range(num_future_frames + 1)]
  
-@@ -356,6 +378,32 @@ def _compute_clip_mean_psnr(
+@@ -356,6 +378,85 @@ def _compute_clip_mean_psnr(
      return float(np.mean(frame_psnr_values))
  
  
@@ -75,10 +75,63 @@ index 62c8fa8..a366bec 100644
 +    return out
 +
 +
++def _refresh_obs(env, obs):
++    """[fastbench] Gate 14E: re-read the observation after a world mutation.
++
++    A "zero stale actions" claim is only honest if the model actually sees the
++    POST-mutation world. `obs` was captured at the previous `env.step()`, so it
++    still shows the object where it used to be; querying on it would plan against
++    stale pixels and the arm would be mislabelled -- it would look like a fresh
++    plan while being generated from pre-strike imagery.
++
++    Returns (obs, refreshed). `refreshed=False` means the caller must not claim
++    zero staleness: either the env raised or the fresh dict is missing keys the
++    policy reads.
++    """
++    # The eval loop's `env` is LIBERO's ControlEnv wrapper, which does not
++    # re-export `_get_observations`; the robosuite env that owns it is `env.env`.
++    # robosuite documents force_update=True as the way to grab observations after
++    # setting simulation state without stepping -- exactly this situation.
++    candidates = []
++    for holder in (getattr(env, "env", None), env):
++        getter = getattr(holder, "_get_observations", None) if holder is not None else None
++        if getter is not None:
++            candidates.append(getter)
++    if not candidates:
++        print("[fastbench] no _get_observations on env or env.env "
++              "-- zero-stale arm is NOT zero-stale", file=sys.stderr, flush=True)
++        return obs, False
++    fresh = None
++    for getter in candidates:
++        try:
++            fresh = getter(force_update=True)
++            break
++        except TypeError:
++            try:
++                fresh = getter()
++                break
++            except Exception as exc:
++                print(f"[fastbench] obs refresh raised ({type(exc).__name__}: {exc})",
++                      file=sys.stderr, flush=True)
++        except Exception as exc:
++            print(f"[fastbench] obs refresh raised ({type(exc).__name__}: {exc})",
++                  file=sys.stderr, flush=True)
++    if fresh is None:
++        print("[fastbench] obs refresh failed -- zero-stale arm is NOT zero-stale",
++              file=sys.stderr, flush=True)
++        return obs, False
++    missing = [k for k in obs.keys() if k not in fresh]
++    if missing:
++        print(f"[fastbench] obs refresh missing keys {missing} "
++              "-- zero-stale arm is NOT zero-stale", file=sys.stderr, flush=True)
++        return obs, False
++    return fresh, True
++
++
  def _predict_action_chunk(
      obs: dict,
      task_description: str,
-@@ -455,6 +503,13 @@ def _get_max_steps(task_suite_name: str) -> int:
+@@ -455,6 +556,13 @@ def _get_max_steps(task_suite_name: str) -> int:
          "libero_goal": 400,
          "libero_10": 700,
          "libero_90": 700,
@@ -92,7 +145,7 @@ index 62c8fa8..a366bec 100644
      }
      if task_suite_name not in suite_steps:
          raise ValueError(f"Unknown task suite: {task_suite_name}")
-@@ -475,13 +530,33 @@ def run_single_episode(
+@@ -475,13 +583,33 @@ def run_single_episode(
      input_h: int,
      model_device: str,
  ) -> tuple[bool, list, list[dict[str, Any]], Optional[float]]:
@@ -127,7 +180,7 @@ index 62c8fa8..a366bec 100644
      env.reset()
      obs = env.set_init_state(initial_state)
      if use_action_ensembler:
-@@ -491,10 +566,29 @@ def run_single_episode(
+@@ -491,10 +619,31 @@ def run_single_episode(
      replay_images = []
      predicted_future_video_clips: list[dict[str, Any]] = []
      episode_future_clip_psnr: list[float] = []
@@ -151,13 +204,50 @@ index 62c8fa8..a366bec 100644
 +    episode_strike_count = 0
 +    episode_first_strike_step = -1
 +    episode_dropped_stale = 0
++    # [fastbench] Gate 14E: strikes whose chunk was planned after the mutation.
++    episode_zero_stale_strikes = 0
 +    # [fastbench] Gate 14D: set at a strike, acted on after that step's action runs.
 +    _drop_chunk_after_step = False
 +    world_intervention = None      # set at the replan where the world was displaced
  
      t = 0
      done = False
-@@ -518,10 +612,19 @@ def run_single_episode(
+@@ -507,6 +656,34 @@ def run_single_episode(
+             continue
+ 
+         if len(pending_actions) == 0:
++            # [fastbench] Gate 14E: zero-stale arm. Apply the world strike BEFORE
++            # the query and re-read the observation, so the chunk is planned
++            # against the post-mutation world and no stale action ever executes.
++            # The trigger is step-based (world_step / lift-relative), so moving
++            # the call here does not change WHICH step fires.
++            _pre_strike = None
++            if icfg.get("world_zero_stale"):
++                _pre_strike = maybe_displace_world(env, icfg, current_replan_idx + 1, step_t=t)
++                if _pre_strike is not None and _pre_strike.get("applied"):
++                    _fresh, _refreshed = _refresh_obs(env, obs)
++                    if _refreshed:
++                        # Did the refresh actually show a different world? If the
++                        # pixels are unchanged the "zero stale" label is a lie
++                        # even though a fresh dict was returned -- the plan would
++                        # be made on pre-strike imagery. Record the difference so
++                        # the arm is auditable from the data, not from trust.
++                        try:
++                            _a = _fresh["agentview_image"].astype(np.int16)
++                            _b = obs["agentview_image"].astype(np.int16)
++                            _pre_strike["obs_pixel_maxdiff"] = int(np.abs(_a - _b).max())
++                            _pre_strike["obs_pixel_changed_frac"] = float((_a != _b).mean())
++                        except Exception as exc:
++                            _pre_strike["obs_pixel_maxdiff"] = -1
++                            print(f"[fastbench] pixel diff unavailable ({exc})",
++                                  file=sys.stderr, flush=True)
++                        obs = _fresh
++                    _pre_strike["zero_stale"] = True
++                    _pre_strike["obs_refreshed"] = bool(_refreshed)
+             action_chunk, imgs, predicted_future_frames = _predict_action_chunk(
+                 obs=obs,
+                 task_description=task_description,
+@@ -518,10 +695,19 @@ def run_single_episode(
                  input_h=input_h,
                  model_device=model_device,
              )
@@ -178,7 +268,7 @@ index 62c8fa8..a366bec 100644
                      "gt_frames": [imgs.copy()],
                      "pred_frames": predicted_future_frames,
                  }
-@@ -533,14 +636,160 @@ def run_single_episode(
+@@ -533,14 +719,177 @@ def run_single_episode(
                  pending_actions = [ensembler.get_action(ts).tolist() for ts in range(t, t + replan_steps)]
              else:
                  pending_actions = action_chunk[:replan_steps].tolist()
@@ -218,13 +308,30 @@ index 62c8fa8..a366bec 100644
 +
 +            # [fastbench] Gate 9 primary H3 hook: mutate the WORLD after the chunk
 +            # exists but before any of its actions run (WARM_START §9.2).
-+            world_intervention = maybe_displace_world(env, icfg, current_replan_idx, step_t=t)
++            if icfg.get("world_zero_stale"):
++                # Already applied above, before the query: nothing to do here.
++                world_intervention = _pre_strike
++            else:
++                world_intervention = maybe_displace_world(env, icfg, current_replan_idx, step_t=t)
 +            if world_intervention is not None:
 +                if world_intervention.get("applied"):
-+                    # §3.2: every action already planned for this chunk was
-+                    # generated against the pre-intervention world, so all of
-+                    # them are stale until the next re-query.
-+                    stale_remaining = len(pending_actions)
++                    if icfg.get("world_zero_stale"):
++                        # The chunk was generated AFTER the mutation, so none of
++                        # it is stale. This is the whole point of the arm; if the
++                        # obs refresh failed the record says so and the arm is
++                        # not zero-stale, so refuse rather than mislabel.
++                        if not world_intervention.get("obs_refreshed"):
++                            raise RuntimeError(
++                                "zero-stale arm could not refresh the observation; "
++                                "refusing to record a strike that would be mislabelled"
++                            )
++                        stale_remaining = 0
++                        episode_zero_stale_strikes += 1
++                    else:
++                        # §3.2: every action already planned for this chunk was
++                        # generated against the pre-intervention world, so all of
++                        # them are stale until the next re-query.
++                        stale_remaining = len(pending_actions)
 +                    episode_intervention_step = t
 +                    episode_strike_count += 1
 +                    if episode_first_strike_step < 0:
@@ -235,7 +342,7 @@ index 62c8fa8..a366bec 100644
 +                    # already popped further down, so exactly one stale action
 +                    # still executes; the remainder is discarded after it. Do not
 +                    # clear the list here — the pop below would raise IndexError.
-+                    if icfg.get("world_drop_stale") and pending_actions:
++                    if icfg.get("world_drop_stale") and not icfg.get("world_zero_stale") and pending_actions:
 +                        world_intervention["dropped_stale"] = max(0, len(pending_actions) - 1)
 +                        _drop_chunk_after_step = True
 +                logging.info(
@@ -341,7 +448,7 @@ index 62c8fa8..a366bec 100644
              if current_replan_step in capture_steps:
                  current_predicted_future_clip["gt_frames"].append(get_libero_image(obs))
              if done or len(pending_actions) == 0:
-@@ -587,6 +836,19 @@ def run_single_episode(
+@@ -587,6 +936,19 @@ def run_single_episode(
                  )
                  if clip_psnr is not None:
                      episode_future_clip_psnr.append(clip_psnr)
@@ -361,7 +468,7 @@ index 62c8fa8..a366bec 100644
                  predicted_future_video_clips.append(current_predicted_future_clip)
                  current_predicted_future_clip = None
          if done:
-@@ -597,6 +859,38 @@ def run_single_episode(
+@@ -597,6 +959,39 @@ def run_single_episode(
      episode_mean_psnr = (
          float(np.mean(episode_future_clip_psnr)) if len(episode_future_clip_psnr) > 0 else None
      )
@@ -395,12 +502,13 @@ index 62c8fa8..a366bec 100644
 +        strike_count=episode_strike_count,
 +        first_strike_step=episode_first_strike_step,
 +        dropped_stale_count=episode_dropped_stale,
++        zero_stale_strikes=episode_zero_stale_strikes,
 +    )
 +    recorder.close()
      return bool(done), replay_images, predicted_future_video_clips, episode_mean_psnr
  
  
-@@ -730,10 +1024,9 @@ def _run_task_to_file(
+@@ -730,10 +1125,9 @@ def _run_task_to_file(
  
      task_suite = benchmark.get_benchmark_dict()[suite_name]()
      task = task_suite.get_task(task_id)

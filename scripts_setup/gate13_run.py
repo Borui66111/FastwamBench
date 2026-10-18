@@ -98,7 +98,7 @@ def free_gpus(min_free_mib: int = 5000):
 
 def common_overrides(suite: str, tid: int, trials: int, seed: int, h: int,
                      mode: str = "idm", max_steps: int | None = None,
-                     drop_stale: bool = False) -> list[str]:
+                     drop_stale: bool = False, zero_stale: bool = False) -> list[str]:
     ov = [
         "task=libero_optional_idm_2cam224_1e-4",
         f"ckpt={CKPT}",
@@ -121,9 +121,13 @@ def common_overrides(suite: str, tid: int, trials: int, seed: int, h: int,
         # Gate 14: a longer budget separates "slower" from "never".
         ov.append(f"+EVALUATION.max_steps={int(max_steps)}")
     if drop_stale:
-        # Gate 14D positive control: discard the executing chunk on every strike,
-        # so the same world change happens but no stale action is ever executed.
+        # Gate 14D positive control: execute one committed action, then discard
+        # the rest of the chunk.
         ov.append("+EVALUATION.intervention_world_drop_stale=true")
+    if zero_stale:
+        # Gate 14E: strike before the query, refresh the observation, so the
+        # chunk is planned against the mutated world (0 stale actions).
+        ov.append("+EVALUATION.intervention_world_zero_stale=true")
     return ov
 
 
@@ -141,7 +145,8 @@ def build_jobs(args):
                         "max_steps": args.max_steps,
                         # Gate 14D: only the disturb arm can have a strike to
                         # drop; the control arm is unaffected either way.
-                        "drop_stale": bool(args.drop_stale_after_strike),
+                        "drop_stale": bool(args.drop_stale_after_strike) and arm == "disturb",
+                        "zero_stale": bool(args.zero_stale) and arm == "disturb",
                     })
     return jobs
 
@@ -168,7 +173,7 @@ def run_job(job, gpu: int, args) -> tuple[str, int]:
     cmd = [PY, "experiments/libero/eval_libero_single.py"]
     cmd += common_overrides(job["suite"], job["tid"], job["trials"], job["seed"], job["h"],
                             job.get("mode", "idm"), job.get("max_steps"),
-                            job.get("drop_stale", False))
+                            job.get("drop_stale", False), job.get("zero_stale", False))
     cmd += [f"EVALUATION.output_dir={out}", f"EVALUATION.recorder_path={out/'records.jsonl'}"]
     if job["psnr"]:
         cmd.append("EVALUATION.visualize_future_video=true")
@@ -262,6 +267,10 @@ def main() -> int:
     ap.add_argument("--drop-stale-after-strike", action="store_true",
                     help="Gate 14D positive control: on every strike, discard the rest of the "
                          "executing chunk so no stale action runs. Same strike, no stale execution.")
+    ap.add_argument("--zero-stale", action="store_true",
+                    help="Gate 14E: apply the strike BEFORE the policy query and refresh the "
+                         "observation, so the chunk is planned against the mutated world "
+                         "(zero stale actions). Disturb arm only.")
     ap.add_argument("--max-steps", type=int, default=None,
                     help="Gate 14: override the per-suite step budget (default: suite value, "
                          "400 for libero_object/spatial). Use a larger value to separate "

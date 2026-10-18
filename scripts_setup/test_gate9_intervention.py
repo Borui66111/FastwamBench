@@ -538,6 +538,31 @@ try:
     check("max_steps and action_infer_mode coexist",
           "+EVALUATION.action_infer_mode=first_frame" in _long and
           "+EVALUATION.max_steps=800" in _long)
+    # Gate 14E: zero-stale is a distinct flag from drop-stale; setting one must
+    # not silently enable the other, or the arms become indistinguishable.
+    _zs = _g13.common_overrides("libero_object", 0, 3, 1, 10, "idm", None, False, True)
+    _ds = _g13.common_overrides("libero_object", 0, 3, 1, 10, "idm", None, True, False)
+    check("zero_stale emits its config key",
+          "+EVALUATION.intervention_world_zero_stale=true" in _zs)
+    check("zero_stale does not emit drop_stale",
+          "+EVALUATION.intervention_world_drop_stale=true" not in _zs)
+    check("drop_stale does not emit zero_stale",
+          "+EVALUATION.intervention_world_zero_stale=true" not in _ds)
+    check("neither flag is emitted by default",
+          not any("zero_stale" in o or "drop_stale" in o
+                  for o in _g13.common_overrides("libero_object", 0, 3, 1, 10)))
+    _zs_cfg = resolve_intervention_cfg({"EVALUATION": {
+        "intervention_enabled": True, "intervention_mode": "world",
+        "intervention_world_enabled": True, "intervention_world_step": 40,
+        "intervention_world_zero_stale": True,
+    }})
+    check("zero_stale survives resolve_intervention_cfg",
+          _zs_cfg.get("world_zero_stale") is True, repr(_zs_cfg.get("world_zero_stale")))
+    check("zero_stale defaults to False",
+          resolve_intervention_cfg({"EVALUATION": {
+              "intervention_enabled": True, "intervention_mode": "world",
+              "intervention_world_enabled": True, "intervention_world_step": 40,
+          }}).get("world_zero_stale") is False)
     # Gate 14D: the drop-stale positive control must be off unless asked for, and
     # must survive resolve_intervention_cfg (the same class of bug as the lift
     # trigger, which reached argparse but never the subprocess).
