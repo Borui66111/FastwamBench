@@ -387,6 +387,42 @@ def main() -> int:
             summary["_config"] = json.loads(cfgp.read_text())
         except Exception as exc:  # pragma: no cover
             print(f"  (could not read run_config.json: {exc})")
+    # ---- completeness audit -------------------------------------------------
+    # A crashed job leaves a cell with fewer episodes than requested, and the
+    # summary then reports that cell at face value (e.g. "control 1.00 (n=1)").
+    # This project has already lost a conclusion to small-sample luck, so make
+    # any shortfall impossible to miss instead of trusting the reader to add up
+    # the n column.
+    cfg = summary.get("_config") or {}
+    exp_trials = cfg.get("trials")
+    exp_seeds = cfg.get("seeds") or []
+    short = []
+    if exp_trials:
+        want = int(exp_trials) * max(1, len(exp_seeds))
+        for key, per_h in data.items():
+            for h, arms in per_h.items():
+                for arm, eps in arms.items():
+                    if len(eps) != want:
+                        short.append((key, h, arm, len(eps), want))
+    summary["_completeness"] = {
+        "expected_per_cell": (int(exp_trials) * max(1, len(exp_seeds))) if exp_trials else None,
+        "incomplete_cells": [
+            {"cell": k, "H": h, "arm": a, "observed": o, "expected": w}
+            for k, h, a, o, w in short
+        ],
+    }
+    if short:
+        print("\n" + "!" * 78)
+        print("INCOMPLETE CELLS - a job crashed or was cut short. These cells are")
+        print("reported above at face value; do NOT read them as estimates.")
+        for k, h, a, o, w in short:
+            print(f"  {k}  H={h}  {a}: {o}/{w} episodes")
+        print("Re-run the missing cells before citing any cost from them.")
+        print("!" * 78)
+    elif exp_trials:
+        print(f"\ncompleteness: all cells have {int(exp_trials) * max(1, len(exp_seeds))}"
+              f" episodes as requested")
+
     outp = OUT_ROOT / "gate13_summary.json"
     with open(outp, "w") as fh:
         json.dump(summary, fh, indent=2, sort_keys=True)

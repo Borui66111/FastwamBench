@@ -69,12 +69,17 @@ $PY scripts_setup/gate13_figure.py results/gate13_main/gate13_summary.json \
 
 ## Verify the experiment is valid (do these first)
 
-1. `$PY scripts_setup/test_gate9_intervention.py` → 67 checks pass. Covers the absolute-step
+1. `$PY scripts_setup/test_gate9_intervention.py` → 84 checks pass. Covers the absolute-step
    trigger and the goal-aware guard.
 2. `$PY scripts_setup/gate13_validate_goal_aware.py` → no model needed; proves the
    disturbance does NOT satisfy the task goal (the original design flaw).
 3. In any `records.jsonl`: `stale` count == H, and `intervention.post_iv_success == false`.
 4. Control success is 1.00 in every cell — the environment (after the OSC fix) is healthy.
+5. `gate13_analyze.py` ends with a completeness audit: it compares each cell's episode count
+   against `run_config.json` (trials x seeds) and prints an `INCOMPLETE CELLS` block naming any
+   short cell. A crashed job otherwise leaves a cell that is reported at face value, which is
+   exactly how a previous conclusion was lost to small-sample luck. Any incomplete cell must be
+   re-run before its cost is cited.
 
 ## Four design flaws that were found and fixed (each had silently invalidated the run)
 
