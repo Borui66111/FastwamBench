@@ -58,11 +58,14 @@ never place it.
 | 0.005 | 10 | 6/6 | 2/6 | 0 | 4 | 0 |
 | 0.01 | 1 | 6/6 | 2/6 | 3 | 1 | 0 |
 | 0.01 | 10 | 6/6 | 1/6 | 3 | 1 | 1 |
+| 0.02 | 1 | 3/3 | 0/3 | 0 | 3 | 0 |
+| 0.02 | 10 | 3/3 | 0/3 | 0 | 3 | 0 |
 
 Three things follow.
 
 **No episode ever failed by never lifting the object.** In all 24 struck episodes
-of the 0.01 m run and all 12 of the 0.005 m run, the object was picked up. The
+of the 0.01 m run, all 12 of the 0.005 m run and all 6 of the 0.02 m run, the object
+was picked up. The
 strike never prevented the grasp. So explanation (2) in its strong form — "the
 object is knocked out of reach" — is wrong: the robot always gets the object.
 
@@ -82,16 +85,41 @@ this experiment resolves.
 out**, and none at 0.005 m. The time-budget explanation accounts for at most one
 episode and cannot explain the aggregate.
 
-## Result — the cost saturates
+## Result — no measurable dose-response over 5–20 mm
 
 | magnitude | stale at H=1 | stale at H=10 | success H=1 | success H=10 |
 |---|---|---|---|---|
 | 0.005 m | 3.5 | 40.0 | 2/6 | 2/6 |
 | 0.01 m | 4.0 | 40.0 | 2/6 | 1/6 |
+| 0.02 m | 4.0 | 40.0 | 0/3 | 0/3 |
 
-The cost at 5 mm is the same as at 10 mm. Halving the displacement did not halve
-the damage. Over this range the cost is **saturated**: any displacement large
-enough to break the policy's tracking of the object during carry is enough.
+Success falls monotonically in the point estimates — 33% (4/12), 25% (3/12), 0%
+(0/6) — but **none of the magnitude contrasts is resolvable at this sample size**:
+0.005 vs 0.01 p=1.000, 0.01 vs 0.02 p=0.515, 0.005 vs 0.02 p=0.245, and pooled
+0.005+0.01 vs 0.02 p=0.290. So the defensible claim is not "the cost saturates"
+but **no measurable dose-response over 5–20 mm**: a 5 mm displacement is already
+enough to destroy two thirds of the episodes, and quadrupling it does not
+measurably worsen that.
+
+That direction matters for the interpretation. Magnitude is a **weak lever**: a 4×
+change in displacement does not produce a resolvable change in success, whereas
+changing *when* the strike lands (approach vs carry) moves success from 11/12 to
+3/12.
+
+But the mechanical explanation is ruled out by a different measurement. If the
+strike simply knocked the object out of the gripper, the object would fall within a
+step or two of the strike. It does not:
+
+| magnitude | failures | never released | released after (steps) | median |
+|---|---|---|---|---|
+| 0.005 m | 8 | 2 | 4, 5, 14, 24, 24, 24 | 19.0 |
+| 0.01 m | 9 | 7 | 3, 18 | 10.5 |
+| 0.02 m | 6 | 0 | 14, 23, 23, 24, 24, 38 | 23.5 |
+
+Across all 23 failures, 9 never released the object at all; the other 14 released it
+a median of 20.5 steps after the strike (range 3–38). **At 0.02 m not a
+single failure released the object within 14 steps of the strike.** The grasp
+survives the strike; what breaks is the subsequent behaviour.
 
 Pooled over horizon — legitimate here precisely because the horizon contrast is
 null, so pooling does not hide a trend — the effect is unambiguous:
@@ -100,15 +128,15 @@ null, so pooling does not hide a trend — the effect is unambiguous:
 |---|---|---|---|
 | 0.005 m | 12/12 | 4/12 | p=0.0013 |
 | 0.01 m | 12/12 | 3/12 | p=0.0003 |
+| 0.02 m | 6/6 | 0/6 | p=0.0022 |
 
-and the two magnitudes are not distinguishable from each other (4/12 vs 3/12,
-Fisher p=1.000). The per-cell tests (n=6) are the underpowered view of the same
-effect; the pooled test is the honest summary of it.
-
-This is the opposite of the step-function prediction in a useful way. There is a
-threshold below 5 mm, but above it the magnitude is irrelevant — so the effect is
-not "we pushed the object further than the grasp could tolerate". The grasp
-survives; the *placement* does not.
+The per-cell tests (n=3–6) are the underpowered view of the same effect; the
+pooled test is the honest summary of it. Magnitude does not separate the cells
+from each other (0.005 vs 0.02 p=0.245, 0.01 vs 0.02 p=0.515, pooled
+0.005+0.01 vs 0.02 p=0.290), so I do not claim a dose-response in either
+direction. What the data support is narrower and still useful: **the carry-phase
+cost is already at or near ceiling at 5 mm, and it is not a mechanical break of
+the grasp.** I have not tested below 5 mm, so where the cost begins is unknown.
 
 ## The horizon null replicates
 

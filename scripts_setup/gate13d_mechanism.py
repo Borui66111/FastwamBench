@@ -74,30 +74,45 @@ def classify(ep, body_hint=None):
     body = ivs[0]["body"] if ivs else body_hint
     if not body or len(st) < 45:
         return None
-    zs = [pos(s, body) for s in st]
-    zs = [q for q in zs if q is not None]
+    # NOTE: keep the env step t with each position. Recording starts after
+    # num_steps_wait, so list index != env step (first record is t=30).
+    # Using the index here biases every "post-lift" test toward True.
+    zs = [(s.get("t"), pos(s, body)) for s in st]
+    zs = [(t, q) for t, q in zs if q is not None]
     if len(zs) < 45:
         return None
 
-    z0 = float(min(q[2] for q in zs[:10]))
-    zmax = float(max(q[2] for q in zs))
-    zend = float(zs[-1][2])
+    z0 = float(min(q[2] for _, q in zs[:10]))
+    zmax = float(max(q[2] for _, q in zs))
+    zend = float(zs[-1][1][2])
     lifted = zmax > z0 + 0.02
     lift_step = None
     if lifted:
-        for k, q in enumerate(zs):
+        for t, q in zs:
             if q[2] > z0 + 0.02:
-                lift_step = k
+                lift_step = t
                 break
 
-    y = np.array([q[2] for q in zs[-40:]])
+    y = np.array([q[2] for _, q in zs[-40:]])
     slope = float(np.polyfit(np.arange(len(y)), y, 1)[0])
 
     bk = [pos(s, "basket_1_main") for s in st]
     bk = [q for q in bk if q is not None]
-    dbask = float(np.linalg.norm(zs[-1][:2] - bk[-1][:2])) if bk else float("nan")
+    dbask = float(np.linalg.norm(zs[-1][1][:2] - bk[-1][:2])) if bk else float("nan")
 
     succ = bool((ep["end"] or {}).get("success"))
+
+    # How long after the first strike is the object released? A grasp that the
+    # strike broke mechanically drops the object within a step or two; a policy
+    # that keeps carrying it and fails later does not.
+    first_strike = min((i["t"] for i in ivs), default=None)
+    peak_t = max(zs, key=lambda q: q[1][2])[0]
+    drop_t = None
+    for t, q in zs:
+        if t > peak_t and q[2] < z0 + 0.02:
+            drop_t = t
+            break
+    drop_delay = (drop_t - first_strike) if (drop_t is not None and first_strike is not None) else None
 
     if succ:
         mode = "PLACED"
@@ -117,6 +132,7 @@ def classify(ep, body_hint=None):
         "success": succ,
         "lifted": lifted,
         "lift_step": lift_step,
+        "drop_delay": drop_delay,
         "z0": round(z0, 4),
         "zmax": round(zmax, 4),
         "zend": round(zend, 4),
@@ -184,6 +200,15 @@ def main():
                 and min(r["strike_steps"]) >= r["lift_step"]]
         print(f"  strike phase: {len(post)}/{len(d)} struck episodes had every "
               f"strike AFTER the lift")
+        # Release timing: a mechanically broken grasp drops the object at once.
+        fails = [r for r in d if not r["success"]]
+        never = [r for r in fails if r["drop_delay"] is None]
+        later = sorted(r["drop_delay"] for r in fails if r["drop_delay"] is not None)
+        if fails:
+            med = np.median(later) if later else float("nan")
+            print(f"  release timing among {len(fails)} failures: {len(never)} never "
+                  f"released the object; {len(later)} released it after "
+                  f"{later if later else '-'} steps (median {med})")
         if len(post) < len(d):
             bad = [r for r in d if r not in post]
             print(f"  !! {len(bad)} struck episodes had a strike before the lift: "
