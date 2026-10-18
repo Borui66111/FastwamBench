@@ -409,21 +409,38 @@ trials = 32 jobs / 160 episodes, unattended (~2.5 h), then the PSNR arm and the 
 `gate13_main/gate13_summary.json`, verify control≈1.0 / cost monotone in H / `contaminated==0`,
 then commit.
 
-## Gate 14D — drop-stale positive control (2026-10-19, plumbed, canary pending)
+## Gate 14D — the stale remainder does not carry the cost (2026-10-19, COMPLETE, NEGATIVE)
 
-Every gate so far *infers* that the success cost comes from executing the stale remainder of the
-chunk. Gate 14D manipulates it: `--drop-stale-after-strike` discards the rest of the executing chunk
-the moment a strike lands, so the same world change happens but no already-planned action runs.
-Config key `EVALUATION.intervention_world_drop_stale`; provenance `dropped_stale_count` per episode
-and `dropped_stale` per strike.
+Every earlier gate *inferred* that the cost comes from executing the stale remainder of the chunk. 14D
+manipulates it: `--drop-stale-after-strike` discards the rest of the executing chunk the moment a strike
+lands, so the same world change happens but the already-planned actions mostly do not run. Config key
+`EVALUATION.intervention_world_drop_stale`; provenance `dropped_stale_count` per episode and
+`dropped_stale` per strike. Pre-registration: `evidence/gate14d_drop_stale.md`.
 
-Pre-registered predictions (written before the run): `evidence/gate14d_drop_stale.md`.
-- P1: carry, 0.01 m, both horizons → disturb returns to ≥5/6 (vs 2/6 and 1/6 with stale execution).
-- P2: `dropped_stale_count > 0` and zero stale steps in every struck episode, else the run is void.
-- If P1 fails, every "stale execution" sentence in README/STATE/evidence has to be rewritten — the
-  world change alone would be doing the damage.
+**Result: 2/6 either way.** Carry regime, `libero_object:0`, 0.01 m, H=10, one strike, n=6/arm
+(`g14keep1` vs `g14drop1`). The same two episodes succeed, one step apart (202/169 vs 203/171); the four
+failures each run to the 430-step cap. Fisher p=1.0000. The manipulation provably fired:
+`stale_action_steps` 10 → 1, `dropped_stale_count` 0 → 9. P1 failed; P2 held.
+
+**Consequences (applied to README/evidence):**
+- The "fixed-horizon chunk execution" framing is **retired**. The cost survives with 9 of 10 stale
+  actions removed, so it belongs to the displacement, not to replaying a stale plan.
+- The horizon gradient is now **unexplained**: 4 strikes → 1/6, 1 strike → 2/6 at H=10, and one strike at
+  H=10 equals the four-strike H=1 cell (2/6). Stale-action count was the obvious mechanism and it is inert.
+- 13D's mechanism result stands unchanged (grasp never breaks; object held above the basket) — measured
+  directly, not inferred from staleness.
+
+**Harness findings from this round (each cost a wasted launch before being caught):**
+- Clearing `pending_actions` at the strike crashes with `IndexError` — the step's action is popped
+  further down. Hence execute-then-drop, which means one stale action still runs.
+- Dropping the chunk desynchronises the repeat-strike grid: replans shift to 101, 111, 121, … where
+  `delta_t % 10` is never 0, so a 4-strike drop arm fires exactly **one** strike. Both 14D arms
+  therefore use `--world-repeat-count 1`; comparing against the 4-strike data would confound stale
+  count with strike count.
+
+**Still unmeasured:** the drop arm executes one committed action, so this cannot separate "displacement
+alone" from "displacement + one in-flight action". A zero-stale arm needs the observation refreshed and
+the chunk re-queried at the strike, which the harness does not do today.
 
 Tests: 108 `[PASS]` (4 new plumbing checks). Patches regenerated and `--check` clean.
-**BLOCKED ON GPU:** `g14ffapproach800` still holds cards 5 and 7 (11/24 episodes at the time of
-writing), so the canary has not run yet. Do not cite this gate as evidence until it does.
 

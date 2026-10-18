@@ -23,25 +23,32 @@ Every gate below (A–D, 7–14) is reproducible from this repo:
   placement height, or carries it away entirely.
 - **Magnitude is a weak lever.** 5 → 20 mm changes nothing resolvable (success 33% → 25% → 0%, all
   pairwise contrasts p ≥ 0.245), whereas *when* the strike lands flips the result from null to large.
-- **And the cost is not specific to a world model** (Gate 14): the same checkpoint driven by the
-  non-future `first_frame` pathway is damaged just as much — 2/6 and 1/6 against 2/6 and 1/6, Fisher
-  p=1.0000 at both horizons — and fails in the same dominant way (object carried to the basket,
-  never released). Note what carries the claim: the *within*-pathway drop (11/12 → 3/12, p=0.0028),
-  not the between-pathway null, whose 95% interval is ±0.44 at this n.
+- **And the stale remainder does not carry the cost** (Gate 14D). Same single strike, same H=10, n=6
+  per arm: dropping 9 of the 10 already-planned actions gives **2/6 either way**, with the same two
+  episodes succeeding one step apart (203 vs 202, 171 vs 169) and the same four failures running to the
+  step cap. The manipulation provably took effect (`stale_action_steps` 10 → 1, `dropped_stale_count`
+  0 → 9) and changed nothing.
 
-So the defensible claim is **a property of fixed-horizon chunk execution, not a world-modeling
-commitment cost**: replaying a stale chunk is costly exactly when the stale actions are load-bearing,
-the cost is at or near ceiling from the first strike instead of compounding, and a controller that
-never conditions on a predicted future pays it just the same. One attribution in that sentence is still
-*inferred* rather than *manipulated* — that the cost comes from executing the stale remainder. Gate 14D
-removes stale execution while keeping the world change; `evidence/gate14d_drop_stale.md` pre-registers
-the predictions. The one thing that *is* specific to the video pathway is
-predicted-future fidelity: a mid-chunk strike costs a fixed ≈4.4 dB of PSNR at lag ≥ 4 and that damage
-does not grow with the replan horizon either.
+So the honest summary is narrower than earlier versions of this file claimed. **A world displacement
+costs success in the carry phase; the cost is not proportional to how many already-planned actions are
+replayed.** Reducing stale execution tenfold leaves the outcome bit-for-bit identical, so "replaying a
+chunk planned against a world that no longer exists" is the wrong mechanism — the harm comes from the
+displacement itself, plus at most the one action already in flight when the strike lands. The
+"fixed-horizon chunk execution" framing used in earlier revisions is **retired**.
+
+That also takes the explanation away from the horizon gradient: four strikes cost more than one
+(1/6 vs 2/6 at H=10), but one strike at H=10 now costs the same as the four-strike H=1 cell (2/6), and
+stale-action count — the obvious candidate — is inert. The gradient is real and measured; its mechanism
+is **unexplained**, and it should not be restated as "commitment compounds with horizon".
+
+What is still specific to the video pathway is predicted-future fidelity: a mid-chunk strike costs a
+fixed ≈4.4 dB of PSNR at lag ≥ 4, and that damage does not grow with the replan horizon either.
 
 **Not established:** why the policy stops short of releasing (the records carry no grasp/contact
-state); whether the WAM has any world-modeling advantage at all under a different intervention; and
-whether a stronger no-video baseline would also pay the same cost.
+state); whether the WAM has any world-modeling advantage at all under a different intervention;
+whether a stronger no-video baseline would also pay the same cost; and whether the *single* in-flight
+action is itself sufficient to cause the loss (the drop arm still executes one, so the attribution
+stops at "at most one action").
 
 ---
 
@@ -412,9 +419,13 @@ identical signature. The baseline is not broken — it is slightly clumsier unde
 (11/12 vs 12/12) and otherwise behaves the same.
 
 **This is a negative result for WAM-specificity.** The carry-phase cost survives removal of
-future-aware action inference, so it is a property of **fixed-horizon chunk execution**, not a
-world-modeling commitment cost. That reframes Gates 13/13B/13C/13D: they measure the protocol, and
-they do so reliably.
+future-aware action inference, so it is not a world-modeling commitment cost.
+
+**And it is not a stale-replay cost either** — that was the next thing to check, and Gate 14D killed it.
+Same single strike, same H=10, dropping 9 of the 10 already-planned actions: **2/6 either way**, the same
+two episodes succeeding one step apart. So the cost is a property of the **displacement**, not of the
+execution protocol that replays a stale plan. Gates 13/13B/13C/13D measure that displacement reliably;
+the mechanism sentence attached to them has been retired. See `evidence/gate14d_drop_stale.md`.
 
 What it does *not* say: that the WAM has no world-modeling advantage. It says this particular
 intervention does not measure one. The predicted-future fidelity result (≈−4.4 dB at lag ≥ 4) comes

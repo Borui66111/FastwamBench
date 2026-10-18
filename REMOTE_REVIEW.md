@@ -167,20 +167,32 @@ horizons, with `EVALUATION.action_infer_mode` switched between `idm` (future-awa
 | carry, 800-step budget | 4/12 | **4/12** | same counts (p=1.00), CI ±0.34 |
 | approach (strike at step 40) | 12/12 → 11/12 | 11/12 → **5/12** (400 steps), **12/12 → 5/12** (800 steps, p=0.0046) | pathway difference is **real, not budget-mediated**; failures are missed grasps (3) and lost objects (4) |
 
-So the carry-phase damage is **not** specific to future-aware inference — it is a property of
-fixed-horizon chunk execution. The one pathway difference found (approach regime) is real: doubling the
-step budget leaves the disturb cell at 5/12 while the control cell becomes 12/12 (p=0.0046), and the
-failures change form (3 missed grasps, 4 objects lost) rather than merely taking longer.
+So the carry-phase damage is **not** specific to future-aware inference. The one pathway difference
+found (approach regime) is real: doubling the step budget leaves the disturb cell at 5/12 while the
+control cell becomes 12/12 (p=0.0046), and the failures change form (3 missed grasps, 4 objects lost)
+rather than merely taking longer.
+
+**Gate 14D then removes the protocol explanation too.** Same single strike, same H=10, dropping 9 of the
+10 already-planned actions: **2/6 either way**, the same two episodes succeeding one step apart
+(202/169 vs 203/171), four failures each at the 430-step cap, p=1.0000 — with `stale_action_steps`
+10 → 1 and `dropped_stale_count` 0 → 9 proving the manipulation fired. The cost is therefore a property
+of the **displacement**, not of the execution protocol that replays a stale plan.
 
 Consequences for the review document:
-1. The headline claim must be restated as a property of the **execution protocol**, not of the WAM.
-2. The predicted-future fidelity result (≈−4.4 dB at lag ≥ 4, flat in horizon) is untouched — it is
+1. The headline must **not** be restated as a property of the execution protocol — 14D tested that and
+   it failed. The supportable claim is narrower: a mid-chunk world displacement in a contact-rich phase
+   costs success, and the cost is not proportional to how many already-planned actions are replayed.
+2. The horizon gradient (4 strikes 1/6 vs 1 strike 2/6 at H=10; one strike at H=10 equal to the
+   four-strike H=1 cell) is **unexplained**. Stale-action count was the natural candidate and it is inert.
+3. The predicted-future fidelity result (≈−4.4 dB at lag ≥ 4, flat in horizon) is untouched — it is
    the one measurement that is specific to the video pathway, and it does not support a
    *task-success* claim.
-3. Anything written earlier that says "the world model commits to a stale future" should be read as
-   "the chunk is replayed while stale", which is protocol-level.
+4. Anything written earlier that says "the world model commits to a stale future" should be read as
+   "the chunk is replayed while stale" — and that replay is now shown **not** to be what costs the
+   episode.
 
-Full write-up: `evidence/gate14_wam_specificity.md`, figure `evidence/gate14_wam_specificity.png`.
+Full write-ups: `evidence/gate14_wam_specificity.md`, `evidence/gate14d_drop_stale.md`; figures
+`evidence/gate14_wam_specificity.png`, `evidence/gate14_matrix.png`.
 
 ## First presentable benchmark target
 
