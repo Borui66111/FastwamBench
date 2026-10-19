@@ -622,3 +622,26 @@ fingers still cradling it. Also not established: why the policy inverts the orde
 **Figure pitfalls hit:** `release_z` serialises as NaN for "never separated", so `is not None` let NaN
 through and titled a panel "nan" — filter on finiteness. The legend advertised a gray "mean" bar that
 was never drawn — replaced with a footnote. Suptitle "Gate 14I" renders as "Gate 141"; write "14-I".
+
+## Gate 14J — the fingers really do open (2026-10-19, COMPLETE)
+
+Settles the one thing 14-I could not. Added `state.gripper = {joints, qpos, width}` to the per-step
+snapshot in `snapshot_state` (`fastbench_intervention.py`); width = sum of the two finger joint
+displacements, ceiling 0.080 m.
+
+**Result, n=9 at 0.01 m (4 success / 5 failure):** failures end with the jaw at **0.0773-0.0795**
+(fully open); successes end at 0.0536-0.0772. Both groups reach 0.0799 at some point (the gripper opens
+to approach), so max width is not the discriminator — end width is.
+
+**Conclusion:** the release command reaches the actuator. Not a control-path bug. The failure is
+geometric: released at 0.18-0.20 m, object left 9-13 mm from the basket centre and 4-11 cm too high.
+What it rests on needs contact state, which is still not recorded.
+
+**Bonus:** independent confirmation of the sign convention. Commanding -1 moved the jaw 0.0625 -> 0.0715
+in the control canary, so `-1 => open` is now measured, not just read from a docstring.
+
+**Artifacts:** `evidence/gate14j_fingers.md`, `results/gate13_g14j10` (seeds 1-2),
+`results/gate13_g14j10b` (seed 3), `results/gate13_g14jcanary` (control + sign check).
+
+**Note:** the gripper field only exists in runs made after this change; earlier runs must be re-run to
+gain it.

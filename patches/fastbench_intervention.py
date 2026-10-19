@@ -371,6 +371,26 @@ def snapshot_state(env: Any, body_names: Optional[Sequence[str]] = None) -> dict
     except Exception as exc:  # pragma: no cover - defensive
         out["eef_error"] = repr(exc)
 
+    # --- gripper fingers (physical, not commanded) ---
+    # Gate 14J: the action records what the policy *asked* the gripper to do; the
+    # finger joints record what it *did*. Without this the "does it open?" question
+    # cannot be settled, because the actuator ramps at 0.01/step and a commanded
+    # open takes many steps to complete.
+    try:
+        jnames = list(getattr(sim.model, "joint_names", []) or [])
+        fingers = [j for j in jnames if "finger" in j]
+        qs, width = [], 0.0
+        for j in fingers:
+            jid = sim.model.joint_name2id(j)
+            adr = int(sim.model.jnt_qposadr[jid])
+            q = float(sim.data.qpos[adr])
+            qs.append(q)
+            width += abs(q)
+        if qs:
+            out["gripper"] = {"joints": fingers, "qpos": qs, "width": width}
+    except Exception as exc:  # pragma: no cover - defensive
+        out["gripper_error"] = repr(exc)
+
     # --- movable objects ---
     bodies = list(body_names) if body_names is not None else list_object_bodies(env)
     for b in bodies:

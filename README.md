@@ -66,9 +66,16 @@ open precedes the episode's last real downward command. Among episodes where the
 gripper, control separates at 0.108 m and failures at 0.178 m — **7 cm too high**. So the policy
 releases first and descends never, rather than descending and failing to release.
 
-The sign convention matters here and is checked against the vendored controller
-(`panda_gripper.py`: `-1 => open`, `1 => closed`). Reading it backwards inverts this result, and the
-first two traces I inspected each supported the opposite reading.
+The sign convention matters here and is checked twice — against the vendored controller
+(`panda_gripper.py`: `-1 => open`, `1 => closed`) and, independently, against the physical finger width:
+commanding −1 moves the jaw from 0.0625 to 0.0715 m.
+
+**And the release really happens** (Gate 14J). Adding finger joint positions to the per-step state
+settles the last ambiguity: in all 5 failures at 0.01 m the jaw ends at 0.0773–0.0795 m against a
+0.080 m ceiling — fully open. So the command reaches the actuator; this is not a control-path bug. The
+policy opens the gripper at 0.18–0.20 m and the object is left there, 9–13 mm from the basket centre in
+xy and 4–11 cm above the control placement height. The remaining question is purely geometric: what
+the object comes to rest on, which needs contact state that is still not recorded.
 
 What is still specific to the video pathway is predicted-future fidelity: a mid-chunk strike costs a
 fixed ≈4.4 dB of PSNR at lag ≥ 4, and that damage does not grow with the replan horizon either.
