@@ -10,10 +10,12 @@ python scripts_setup/gate14_summary.py --write
 The headline: a mid-carry displacement costs success, and the cost survives every
 manipulation that removes the two obvious explanations (future-aware inference, stale
 execution). What is left is a shallow corrective response that commands the release and
-then stops descending, leaving the object carried. See
+then stops descending, leaving the object carried. Gate 14L then asks whether the
+future-aware advantage scales with commitment in the approach regime, and finds it does
+not. See
 `evidence/gate14_wam_specificity.md`, `gate14e_zero_stale.md`,
 `gate14g_magnitude.md`, `gate14h_geometry.md`, `gate14i_release.md`, `gate14j_fingers.md`,
-`gate14k_contacts.md`.
+`gate14k_contacts.md`, `gate14L_horizon.md`.
 
 | gate | manipulation | result | test | source |
 |---|---|---|---|---|
@@ -43,6 +45,24 @@ comparison to test. Numbers below are recomputed from the records.
   steps, and **7 of 8** show left-finger contact only with the right
   finger never touching it. The object is carried, not placed. See
   `evidence/gate14k_contacts.md`.
+
+## Gate 14L — horizon scaling (approach regime, n=18 per cell)
+
+Strike at env step 40 (pre-grasp), 800-step budget, no `--zero-stale`.
+H controls only `pending_actions = action_chunk[:H]`; conditioning is fixed.
+
+| H | idm disturb | ff disturb | gap (idm-ff) | Fisher p |
+|---|---|---|---|---|
+| 1 | 12/18 | 5/18 | +0.39 | 0.0437 |
+| 2 | 12/18 | 11/18 | +0.06 | 1.0000 |
+| 5 | 17/18 | 12/18 | +0.28 | 0.0877 |
+| 10 | 15/18 | 17/18 | -0.11 | 0.6026 |
+
+Pooled over horizons: idm 56/72 vs first_frame 45/72, Fisher p=0.0680.
+
+The gap has no monotone ordering (+0.39, +0.06, +0.28, -0.11) and the pooled test is
+not significant, so the pre-registered prediction that commitment would amplify the
+future-aware advantage is **refuted**. See `evidence/gate14L_horizon.md`.
 
 Note: gates 14D/14E use n=6 (one strike, single cell). Gate 14G/14H/14-I use n=9 per
 magnitude. Per-cell tests on n=6 are underpowered; the pooled tests carry the claims.

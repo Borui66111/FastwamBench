@@ -670,3 +670,42 @@ success from failure — only height does. And `state.bodies` is unordered: taki
 returned the **floor**, silently reporting `z=0.000`. Select the manipulated body by name.
 
 **Note:** the contacts field only exists in runs made after this change (`g14k9*`).
+
+## Gate 14L — commitment horizon does not amplify the future-aware advantage (2026-10-21, COMPLETE, REFUTED)
+
+Pre-registered in `evidence/gate14L_prereg.md` (commit `cc75fa9`) before the sweep finished.
+
+**Design.** Approach regime (`libero_object:0`, strike at env step 40, repeats every 10 x4, 0.01 m,
+800-step budget, no `--zero-stale`), H in {1,2,5,10}, both pathways, n=18 per cell (seeds 1-6 x 3
+trials). Runs `results/gate13_g14L_{idm,ff}_H{1,2,5,10}`.
+
+**Result: the predicted dose-response is refuted.** Disturb success, idm vs first_frame:
+
+| H | idm | ff | gap | Fisher p |
+|---|-----|----|-----|----------|
+| 1 | 12/18 | 5/18 | +0.39 | 0.0437 |
+| 2 | 12/18 | 11/18 | +0.06 | 1.0000 |
+| 5 | 17/18 | 12/18 | +0.28 | 0.0877 |
+| 10 | 15/18 | 17/18 | -0.11 | 0.6026 |
+
+Pooled 56/72 vs 45/72, p=0.0680 (not significant). The gap oscillates with no ordering; the
+pre-registered predictions P2 (non-decreasing) and P3 (H=10 > H=1) both fail, P3 with the wrong
+sign.
+
+**A correction made mid-run, and why.** The pre-registration originally claimed `replan_steps`
+also set the number of future frames the IDM scores, making H a confound. That was **wrong**:
+`_get_num_video_frames` reads `data.train.num_frames`, and H controls only
+`pending_actions = action_chunk[:replan_steps]` (line 744). P1 was withdrawn in commit `0029bde`
+while the `idm` half was still running and before any paired number existed. Consequence: this
+gate isolates *execution commitment* cleanly, and cannot support any claim about conditioning.
+
+**What it does not show.** No overall `idm` advantage (pooled p=0.068, and the H=1 cell does not
+survive correction for four comparisons); no mechanism for the non-monotone shape; nothing about
+the carry regime, where the earlier null was flat at all horizons — that discrepancy is real and
+is not smoothed over. Main confound: `idm` and `first_frame` are different model classes
+(`FastWAMIDM` vs `FastWAM`), so conditioning is not the only difference between them.
+
+**Recorded during this gate:** the first draft of `gate14L_horizon.md` contained numbers I had
+written from memory rather than from the output; the mismatch was caught by
+`scripts_setup/gate14L_verify.py`, which now machine-checks every count in the doc against the
+records. Always run it before quoting this gate.

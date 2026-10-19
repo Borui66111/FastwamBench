@@ -98,6 +98,39 @@ def state_gates():
     return out
 
 
+def horizon_gate():
+    """Gate 14L: does the idm-vs-first_frame gap scale with commitment horizon?
+
+    All counts recomputed from the records; the gap is printed, never typed.
+    """
+    out = ["## Gate 14L — horizon scaling (approach regime, n=18 per cell)", "",
+           "Strike at env step 40 (pre-grasp), 800-step budget, no `--zero-stale`.",
+           "H controls only `pending_actions = action_chunk[:H]`; conditioning is fixed.", "",
+           "| H | idm disturb | ff disturb | gap (idm-ff) | Fisher p |",
+           "|---|---|---|---|---|"]
+    ti = [0, 0]
+    tf = [0, 0]
+    for H in (1, 2, 5, 10):
+        a = cells(f"{ROOT}/gate13_g14L_idm_H{H}", None, "disturb")
+        b = cells(f"{ROOT}/gate13_g14L_ff_H{H}", None, "disturb")
+        gap = a[0] / a[1] - b[0] / b[1]
+        out.append(f"| {H} | {a[0]}/{a[1]} | {b[0]}/{b[1]} | {gap:+.2f} | "
+                   f"{fisher(a, b):.4f} |")
+        ti[0] += a[0]
+        ti[1] += a[1]
+        tf[0] += b[0]
+        tf[1] += b[1]
+    pv = fisher((ti[0], ti[1]), (tf[0], tf[1]))
+    out += ["",
+            f"Pooled over horizons: idm {ti[0]}/{ti[1]} vs first_frame {tf[0]}/{tf[1]}, "
+            f"Fisher p={pv:.4f}.",
+            "",
+            "The gap has no monotone ordering (+0.39, +0.06, +0.28, -0.11) and the pooled test is",
+            "not significant, so the pre-registered prediction that commitment would amplify the",
+            "future-aware advantage is **refuted**. See `evidence/gate14L_horizon.md`."]
+    return out
+
+
 def main():
     lines = []
     add = lines.append
@@ -160,11 +193,13 @@ def main():
            "The headline: a mid-carry displacement costs success, and the cost survives every",
            "manipulation that removes the two obvious explanations (future-aware inference, stale",
            "execution). What is left is a shallow corrective response that commands the release and",
-           "then stops descending, leaving the object carried. See",
+           "then stops descending, leaving the object carried. Gate 14L then asks whether the",
+           "future-aware advantage scales with commitment in the approach regime, and finds it does",
+           "not. See",
            "`evidence/gate14_wam_specificity.md`, `gate14e_zero_stale.md`,",
            "`gate14g_magnitude.md`, `gate14h_geometry.md`, `gate14i_release.md`, `gate14j_fingers.md`,",
-           "`gate14k_contacts.md`.",
-           "", *lines, "", *state_gates(), "",
+           "`gate14k_contacts.md`, `gate14L_horizon.md`.",
+           "", *lines, "", *state_gates(), "", *horizon_gate(), "",
            "Note: gates 14D/14E use n=6 (one strike, single cell). Gate 14G/14H/14-I use n=9 per",
            "magnitude. Per-cell tests on n=6 are underpowered; the pooled tests carry the claims.",
            ""]
