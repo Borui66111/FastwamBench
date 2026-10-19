@@ -36,7 +36,7 @@ the outcome identical. Both "replaying a chunk planned against a world that no l
 "the fixed-horizon chunk execution" framing are **retired**: the episode fails whether the chunk is
 replayed, truncated, or never replayed.
 
-That takes the explanation away from the horizon gradient as well. Four strikes cost more than one
+That leaves the horizon gradient without an explanation too. Four strikes cost more than one
 (1/6 vs 2/6 at H=10), but one strike at H=10 costs the same as the four-strike H=1 cell (2/6), and
 stale-action count — the obvious candidate — is inert. The gradient is real and measured; its
 mechanism is **unexplained**, and it should not be restated as "commitment compounds with horizon".
