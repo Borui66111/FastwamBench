@@ -570,7 +570,8 @@ damage, but "flat" and "sublinear" are different claims and only the second surv
 Also: **40 mm is 1/9, not 0/9.** The largest displacement is near-impossible, not impossible — the
 README no longer says 0/6.
 
-**14H at n=9:** success heights 0.1142 / 0.1244 / 0.1276 / 0.1136 / 0.1165 (control 0.1145);
+**14H at n=9:** success heights 0.1142 / 0.1244 / 0.1276 / 0.1136 / 0.1165 (control 0.1126; success
+mean 0.1202 vs control, MWU p=0.29);
 failure heights 0.1799 / 0.2023 / 0.2028 at 10/20/40 mm; among failures rho=+0.606 (p=0.0028);
 success vs failure 0.1202 vs 0.1898 (MWU p=1.4e-6); 14/22 failures still rising at timeout.
 22 failures = 20 held-high + 2 lost-far (5 mm seed1 ep0, 40 mm seed1 ep1).

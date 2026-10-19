@@ -49,7 +49,8 @@ is far shallower than the damage.
 
 **And the shortfall is specifically in the placement, not the approach** (Gate 14H). Measuring the
 object itself from the same records: successful episodes end at a **fixed** height — 0.114–0.128 m
-across a 20× magnitude change, indistinguishable from control's 0.1145 — while failures are left
+across a 20× magnitude change, against control's 0.1126 (successes 0.1202, Mann-Whitney p=0.29) — while
+failures are left
 **above** the basket at 0.180 → 0.202 → 0.203 m for 10/20/40 mm (among failures rho=+0.61, p=0.0028).
 The horizontal part works: minimum xy distance to the basket is under 0.03 m even at 10 and 20 mm,
 where success is 4/9 and 1/9 — those failures end 9 and 13 mm from the basket centre, inside the

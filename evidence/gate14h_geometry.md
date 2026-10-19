@@ -28,18 +28,19 @@ mag_mm   succ   z_end|succ   z_end|fail   d_end|succ   d_end|fail
     40    1/9       0.1165       0.2028       0.0077       0.0639
 ```
 
-control: 9/9, z_end 0.1145, d_end 0.0161.
+control: 9/9, z_end 0.1126, d_end 0.0165.
 
 Three things fall out.
 
 **1. Successful episodes end at a fixed height, whatever the strike.** 0.1142, 0.1244, 0.1276, 0.1136,
-0.1165 m — a 14 mm spread across a 20× change in magnitude, centred on the control's 0.1145. A
+0.1165 m — a 14 mm spread across a 20× change in magnitude, against a control mean of 0.1126 (the
+success mean is 0.1202; Mann-Whitney p=0.29, so no detectable difference). A
 successful place has one signature and the strike does not shift it, including the single success at
 40 mm (0.1165, inside the control band). So a strike does not degrade the quality of a success; it
 converts episodes into a different terminal state.
 
 **2. Failures are left above the basket, and how high scales with the strike.** 0.1799 → 0.2023 →
-0.2028 m at 10 / 20 / 40 mm, against a control placement band of 0.096–0.136 m: 4–11 cm too high.
+0.2028 m at 10 / 20 / 40 mm, against a control placement band of 0.095–0.136 m: 4–11 cm too high.
 Among failures only, z_end vs magnitude gives Spearman **rho=+0.606, p=0.0028** (n=22); pooling
 successes and failures gives **rho=+0.651, p=1.3e-6** (n=45). Success vs failure heights:
 **0.1202 vs 0.1898, Mann-Whitney p=1.4e-6**.
