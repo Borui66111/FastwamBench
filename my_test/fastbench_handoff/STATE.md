@@ -653,11 +653,12 @@ penetration depth). Runs `results/gate13_g14k9` (seeds 1-3) and `_g14k9b` (seeds
 7 success / 8 failure.
 
 **Result.** 14-I inferred that the release is commanded early so the object lands on the basket. It
-does not: in **6 of 8 failures the object is still attached to the gripper at the end**, a fixed
+does not: in **7 of 8 failures the object is still attached to the gripper at the end**, a fixed
 ~6 mm below the eef, with penetration up to **9.4 mm into the left finger** and the right finger
-**never** touching it — and `obj_basket` is **0 in the last 40 steps of 6 of the 8 failures** (the
-seventh is the one that falls to the floor, `z=0.038`; the eighth never leaves the hand either but sits
-at 0.205 m). The object never reaches the basket in the failure mode that matters.
+**never** touching it. `obj_basket` is **0 in the last 40 steps of those same 7 failures** — the
+object never gets close enough to touch the basket. The eighth failure is the opposite case: it falls
+to the floor (`z=0.038`) and is the only one with basket contacts (80) and no finger contact at all.
+So the dominant failure mode is a carried object, not a misplaced one.
 
 **What survives from 14-I.** The jaw does open (14J: 0.077-0.080 of 0.080) and the ordering result
 stands. The correction is to the inference: the policy stops descending, so opening the jaw changes

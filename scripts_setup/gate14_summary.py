@@ -5,6 +5,8 @@ import sys
 
 from scipy.stats import fisher_exact
 
+import gate14k_contacts
+
 ROOT = "results"
 
 
@@ -53,6 +55,47 @@ def row(gate, manipulation, a, b, labels, src):
     p = fisher(a, b)
     return (f"| {gate} | {manipulation} | {labels[0]} {k1}/{n1} vs {labels[1]} "
             f"{k2}/{n2} | p={p:.4f} | `{src}` |")
+
+
+def state_gates():
+    """14J/14K are state measurements, so they get prose rows, not a 2x2 test."""
+    out = ["## State measurements (14J, 14K)", "",
+           "These answer 'what did the actuator and the contacts do', so there is no success-rate",
+           "comparison to test. Numbers below are recomputed from the records.",
+           ""]
+    # 14J: finger width at the end of each episode.
+    wok, wno = [], []
+    for run in ("results/gate13_g14j10", "results/gate13_g14j10b"):
+        for p in glob.glob(os.path.join(run, "**", "records.jsonl"), recursive=True):
+            by, end = gate14k_contacts.episodes(p)
+            for e, steps in by.items():
+                w = (steps[-1].get("state", {}).get("gripper", {}) or {}).get("width")
+                if w is None or e not in end:
+                    continue
+                (wok if end[e].get("success") else wno).append(w)
+    if wno:
+        out += [f"- **14J** (n={len(wok) + len(wno)}: {len(wok)} success / {len(wno)} failure): "
+                f"finger width at the last step is",
+                f"  **{min(wno):.4f}-{max(wno):.4f} m** in failures against a 0.080 m ceiling, so the "
+                "release command",
+                "  reaches the actuator. Width is not the discriminator - both groups reach the",
+                "  ceiling at some point, because the gripper opens to approach. See",
+                "  `evidence/gate14j_fingers.md`."]
+    # 14K: contacts in the last 40 steps.
+    rows = []
+    for run in ("results/gate13_g14k9", "results/gate13_g14k9b"):
+        rows += gate14k_contacts.main([run], save=False)
+    no = [r for r in rows if not r["success"]]
+    ok = [r for r in rows if r["success"]]
+    if no:
+        nb = sum(1 for r in no if r["basket"] == 0)
+        nl = sum(1 for r in no if r["left"] > 0 and r["right"] == 0)
+        out += [f"- **14K** (n={len(rows)}: {len(ok)} success / {len(no)} failure): in **{nb} of "
+                f"{len(no)}** failures the object records **zero basket contacts** in the last 40",
+                f"  steps, and **{nl} of {len(no)}** show left-finger contact only with the right",
+                "  finger never touching it. The object is carried, not placed. See",
+                "  `evidence/gate14k_contacts.md`."]
+    return out
 
 
 def main():
@@ -116,10 +159,12 @@ def main():
            "", "```", "python scripts_setup/gate14_summary.py --write", "```", "",
            "The headline: a mid-carry displacement costs success, and the cost survives every",
            "manipulation that removes the two obvious explanations (future-aware inference, stale",
-           "execution). What is left is a shallow corrective response that releases the object too",
-           "high. See `evidence/gate14_wam_specificity.md`, `gate14e_zero_stale.md`,",
-           "`gate14g_magnitude.md`, `gate14h_geometry.md`, `gate14i_release.md`, `gate14j_fingers.md`.",
-           "", *lines, "",
+           "execution). What is left is a shallow corrective response that commands the release and",
+           "then stops descending, leaving the object carried. See",
+           "`evidence/gate14_wam_specificity.md`, `gate14e_zero_stale.md`,",
+           "`gate14g_magnitude.md`, `gate14h_geometry.md`, `gate14i_release.md`, `gate14j_fingers.md`,",
+           "`gate14k_contacts.md`.",
+           "", *lines, "", *state_gates(), "",
            "Note: gates 14D/14E use n=6 (one strike, single cell). Gate 14G/14H/14-I use n=9 per",
            "magnitude. Per-cell tests on n=6 are underpowered; the pooled tests carry the claims.",
            ""]

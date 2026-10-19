@@ -9,9 +9,11 @@ python scripts_setup/gate14_summary.py --write
 
 The headline: a mid-carry displacement costs success, and the cost survives every
 manipulation that removes the two obvious explanations (future-aware inference, stale
-execution). What is left is a shallow corrective response that releases the object too
-high. See `evidence/gate14_wam_specificity.md`, `gate14e_zero_stale.md`,
-`gate14g_magnitude.md`, `gate14h_geometry.md`, `gate14i_release.md`, `gate14j_fingers.md`.
+execution). What is left is a shallow corrective response that commands the release and
+then stops descending, leaving the object carried. See
+`evidence/gate14_wam_specificity.md`, `gate14e_zero_stale.md`,
+`gate14g_magnitude.md`, `gate14h_geometry.md`, `gate14i_release.md`, `gate14j_fingers.md`,
+`gate14k_contacts.md`.
 
 | gate | manipulation | result | test | source |
 |---|---|---|---|---|
@@ -26,6 +28,21 @@ high. See `evidence/gate14_wam_specificity.md`, `gate14e_zero_stale.md`,
 | 14G | single strike, zero stale, 2/5/10/20/40 mm, n=9 each | success 9/9 8/9 4/9 1/9 1/9 | Spearman rho=-0.975, p=0.0048 | `results/gate14g_response.json` |
 | 14H | object height at episode end, success vs failure | 0.118 m vs 0.190 m | Mann-Whitney p=1.4e-6 | `results/gate14h_geometry_n9.json` |
 | 14-I | gripper commanded open after the strike, success vs failure | 0.114 vs 0.719 | descriptive | `results/gate14i_release.json` |
+
+## State measurements (14J, 14K)
+
+These answer 'what did the actuator and the contacts do', so there is no success-rate
+comparison to test. Numbers below are recomputed from the records.
+
+- **14J** (n=9: 4 success / 5 failure): finger width at the last step is
+  **0.0773-0.0795 m** in failures against a 0.080 m ceiling, so the release command
+  reaches the actuator. Width is not the discriminator - both groups reach the
+  ceiling at some point, because the gripper opens to approach. See
+  `evidence/gate14j_fingers.md`.
+- **14K** (n=15: 7 success / 8 failure): in **7 of 8** failures the object records **zero basket contacts** in the last 40
+  steps, and **7 of 8** show left-finger contact only with the right
+  finger never touching it. The object is carried, not placed. See
+  `evidence/gate14k_contacts.md`.
 
 Note: gates 14D/14E use n=6 (one strike, single cell). Gate 14G/14H/14-I use n=9 per
 magnitude. Per-cell tests on n=6 are underpowered; the pooled tests carry the claims.

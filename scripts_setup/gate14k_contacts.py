@@ -71,7 +71,8 @@ def summarise(steps, end):
     }
 
 
-def main(runs):
+def main(runs, save=True):
+    """save=False when called as a library, so the JSON keeps every run, not just the last."""
     rows = []
     for run in runs:
         for p in sorted(glob.glob(os.path.join(run, "**", "records.jsonl"), recursive=True)):
@@ -98,8 +99,9 @@ def main(runs):
         print(f"  {name}: basket contacts {sum(r['basket'] for r in grp)}, "
               f"R-finger {sum(r['right'] for r in grp)}, "
               f"L-finger {sum(r['left'] for r in grp)}")
-    with open("results/gate14k_contacts.json", "w") as fh:
-        json.dump(rows, fh, indent=1)
+    if save:
+        with open("results/gate14k_contacts.json", "w") as fh:
+            json.dump(rows, fh, indent=1)
     return rows
 
 

@@ -14,9 +14,9 @@ penetration, the finger width, and how far the object sits below the eef.
 | group | n | object height at end | width at end | basket contacts | left-finger | right-finger | offset below eef |
 |---|---|---|---|---|---|---|---|
 | success | 7 | 0.112-0.137 m | 0.054-0.066 | 0-12 | 38-717 | 0-58 | -0.006 to -0.058 m |
-| failure | 8 | 0.150-0.205 m | 0.054-0.080 | **0** (6 of 8) | 120-200 | **0** | **-0.005 to -0.012 m** |
+| failure | 8 | 0.150-0.205 m | 0.054-0.080 | **0** (7 of 8) | 120-200 | **0** | **-0.005 to -0.012 m** |
 
-The offset column is the discriminator. In 6 of 8 failures the object sits a **fixed 5-12 mm below
+The offset column is the discriminator. In 7 of 8 failures the object sits a **fixed 5-12 mm below
 the eef** — it is still being carried. In the successes that work, the object has fallen 3.8-5.8 cm
 below the eef, i.e. it left the hand and dropped into the basket. The two successes that end at
 0.136-0.137 m with a 6-7 mm offset are placements: the object was lowered to placement height and is
@@ -25,7 +25,7 @@ still held when the episode ends, which the task counts as success.
 ## What this changes about Gate 14-I
 
 14-I said the policy "commands the release too early and stops commanding descent", and inferred the
-object was placed on the basket rim. Contact refutes the rim reading: in 6 of 8 failures the object
+object was placed on the basket rim. Contact refutes the rim reading: in 7 of 8 failures the object
 touches the basket **zero** times. It never gets close enough.
 
 The ordering result from 14-I stands — failures open the jaw before their last downward command — but

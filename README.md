@@ -69,9 +69,9 @@ gripper, control separates at 0.108 m and failures at 0.178 m — **7 cm too hig
 releases first and descends never, rather than descending and failing to release.
 
 **But the object does not actually leave the hand** (Gate 14K). Recording contact state settles what
-14-I could only infer. In 6 of 8 failures the object is still attached to the gripper at the end —
+14-I could only infer. In 7 of 8 failures the object is still attached to the gripper at the end —
 a fixed 6 mm below the eef, pressed ~9 mm into the *left* finger, with the right finger never touching
-it — and it never contacts the basket at all. The jaw does open (0.077–0.080 of 0.080, Gate 14J), but
+it — and those same 7 never contact the basket at all. The jaw does open (0.077–0.080 of 0.080, Gate 14J), but
 the object stays with the hand because the hand stops descending. Successes differ in the object's
 height, not in whether it is held: they either deliver it to 0.13 m still in the gripper, or it falls
 4–6 cm below the eef. So the failure is **a failure to descend, not a failure to release** — and the
