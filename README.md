@@ -9,7 +9,9 @@ execute an open-loop action chunk?*
 
 ## Bottom line (read this first)
 
-Every gate below (A–D, 7–14) is reproducible from this repo:
+Every gate below (A–D, 7–14) is reproducible from this repo. For the Gate 14 family, one table with
+every number regenerated from the records: **`evidence/RESULTS.md`**
+(`python scripts_setup/gate14_summary.py --write`).
 
 - **A single mid-chunk world displacement is harmless where the stale actions are not load-bearing.**
   In the approach phase it costs nothing measurable: 12/12 vs 11/12 (Fisher p=1.0), twice replicated.
@@ -60,7 +62,7 @@ the budget runs out.
 
 **The sequence is inverted** (Gate 14-I). Measuring the executed action from the same records: control
 keeps the gripper closed and commands the object down at −0.20 per step until it is at 0.10–0.13 m,
-opening only in its final steps. The disturbed policy commands the gripper **open for 74% of the
+opening only in its final steps. The disturbed policy commands the gripper **open for 72% of the
 remaining episode** (against 11% for control), and in all 21 failures with a detectable release that
 open precedes the episode's last real downward command. Among episodes where the object does leave the
 gripper, control separates at 0.108 m and failures at 0.178 m — **7 cm too high**. So the policy

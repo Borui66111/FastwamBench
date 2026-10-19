@@ -597,10 +597,10 @@ traces that each seemed to support the opposite; the vendored docstring is the a
 backwards inverts the entire result.
 
 **Result (n=9/magnitude, grouped by outcome):**
-- gripper commanded open: **0.741** of post-strike steps for failures vs **0.114** for successes
+- gripper commanded open: **0.719** of post-strike steps for failures vs **0.114** for successes
 - last 40 steps: grip +0.55 (closed) for successes vs -1.00 (open) for failures
 - commanded dz last 40: **-0.198** (descending) vs **+0.020** (not descending)
-- object height at end: 0.119 m vs 0.205 m
+- object height at end: 0.118 m vs 0.190 m (pooled over magnitudes; the 40 mm cell alone is 0.203)
 - separation height: 0.108 m (n=19) vs 0.178 m (n=9) — 7 cm too high
 
 **Ordering (the key claim, verified):** in **21/21** failures with a detectable release, the first open

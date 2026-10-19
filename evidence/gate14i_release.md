@@ -15,19 +15,19 @@ authority.
 
 Grouped by outcome across all five magnitudes:
 
-| quantity (median) | success (n=32) | failure (n=22) |
+| quantity (mean over episodes) | success (n=32) | failure (n=22) |
 |---|---|---|
-| fraction of post-strike steps commanding **open** | **0.114** | **0.741** |
+| fraction of post-strike steps commanding **open** | **0.114** | **0.719** |
 | gripper command, last 40 steps | +0.55 (closed) | **−1.00 (open)** |
 | commanded vertical motion, last 40 steps | **−0.198** (descending) | **+0.020** (not descending) |
 | object vertical motion, last 40 steps | −3.9 mm/step | +0.1 mm/step |
-| object height at episode end | 0.119 m | 0.205 m |
+| object height at episode end | 0.118 m | 0.190 m |
 | object height when it leaves the gripper | 0.108 m (n=19) | 0.178 m (n=9) |
 
 Three things follow.
 
 **1. The failures open the gripper, and they open it early.** Not "the policy forgets to release" —
-it commands the gripper open for 74% of the remaining episode, against 11% for successes, which open
+it commands the gripper open for 72% of the remaining episode, against 11% for successes, which open
 only in their final steps.
 
 **2. They open it *before* any sustained descent, not after.** In all 21 failures with a detectable
