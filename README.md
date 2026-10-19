@@ -41,20 +41,21 @@ That takes the explanation away from the horizon gradient as well. Four strikes 
 stale-action count — the obvious candidate — is inert. The gradient is real and measured; its
 mechanism is **unexplained**, and it should not be restated as "commitment compounds with horizon".
 
-**What does explain the cost is a bounded corrective response** (Gate 14G). Sweeping the displacement
-from 2 mm to 40 mm with one strike: success falls monotonically 6/6 → 5/6 → 2/6 → 1/6 → **0/6**
-(rho = −1.000; 2 vs 40 mm p=0.0022), while the policy's mean change of plan rises 69% from 2 mm to
-5 mm and then **stops growing** — a further 4× displacement buys −1.5%. The model responds, and its
-response is capped; the error is not.
+**What does explain the cost is a corrective response that grows far too slowly** (Gate 14G). Sweeping
+the displacement from 2 mm to 40 mm with one strike, n=9 per magnitude: success falls 9/9 → 8/9 → 4/9
+→ 1/9 → **1/9** (rho = −0.975; 2 vs 40 mm p=4.1e-4), while the policy's mean change of plan grows as
+roughly **m^0.22** — 20× the displacement buys **2.1×** the response. The model responds; the response
+is far shallower than the damage.
 
-**And the cap is specifically in the placement, not the approach** (Gate 14H). Measuring the object
-itself from the same records: successful episodes end at a **fixed** height — 0.1136–0.1206 m across
-a 20× magnitude change, indistinguishable from control's 0.1145 — while failures are left **above**
-the basket at 0.174 → 0.196 → 0.202 m for 10/20/40 mm (among failures rho=+0.73, p=0.0014). The
-horizontal part works: minimum xy distance to the basket is under 0.03 m even at 10 and 20 mm, where
-success is 2/6 and 1/6. So the object is delivered to the basket and not put in it. That is not a
-timeout: over the last 40 steps the height slope is median +0.12 mm/step and **11 of 16 failures are
-still rising** when the budget runs out.
+**And the shortfall is specifically in the placement, not the approach** (Gate 14H). Measuring the
+object itself from the same records: successful episodes end at a **fixed** height — 0.114–0.128 m
+across a 20× magnitude change, indistinguishable from control's 0.1145 — while failures are left
+**above** the basket at 0.180 → 0.202 → 0.203 m for 10/20/40 mm (among failures rho=+0.61, p=0.0028).
+The horizontal part works: minimum xy distance to the basket is under 0.03 m even at 10 and 20 mm,
+where success is 4/9 and 1/9 — those failures end 9 and 13 mm from the basket centre, inside the
+footprint. So the object is delivered to the basket and not put in it. That is not a timeout: over the
+last 40 steps the height slope is median +0.12 mm/step and **14 of 22 failures are still rising** when
+the budget runs out.
 
 What is still specific to the video pathway is predicted-future fidelity: a mid-chunk strike costs a
 fixed ≈4.4 dB of PSNR at lag ≥ 4, and that damage does not grow with the replan horizon either.
@@ -398,8 +399,8 @@ p=1.000, 0.005 vs 0.02 m p=0.245, 0.01 vs 0.02 m p=0.515.
 
 That null is a **floor effect, not an absence of magnitude dependence**. Four strikes already pin the
 cell near the floor by 5 mm, so there is no room for a gradient. The single-strike design (Gate 14G)
-starts at 6/6 and does show one: 6/6 → 5/6 → 2/6 → 1/6 → 0/6 across 2/5/10/20/40 mm (rho = -1.000,
-2 vs 40 mm p=0.0022). So: **repeated strikes saturate the damage; magnitude still matters underneath.**
+starts at 9/9 and does show one: 9/9 → 8/9 → 4/9 → 1/9 → 1/9 across 2/5/10/20/40 mm (rho = −0.975,
+2 vs 40 mm p=4.1e-4). So: **repeated strikes saturate the damage; magnitude still matters underneath.**
 Pooled over horizon
 (legitimate because the horizon contrast is null), against control: 0.005 m **4/12, Fisher p=0.0013**;
 0.01 m **3/12, p=0.0003**; 0.02 m **0/6, p=0.0022**.
@@ -559,7 +560,8 @@ WAM-vs-VLA claim. The current task is 0% success in both arms, so it cannot yiel
 > stale window is a property of the execution protocol. It is **not** the repo's conclusion about what
 > *costs success* — that was tested later and did not hold up. Gates 14D/14E show the success cost is
 > not carried by stale execution (10, 1 and 0 stale actions all give 2/6), and Gate 14G attributes it
-> to a **capped corrective response**, which Gate 14H localises to the final placement: the object
+> to a **corrective response that grows only as m^0.22**, which Gate 14H localises to the final
+> placement: the object
 > reaches the basket in xy and stalls above it. Read the H3 section for the divergence measurement,
 > not for the cost claim.
 

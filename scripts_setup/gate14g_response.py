@@ -123,6 +123,9 @@ def main():
             "n": len(eps),
             "success": succ,
             "zero_stale_episodes": sum(1 for e in eps if e["zero_stale"] > 0),
+            # seeds this cell actually ran, so a figure title can state them
+            # instead of falling back to a guess.
+            "seeds": sorted({e["seed"] for e in eps if e.get("seed") is not None}),
             "paired": len(deltas),
             "chunk_delta_mean": float(np.mean(deltas)) if deltas else None,
             # per-episode values: the figure plots these so the reader can see

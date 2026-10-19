@@ -228,7 +228,7 @@ with:
 | tasks | 2–3 | 2 (`libero_object:0`, `libero_spatial:0`) | met |
 | disturbance levels | 3 | 5 magnitudes (2/5/10/20/40 mm) + 2 regimes (approach / carry) | met |
 | inference conditions | 2 | 2 (`idm`, `first_frame`) | met |
-| paired seeds | 10–20 | 6 per cell (2 seeds × 3 trials) | **short** — per-cell tests underpowered, pooled tests significant |
+| paired seeds | 10–20 | 9 per magnitude cell on the single-strike sweep (3 seeds × 3 trials); 6 per cell elsewhere | **short** on the Gate 13 cells; the Gate 14G/14H sweep is at 9 and per-cell tests are now significant |
 | (1) success/recovery heatmap | required | `evidence/gate14_matrix.png` (`scripts_setup/gate14_heatmap.py`) | met |
 | (2) horizon vs stale execution | required | `evidence/gate13_commitment_cost.png` | met |
 | (3) plan divergence | required | `evidence/gate13_psnr_*.png` (≈−4.4 dB) | met |

@@ -1,106 +1,105 @@
-# Gate 14G — the corrective response plateaus while the damage keeps growing
+# Gate 14G — the corrective response grows sublinearly while success collapses
 
-STATUS: **COMPLETE (2026-10-19).** Single strike, zero stale actions, five magnitudes. Success falls
-monotonically to 0/6 while the policy's mean corrective response stops growing after 5 mm.
+STATUS: **COMPLETE (2026-10-19), n=9 per magnitude.** Supersedes the n=6 pilot of the same design,
+which read the response as a plateau after 5 mm; the wider replication does not support that reading.
+The pilot's numbers are kept below so the change is auditable.
 
 ## Question
 
-Gates 14D/14E/14F left one reading open. A 10 mm strike costs the episode, the policy measurably
-reacts (max |delta| 0.0998 at the strike), and yet the outcome is unchanged whether the stale chunk is
-replayed or never executed. Two explanations survive that pattern:
+Gate 14D/14E/14F showed the success cost is not carried by stale execution, and 14F showed the model
+does respond to the strike (plan changes by up to 0.0998 at the strike step). So the cost has to be in
+*how much* it responds. This gate measures the size of the response as a function of the size of the
+displacement.
 
-1. **Magnitude** — 0.10 normalized units is simply too small a correction for the error it faces.
-2. **Ceiling** — the policy's correction is *capped*, and the cap does not scale with the error.
+## Setup
 
-These make different predictions about a magnitude sweep. Under (1) the response should keep growing
-with displacement; under (2) it should flatten while success keeps falling.
+`libero_object:0`, H=10, **one** grasp-relative strike at the detected lift (+0.02 m), **zero stale
+actions** (strike applied before the policy query, observation refreshed), **n=9 per magnitude**
+(seeds 1,2,3 × 3 trials), 5 magnitudes plus a no-strike control.
 
-## Design
+The response is the change in the planned action chunk at the strike step, comparing the zero-stale
+run (planned from the post-strike observation) with the control run at the same seed, trial, and
+replan step. Both arms dump every chunk.
 
-`libero_object:0`, H=10, one grasp-relative strike (`--world-trigger-after-lift 0.02`,
-`--world-repeat-count 1`), **zero-stale arm** (strike applied before the policy query, observation
-refreshed — Gate 14E), seeds 1–2, 3 trials each, **n=6 per magnitude**.
-
-Magnitudes: 2, 5, 10, 20, 40 mm. Control: 6/6 (no strike), same seeds and horizon.
-
-Response metric: for each disturb episode, the change in the planned chunk at the strike step relative
-to the control episode of the same seed/trial —
-`mean_j |chunk_disturb[j] - chunk_control[j]|` over the first 10 actions, plus the max over them.
-Both runs are bit-identical before the strike (verified in Gate 14F), so this is a clean paired
-comparison.
-
-Reproduce:
-
-```bash
-bash scripts_setup/gate14g_sweep.sh 5 ctl 0.002 0.01
-bash scripts_setup/gate14g_sweep.sh 7 0.005 0.02 0.04
-python scripts_setup/gate14g_response.py --ctl results/gate13_g14gctl \
-    --runs results/gate13_g14gm0002 results/gate13_g14gm0005 \
-           results/gate13_g14gm001 results/gate13_g14gm002 results/gate13_g14gm004 \
-    --dumpdir /tmp --json results/gate14g_response.json
-python scripts_setup/gate14g_figure.py     # -> evidence/gate14g_magnitude.png
-```
+**Reproducibility check.** All 36 seed-1,2 episodes reproduce the n=6 pilot **exactly** — same success
+flag, same step count — so the harness is deterministic and the n=9 data is the n=6 data plus seed 3.
 
 ## Result
 
-| magnitude | success | mean \|delta\| | max \|delta\| |
-|---|---|---|---|
-| 2 mm | **6/6** | 0.0611 | 0.0989 |
-| 5 mm | **5/6** | 0.1031 | 0.1735 |
-| 10 mm | **2/6** | 0.1125 | 0.2193 |
-| 20 mm | **1/6** | 0.1041 | 0.1410 |
-| 40 mm | **0/6** | 0.1109 | 0.1758 |
+```
+ magnitude    succ  zero-stale  paired   mean|d|      95% CI (bootstrap)   max|d|
+     2.0mm   9/9             9       9   0.0556   [0.0405, 0.0715]        0.0989
+     5.0mm   8/9             9       9   0.0901   [0.0707, 0.1148]        0.1735
+    10.0mm   4/9             9       9   0.1026   [0.0849, 0.1331]        0.2193
+    20.0mm   1/9             9       9   0.0998   [0.0863, 0.1147]        0.1410
+    40.0mm   1/9             9       9   0.1160   [0.0904, 0.1422]        0.1758
+```
 
-**Success is perfectly monotone in magnitude**: Spearman rho = -1.000 over the five cells
-(n=6 each). 2 mm vs 40 mm: 6/6 vs 0/6, Fisher **p=0.0022**. 5 mm vs 40 mm: 5/6 vs 0/6, **p=0.0152**.
-2 mm vs 10 mm: 6/6 vs 2/6, p=0.061 (not significant at n=6 — the curve is resolved by its endpoints,
-not by every adjacent pair).
+control: 9/9.
 
-**The response plateaus.** Mean |delta| rises **+68.7%** from 2 mm to 5 mm, then **+9.2%** from 5 to
-10 mm, and **-1.5%** from 10 to 40 mm — a further **4x** increase in displacement buys no additional
-mean correction. Per-episode dots in the figure show the spread; there is a low outlier at 2 mm
-(~0.034) that pulls that cell's mean down, so the 2->5 mm jump is partly between-episode variance
-rather than a clean within-episode dose-response.
+**Success collapses.** 9/9 → 8/9 → 4/9 → 1/9 → 1/9. Spearman **rho=−0.975, p=0.0048**; 2 vs 40 mm
+Fisher **p=4.1e-4**; 2 vs 10 mm **p=0.029**. Note 40 mm is **1/9, not 0/9** — the largest displacement
+is not impossible, it is close to it.
 
-## Interpretation
+**The response grows sublinearly.** A 20× increase in displacement (2→40 mm) buys a **2.09×** increase
+in the mean response, i.e. the response scales as roughly **m^0.22**. From 5 mm to 40 mm — 8× the
+displacement — the response grows only **1.29×**.
 
-**Ceiling, not magnitude.** The policy's corrective authority saturates at roughly 0.10–0.11 mean
-|delta| (max ~0.14–0.22) once the object is displaced by 5 mm or more. Success keeps falling to 0/6
-across the same range. The failure is therefore not "the model did not notice" (14F) and not "the
-model replayed stale actions" (14D/14E): it is that the correction the model produces is bounded and
-the residual geometric error is not.
+**So the two curves are qualitatively different.** Success is a near-step function of magnitude; the
+corrective response is a shallow power law. Between 10 and 40 mm the displacement quadruples, the
+response grows 13%, and success falls from 4/9 to 1/9.
 
-This is a statement about *this* policy on *this* task, not about world models in general: a controller
-whose correction is capped will fail once the error exceeds the cap, regardless of how it infers
-actions.
+## Correction to the n=6 pilot
 
-## Reconciliation with Gate 13D
+The n=6 run gave 6/6, 5/6, 2/6, 1/6, 0/6 with means 0.0611, 0.1031, 0.1125, 0.1041, 0.1109, which I
+read as "+69% from 2→5 mm, then flat to 40 mm" and titled a figure "the MEAN corrective response
+plateaus after 5 mm". At n=9 the 20 mm dip is within noise and the 40 mm mean is 13% above the 10 mm
+mean, so **"plateau" is not supportable**. The honest statement is a power law with exponent ≈0.22,
+and the figures now say that. The n=6 JSON is kept as `results/gate14g_response_n6.json`; the
+authoritative file is `results/gate14g_response.json`.
 
-Gate 13D reported "no measurable dose-response over 5–20 mm" (all pairwise p >= 0.245). That is not
-contradicted here — it is explained. 13D used the **repeated-strike** design (4 strikes), whose cells
-were already at or near the floor: 2/6 at 5 mm and 0/3 at 20 mm. A design pinned at the floor cannot
-show a gradient. The single-strike design starts at 6/6 and has room to fall, which is why the
-dose-response is visible.
+The two readings agree on the substantive point — the response grows far more slowly than the damage
+— but "flat" and "sublinear" are different claims and only the second survives more data.
 
-The 13D claim should therefore be read as scoped to the repeated-strike design: **repeated strikes
-saturate the damage**, and within that saturated regime magnitude is not resolvable at n=6. The
-underlying magnitude dependence is real, as this gate shows.
+## Why this is not a measurement artefact
 
-## Does establish
+- **Pre-strike internal validity.** In the paired chunk dumps the pre-strike plans are bit-identical
+  across arms (Gate 14F: max|d| = 0.00000 for 7 consecutive replans), so the difference at the strike
+  is the response and nothing else.
+- **The comparison is within-episode.** Each disturbed episode is paired with the control episode of
+  the same seed and trial, not with a pooled control mean.
+- **Per-episode spread is shown, not hidden.** The 95% intervals above are bootstrap over episodes;
+  they overlap from 5 mm upward, which is exactly why "flat" was tempting and why the power-law fit
+  is the better summary.
 
-- Success decreases monotonically with displacement magnitude across 2–40 mm in the single-strike
-  zero-stale design (6/6 -> 0/6, rho = -1.000, endpoints p=0.0022).
-- The mean corrective response grows from 2 mm to 5 mm and then stops growing: a 4x further
-  displacement produces no additional mean correction (-1.5%).
-- Therefore the failure at >=5 mm is not attributable to absent or stale response; the response is
-  present and saturated.
+## What this establishes
 
-## Does not establish
+> The policy's corrective response to a mid-carry displacement grows roughly as the 0.22 power of the
+> displacement, while task success collapses over the same range. The response is real (it is not a
+> failure to notice the strike) but far too shallow to absorb the disturbance.
 
-- **Why** the correction is capped (training distribution, action-space smoothing, or the policy's
-  limited authority over the object once grasped). The records carry no contact/grasp state.
-- That the cap is a property of world-action models in general — one policy, one task, one horizon.
-- A precise dose-response threshold: with n=6 per cell, 2 mm vs 10 mm is p=0.061; the curve is
-  established by its endpoints, not by every step.
-- That magnitude is the only variable. Displacement **direction** was fixed (away from the goal);
-  a sideways strike of the same size may cost differently.
+## What it does not establish
+
+- **Why** the response is capped. Gate 14H localises the consequence to the final descent/release
+  (the object reaches the basket in xy and stalls above it), but the cap itself is not explained by
+  these records.
+- Any WAM-vs-baseline claim: this is the `idm` pathway only.
+- The exact functional form. Five magnitudes with n=9 support "sublinear, exponent ≈0.2–0.3"; they do
+  not distinguish a power law from a saturating exponential.
+- Generality beyond `libero_object:0`.
+
+## Reproduce
+
+```bash
+# n=9 replication (seeds 1,2,3), tag prefix keeps the n=6 runs intact
+SEEDS=1,2,3 TRIALS=3 TAGPFX=g14s9 bash scripts_setup/gate14g_sweep.sh 5 ctl 0.002 0.01
+SEEDS=1,2,3 TRIALS=3 TAGPFX=g14s9 bash scripts_setup/gate14g_sweep.sh 7 0.005 0.02 0.04
+
+python scripts_setup/gate14g_response.py \
+    --ctl results/gate13_g14s9ctl \
+    --runs results/gate13_g14s9m0002 results/gate13_g14s9m0005 \
+           results/gate13_g14s9m001 results/gate13_g14s9m002 results/gate13_g14s9m004 \
+    --dumpdir /tmp --json results/gate14g_response.json
+
+python scripts_setup/gate14g_figure.py    # -> evidence/gate14g_magnitude.{png,pdf}
+```

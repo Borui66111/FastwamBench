@@ -17,8 +17,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-MAG = {"gate13_g14gctl": 0, "gate13_g14gm0002": 2, "gate13_g14gm0005": 5,
-       "gate13_g14gm001": 10, "gate13_g14gm002": 20, "gate13_g14gm004": 40}
+MAG = None  # magnitudes are read from each row; kept for backward compatibility
 
 
 def main():
@@ -28,7 +27,9 @@ def main():
     args = ap.parse_args()
 
     data = json.load(open(args.json))
-    rows = [(MAG[r["label"]], r) for r in data if r["label"] in MAG]
+    # magnitude comes from the record itself, not from the directory name
+    rows = [(round(r["magnitude_m"] * 1000), r) for r in data
+            if r.get("magnitude_m") is not None]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11.5, 4.6))
 
@@ -92,10 +93,15 @@ def main():
     ax2.grid(alpha=0.3, zorder=0, which="both")
     ax2.set_ylim(0.0008, 0.75)
 
+    # Metadata in the title is computed, never typed: a hardcoded "n=6, seeds 1-2"
+    # survived one replication and contradicted the plotted 9/9 labels.
+    nmax = max((r["n"] for _, r in rows), default=0)
+    seeds = sorted({e["seed"] for _, r in rows for e in r["episodes"]})
+    seed_s = ",".join(str(s) for s in seeds)
     fig.suptitle("Gate 14H: failures are mainly in the final placement, while the "
                  "approach usually\nreaches the basket footprint "
                  "(libero_object:0, H=10, one grasp-relative strike, zero stale "
-                 "actions, n=6 per magnitude, seeds 1-2)", fontsize=9)
+                 f"actions, n={nmax} per magnitude, seeds {seed_s})", fontsize=9)
     fig.tight_layout(rect=(0, 0, 1, 0.90))
     fig.savefig(args.out, dpi=150)
     fig.savefig(args.out.replace(".png", ".pdf"))

@@ -13,6 +13,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.stats import rankdata
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RES = os.path.join(HERE, "results", "gate14g_response.json")
@@ -38,6 +39,9 @@ def main():
     dmax = np.array([r["chunk_delta_max"] for r in rows])
     lo = np.array([wilson(k, m)[0] for k, m in zip(succ, n)])
     hi = np.array([wilson(k, m)[1] for k, m in zip(succ, n)])
+    # computed, not typed: a hardcoded -1.000 stops being true the moment one
+    # episode at the largest magnitude succeeds
+    rho = float(np.corrcoef(rankdata(mm), rankdata(succ / n))[0, 1])
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.4))
 
@@ -59,7 +63,8 @@ def main():
     ax1.set_ylabel("success rate")
     ax1.set_ylim(-0.06, 1.12)
     ax1.set_title("A. Single strike, zero stale actions: success falls\n"
-                  f"monotonically (6/6 -> 0/6, Spearman rho = -1.000)", fontsize=10)
+                  f"({' -> '.join(f'{s}/{n}' for s, n in zip(succ, n))}, "
+                  f"Spearman rho = {rho:.3f})", fontsize=10)
     ax1.grid(alpha=0.3, zorder=0)
 
     ax2.plot(mm, dmean, "o-", color="#1f6fb2", lw=1.8, ms=7, label="mean |delta|",
@@ -77,16 +82,25 @@ def main():
     ax2.set_xticklabels([f"{v:g}" for v in mm])
     ax2.set_xlabel("displacement magnitude (mm, log scale)")
     ax2.set_ylabel("change in planned chunk\n(normalized action units)")
-    ax2.set_title("B. The MEAN corrective response plateaus after 5 mm:\n"
-                  "+69% from 2->5 mm, then approximately flat", fontsize=10)
+    # Sublinear growth, quantified: the log-log slope is the exponent. At n=6 this
+    # read as a plateau after 5 mm; at n=9 the 20 mm dip is noise and the honest
+    # statement is a power law, not a plateau.
+    slope = float(np.polyfit(np.log(mm), np.log(dmean), 1)[0])
+    ratio = dmean[-1] / dmean[0]
+    ax2.set_title(f"B. The corrective response grows SUBLINEARLY:\n"
+                  f"{mm[-1] / mm[0]:.0f}x displacement -> {ratio:.2f}x response "
+                  f"(response ~ m^{slope:.2f})", fontsize=10)
     ax2.legend(fontsize=9, framealpha=0.9)
     ax2.grid(alpha=0.3)
     ax2.set_ylim(0, max(dmax) * 1.18)
 
-    fig.suptitle("Gate 14G: task damage keeps growing after the MEAN corrective "
-                 "response has plateaued\n"
+    nmax = max(n)
+    seeds = sorted({s for r in rows for s in (r.get("seeds") or [])})
+    seed_s = ",".join(str(s) for s in seeds) if seeds else "?"
+    fig.suptitle("Gate 14G: success collapses while the corrective response grows "
+                 "only sublinearly\n"
                  "(libero_object:0, H=10, one grasp-relative strike, "
-                 "n=6 episodes per magnitude, seeds 1-2)", fontsize=9)
+                 f"n={nmax} episodes per magnitude, seeds {seed_s})", fontsize=9)
     fig.tight_layout(rect=(0, 0, 1, 0.92))
     for ext in ("png", "pdf"):
         fig.savefig(f"{OUT}.{ext}", dpi=170)

@@ -161,6 +161,10 @@ def main():
             print(f"{label:>28s}  -- no episodes")
             continue
         s = summarise(eps, label)
+        # carry the magnitude in the row so consumers (the figure) never have to
+        # map a directory name back to a magnitude -- that mapping is how the
+        # 0.02-vs-0.002 tag ambiguity bit us once already.
+        s["magnitude_m"] = mag_of.get(label, 0.0)
         out.append(s)
 
         def m(key):

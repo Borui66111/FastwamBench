@@ -547,3 +547,40 @@ description of what is plotted.
 **Not established:** *why* the descent does not complete (no gripper/contact state in the
 records); generality beyond `libero_object:0`; any WAM-vs-baseline claim; the shape of the
 gradient at n=6 with two off-mode episodes.
+
+## Gate 14G/H replication to n=9 (2026-10-19)
+
+Seeds 1,2,3 x 3 trials = **9 episodes per magnitude**, tag prefix `g14s9`, original n=6 runs left
+intact. All 36 seed-1,2 episodes reproduce the n=6 run **exactly** (same success flag, same step
+count), so the harness is deterministic and the n=9 data is the n=6 data plus seed 3.
+
+**What changed: the "plateau" reading was wrong.**
+
+| | n=6 (pilot) | n=9 (authoritative) |
+|---|---|---|
+| success | 6/6, 5/6, 2/6, 1/6, **0/6** | 9/9, 8/9, 4/9, 1/9, **1/9** |
+| mean abs delta | .0611 .1031 .1125 .1041 .1109 | .0556 .0901 .1026 .0998 .1160 |
+| reading | "rises 69% then flat" | **response ~ m^0.22; 20x displacement -> 2.09x response** |
+
+At n=6 the 20 mm dip looked like a plateau; at n=9 the 40 mm mean is 13% above the 10 mm mean, so
+"flat" is not supportable. Both readings agree that the response grows far more slowly than the
+damage, but "flat" and "sublinear" are different claims and only the second survives more data. The
+14G doc records the correction and keeps the n=6 JSON as `results/gate14g_response_n6.json`.
+
+Also: **40 mm is 1/9, not 0/9.** The largest displacement is near-impossible, not impossible — the
+README no longer says 0/6.
+
+**14H at n=9:** success heights 0.1142 / 0.1244 / 0.1276 / 0.1136 / 0.1165 (control 0.1145);
+failure heights 0.1799 / 0.2023 / 0.2028 at 10/20/40 mm; among failures rho=+0.606 (p=0.0028);
+success vs failure 0.1202 vs 0.1898 (MWU p=1.4e-6); 14/22 failures still rising at timeout.
+22 failures = 20 held-high + 2 lost-far (5 mm seed1 ep0, 40 mm seed1 ep1).
+
+**Figure-metadata pitfall (fixed twice):** both figure suptitles carried typed metadata ("n=6,
+seeds 1-2") that survived the replication and contradicted the plotted 9/9 labels. Vision audit
+caught it both times. `gate14g_figure.py` now reads `n` and `seeds` from the response JSON (the
+response script records `seeds` per row) and `gate14h_figure.py` reads `n`/`seeds` from the geometry
+JSON. Rule: metadata in a figure title is computed from the data, never typed.
+
+**Script changes:** `gate14g_sweep.sh` takes `SEEDS`, `TRIALS`, `TAGPFX` env overrides;
+`gate14h_geometry.py` writes `magnitude_m` into each row so consumers never map a directory name back
+to a magnitude.
