@@ -17,7 +17,7 @@ high. See `evidence/gate14_wam_specificity.md`, `gate14e_zero_stale.md`,
 |---|---|---|---|---|
 | 14 carry | idm vs first_frame, H=1, 0.01 m, 4 strikes | idm 2/6 vs first_frame 2/6 | p=1.0000 | `results/gate13_g14ff` |
 | 14 carry | idm vs first_frame, H=10, 0.01 m, 4 strikes | idm 1/6 vs first_frame 1/6 | p=1.0000 | `results/gate13_g14ff` |
-| 14 carry ctrl | same, control arm (comparability check) | idm 6/6 vs first_frame 5/6 | p=1.0000 | `results/gate13_g14ff` |
+| 14 carry ctrl | control arm, H=1 (comparability check) | idm 6/6 vs first_frame 5/6 | p=1.0000 | `results/gate13_g14ff` |
 | 14 budget | same at 800 steps, pooled over H | idm 4/12 vs first_frame 4/12 | p=1.0000 | `results/gate13_g14ff800` |
 | 14 approach | strike at step 40, first_frame: control vs disturb | control 11/12 vs disturb 5/12 | p=0.0272 | `results/gate13_g14ffapproach` |
 | 14 approach@800 | same, 800-step budget | control 12/12 vs disturb 5/12 | p=0.0046 | `results/gate13_g14ffapproach800` |

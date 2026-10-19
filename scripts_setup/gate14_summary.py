@@ -66,7 +66,7 @@ def main():
         add(row("14 carry", f"idm vs first_frame, H={h}, 0.01 m, 4 strikes",
                 cells(IDM_CARRY, h, "disturb"), cells(FF_CARRY, h, "disturb"),
                 ("idm", "first_frame"), FF_CARRY))
-    add(row("14 carry ctrl", "same, control arm (comparability check)",
+    add(row("14 carry ctrl", "control arm, H=1 (comparability check)",
             cells(IDM_CARRY, 1, "control"), cells(FF_CARRY, 1, "control"),
             ("idm", "first_frame"), FF_CARRY))
     add(row("14 budget", "same at 800 steps, pooled over H",
