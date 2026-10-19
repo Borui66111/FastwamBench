@@ -80,9 +80,9 @@ The two readings agree on the substantive point — the response grows far more 
 
 ## What it does not establish
 
-- **Why** the response is capped. Gate 14H localises the consequence to the final descent/release
-  (the object reaches the basket in xy and stalls above it), but the cap itself is not explained by
-  these records.
+- **Why** the response is so shallow. Gate 14H localises the consequence to the final descent/release
+  (the object reaches the basket in xy and stalls above it), but the shallowness itself is not
+  explained by these records.
 - Any WAM-vs-baseline claim: this is the `idm` pathway only.
 - The exact functional form. Five magnitudes with n=9 support "sublinear, exponent ≈0.2–0.3"; they do
   not distinguish a power law from a saturating exponential.
