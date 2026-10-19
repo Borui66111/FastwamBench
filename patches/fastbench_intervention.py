@@ -391,6 +391,32 @@ def snapshot_state(env: Any, body_names: Optional[Sequence[str]] = None) -> dict
     except Exception as exc:  # pragma: no cover - defensive
         out["gripper_error"] = repr(exc)
 
+    # --- contacts involving a tracked body (Gate 14K) ---
+    # The object stalls at 0.18-0.20 m with the jaw fully open, so contacts decide
+    # between two readings: resting on the basket (geometric) or still held by the
+    # fingers (mechanical). Best-effort: MuJoCo APIs differ across versions.
+    try:
+        model, data = sim.model, sim.data
+        tracked = set(body_names or list_object_bodies(env) or [])
+        static = {"floor", "table"}
+        hits = []
+        for c in list(getattr(data, "contact", []) or [])[:400]:
+            try:
+                b1 = model.body_id2name(int(model.geom_bodyid[int(c.geom1)]))
+                b2 = model.body_id2name(int(model.geom_bodyid[int(c.geom2)]))
+            except Exception:
+                continue
+            if b1 in tracked or b2 in tracked:
+                hits.append({"a": b1, "b": b2, "dist": float(c.dist)})
+        # Static pairs (floor-basket, floor-object at rest) would fill any small cap
+        # and hide the object-finger / object-basket contacts this gate is about.
+        live = [h for h in hits if h["a"] not in static and h["b"] not in static]
+        rest = [h for h in hits if h not in live]
+        out["contacts"] = (live + rest)[:8]
+        out["contact_count"] = len(hits)
+    except Exception as exc:  # pragma: no cover - defensive
+        out["contacts_error"] = repr(exc)
+
     # --- movable objects ---
     bodies = list(body_names) if body_names is not None else list_object_bodies(env)
     for b in bodies:

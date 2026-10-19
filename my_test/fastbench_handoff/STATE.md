@@ -645,3 +645,26 @@ in the control canary, so `-1 => open` is now measured, not just read from a doc
 
 **Note:** the gripper field only exists in runs made after this change; earlier runs must be re-run to
 gain it.
+
+## Gate 14K — the object never leaves the hand (2026-10-19, COMPLETE)
+
+Added contact state to the recorder (`state.contacts`: non-static pairs only, capped at 8, sorted by
+penetration depth). Runs `results/gate13_g14k9` (seeds 1-3) and `_g14k9b` (seeds 4-5), n=15,
+7 success / 8 failure.
+
+**Result.** 14-I inferred that the release is commanded early so the object lands on the basket. It
+does not: in **6 of 8 failures the object is still attached to the gripper at the end**, a fixed
+~6 mm below the eef, with penetration up to **9.4 mm into the left finger** and the right finger
+**never** touching it — and `obj_basket` is **0 in the last 40 steps of every failure**. The object
+never reaches the basket at all.
+
+**What survives from 14-I.** The jaw does open (14J: 0.077-0.080 of 0.080) and the ordering result
+stands. The correction is to the inference: the policy stops descending, so opening the jaw changes
+nothing — the object rides with the hand. **Failure to descend, not failure to release.**
+
+**A trap worth recording.** Successes also mostly hold the object at the end (delivered to 0.13 m
+still gripped, or dropped 4-6 cm below the eef). So "is the object in the hand" does NOT separate
+success from failure — only height does. And `state.bodies` is unordered: taking `list(values())[0]`
+returned the **floor**, silently reporting `z=0.000`. Select the manipulated body by name.
+
+**Note:** the contacts field only exists in runs made after this change (`g14k9*`).

@@ -1,5 +1,11 @@
 # Gate 14-I — the release is commanded early, at the wrong height
 
+> **CORRECTION (2026-10-19, Gate 14K).** The ordering result stands, but the inference that the object
+> comes to rest on the basket rim is **refuted by contact records**: in 6 of 8 failures the object never
+> touches the basket. The jaw opens and the object stays with the hand. See
+> `evidence/gate14k_contacts.md`: the release is commanded but not achieved, and the failure is a
+> failure to descend.
+
 STATUS: **COMPLETE (2026-10-19), n=9 per magnitude.** Answers the question Gate 14H left open: *why*
 does the descent stop? No new GPU runs — measured from the Gate 14G sweep records, which carry the
 executed action, the eef pose and the object pose on every step.
@@ -59,11 +65,9 @@ sweep whose release height (0.24 m) sits outside the success cluster.
 the object move together (group means −3.55 and −3.81 mm/step in successes, +0.12 and +0.11 in
 failures). It is a *sequencing* failure — the release is commanded before the descent.
 
-**Does not establish.** Whether the fingers physically open. The records carry the commanded action
-but not the finger qpos, and the actuator ramps at 0.01/step, so a commanded open takes many steps to
-complete. In 13 of 22 failures the object stays 1.5–2.4 cm from the eef to the end, which is
-consistent with the fingers still cradling it — so "the object is released and left on the rim" is a
-plausible reading, not a measured one.
+**Does not establish.** Whether the fingers physically open — answered by Gate 14J (they do: 0.077-0.080
+of a 0.080 ceiling) — nor what the object rests on, answered by Gate 14K (nothing: it stays in the hand
+and never touches the basket).
 
 **Also not established:** why the policy inverts the order. That is a policy question these records
 cannot answer.
