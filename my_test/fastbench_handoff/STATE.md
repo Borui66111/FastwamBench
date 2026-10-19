@@ -585,3 +585,40 @@ JSON. Rule: metadata in a figure title is computed from the data, never typed.
 **Script changes:** `gate14g_sweep.sh` takes `SEEDS`, `TRIALS`, `TAGPFX` env overrides;
 `gate14h_geometry.py` writes `magnitude_m` into each row so consumers never map a directory name back
 to a magnitude.
+
+## Gate 14-I — the release is commanded before the descent (2026-10-19, COMPLETE)
+
+Answers the question 14H left open. No GPU: read from the Gate 14G sweep records, which carry the
+executed action, eef pose and object pose every step.
+
+**Sign convention (checked, not assumed):** `robosuite/models/grippers/panda_gripper.py`
+`format_action` docstring: **-1 => open, 1 => closed**. I read it the other way first from two
+traces that each seemed to support the opposite; the vendored docstring is the authority. Reading it
+backwards inverts the entire result.
+
+**Result (n=9/magnitude, grouped by outcome):**
+- gripper commanded open: **0.741** of post-strike steps for failures vs **0.114** for successes
+- last 40 steps: grip +0.55 (closed) for successes vs -1.00 (open) for failures
+- commanded dz last 40: **-0.198** (descending) vs **+0.020** (not descending)
+- object height at end: 0.119 m vs 0.205 m
+- separation height: 0.108 m (n=19) vs 0.178 m (n=9) — 7 cm too high
+
+**Ordering (the key claim, verified):** in **21/21** failures with a detectable release, the first open
+after the grasp precedes that episode's last real downward command; control is the other way round in
+5/8. So the release is commanded *before* the descent, not after a stall.
+
+**The 40 mm "1/9 success" is an incidental drop-in** (inspected directly): gripper closed throughout,
+object rides to 0.263 m, slips out, falls to 0.117 m into the basket. Read the cell as 0/9 by
+placement, 1/9 by luck.
+
+**Not established:** whether the fingers physically open (no finger qpos recorded; actuator ramps at
+0.01/step). 13/22 failures keep the object 1.5-2.4 cm from the eef to the end, consistent with the
+fingers still cradling it. Also not established: why the policy inverts the order.
+
+**Artifacts:** `evidence/gate14i_release.md`, `evidence/gate14i_release.png`/`.pdf`,
+`scripts_setup/gate14i_release.py`, `scripts_setup/gate14i_figure.py`,
+`results/gate14i_release.json`.
+
+**Figure pitfalls hit:** `release_z` serialises as NaN for "never separated", so `is not None` let NaN
+through and titled a panel "nan" — filter on finiteness. The legend advertised a gray "mean" bar that
+was never drawn — replaced with a footnote. Suptitle "Gate 14I" renders as "Gate 141"; write "14-I".
