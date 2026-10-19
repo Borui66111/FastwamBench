@@ -99,3 +99,29 @@ Consequences, stated before the numbers:
   is what matters and it is horizon-independent", which is a different claim from the one P2/P3 test.
   If the gap is flat, both readings will be stated; I will not pick the flattering one.
 
+## OUTCOME (added after the sweep finished)
+
+Every number recomputed from `records.jsonl` by `scripts_setup/gate14L_horizon.py`; the counts in
+the write-up are machine-checked by `scripts_setup/gate14L_verify.py`. Re-run that before quoting.
+
+| H  | idm disturb | ff disturb | gap   | Fisher p |
+|----|-------------|------------|-------|----------|
+| 1  | 12/18       |  5/18      | +0.39 | 0.0437   |
+| 2  | 12/18       | 11/18      | +0.06 | 1.0000   |
+| 5  | 17/18       | 12/18      | +0.28 | 0.0877   |
+| 10 | 15/18       | 17/18      | -0.11 | 0.6026   |
+
+Pooled over all horizons: idm 56/72 vs ff 45/72 (p=0.0680, not significant).
+
+- **P1 — WITHDRAWN** (mis-specified; H does not control future-frame count).
+- **P2 (gap non-decreasing in H) — FAILED.** +0.39, +0.06, +0.28, -0.11: no monotone ordering.
+- **P3 (H=10 gap exceeds H=1) — FAILED.** -0.11 vs +0.39, wrong sign.
+- **Refutation branch — FIRED.**
+
+The gap is not flat, so the "flat gap = horizon-independent conditioning" branch above does not
+apply. It oscillates with no ordering, and no measured quantity explains the H=5 rebound. The
+H=1 cell is nominally significant (p=0.0437) but is one of four uncorrected comparisons and does
+not clear a multiplicity-corrected threshold; it is not reported as an `idm` advantage.
+
+Detail: `evidence/gate14L_horizon.md`.
+
